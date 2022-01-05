@@ -34,7 +34,7 @@ public class Archon extends RobotPlayer {
 
         //Bulders are built with an about 1:20 ratio to the number of total units owned
         System.out.println(rc.getRobotCount());
-        if (rc.getRobotCount() > (buildersBuilt + 1) * 30) {
+        if (rc.getRobotCount() > (buildersBuilt + 1) * 30 && buildersBuilt < 5) {
             if (rc.canBuildRobot(RobotType.BUILDER, dir)) {
                 rc.buildRobot(RobotType.BUILDER, dir);
                 buildersBuilt++;

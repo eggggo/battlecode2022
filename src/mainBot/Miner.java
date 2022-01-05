@@ -31,17 +31,17 @@ public class Miner extends RobotPlayer {
         }
 
         //Sensing Important information:
-        List<MapLocation> resources = new ArrayList<MapLocation>();
-        MapLocation[] allLocs = rc.getAllLocationsWithinRadiusSquared(rc.getLocation(), Integer.MAX_VALUE); // Second parameter defaults to robot sensing radius if too large
+        MapLocation resources = null;
+        MapLocation[] allLocs = rc.getAllLocationsWithinRadiusSquared(rc.getLocation(), rc.getType().visionRadiusSquared); // Second parameter defaults to robot sensing radius if too large
         for (int i = allLocs.length-1; i >= 0; i--) {
             if (rc.senseLead(allLocs[i]) > 20 || rc.senseGold(allLocs[i]) != 0) {
-                resources.add(allLocs[i]);
+                resources = allLocs[i];
             }
         }
 
         Direction dir = directions[rng.nextInt(directions.length)];
-        if (!resources.isEmpty()) {
-            MapLocation tgtResource = resources.get(0);
+        if (resources != null) {
+            MapLocation tgtResource = resources;
             dir = Pathfinder.getMoveDir(rc, tgtResource);
         }
         if (rc.canMove(dir)) {

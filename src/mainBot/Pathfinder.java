@@ -47,7 +47,7 @@ public class Pathfinder {
             immTgt = src.translate(deltaX, deltaY);
         }
 
-        HashMap<MapLocation, Double> costs = new HashMap<>(100);
+        HashMap<MapLocation, Double> costs = new HashMap<>(10);
         MapLocation moveTo = src.add(src.directionTo(immTgt));
         LinkedList<MapLocation> processQ = new LinkedList<>();
         int tgtRubble = bot.senseRubble(immTgt);

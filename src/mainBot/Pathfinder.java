@@ -5,9 +5,6 @@ import mainBot.betterJavaUtil.*;
 
 public class Pathfinder {
 
-    static boolean onMap(RobotController rc, MapLocation test) {
-        return (test.x >= 0 && test.x < rc.getMapWidth() && test.y >= 0 && test.y < rc.getMapHeight());
-    }
     static Direction getMoveDir(RobotController bot, MapLocation tgt) throws GameActionException {
         MapLocation src = bot.getLocation();
         int range = 8;
@@ -71,7 +68,7 @@ public class Pathfinder {
                             + Math.floor((1 + currRubble/10.0)*bot.getType().actionCooldown);
             
             MapLocation towards = current.add(straightDir);
-            if (onMap(bot, towards) && towards.isWithinDistanceSquared(src, range) && (towards.equals(src) || !bot.isLocationOccupied(towards))) {
+            if (bot.onTheMap(towards) && towards.isWithinDistanceSquared(src, range) && (towards.equals(src) || !bot.isLocationOccupied(towards))) {
                 int toRubble = bot.senseRubble(towards);
                 double towardsCds = Math.floor((1 + toRubble/10.0)*bot.getType().movementCooldown)
                                     + Math.floor((1 + toRubble/10.0)*bot.getType().actionCooldown);
@@ -87,7 +84,7 @@ public class Pathfinder {
             }
 
             MapLocation left = current.add(straightDir.rotateLeft());
-            if (onMap(bot, left) && left.isWithinDistanceSquared(src, range) && (left.equals(src) || !bot.isLocationOccupied(left))) {
+            if (bot.onTheMap(left) && left.isWithinDistanceSquared(src, range) && (left.equals(src) || !bot.isLocationOccupied(left))) {
                 int leftRubble = bot.senseRubble(left);
                 double leftCds = Math.floor((1 + leftRubble/10.0)*bot.getType().movementCooldown)
                                 + Math.floor((1 + leftRubble/10.0)*bot.getType().actionCooldown);
@@ -103,7 +100,7 @@ public class Pathfinder {
             }
 
             MapLocation right = current.add(straightDir.rotateRight());
-            if (onMap(bot, right) && right.isWithinDistanceSquared(src, range) && (right.equals(src) || !bot.isLocationOccupied(right))) {
+            if (bot.onTheMap(right) && right.isWithinDistanceSquared(src, range) && (right.equals(src) || !bot.isLocationOccupied(right))) {
                 int rightRubble = bot.senseRubble(right);
                 double rightCds = Math.floor((1 + rightRubble/10.0)*bot.getType().movementCooldown) 
                                 + Math.floor((1 + rightRubble/10.0)*bot.getType().actionCooldown);

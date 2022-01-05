@@ -51,23 +51,6 @@ public class Archon extends RobotPlayer {
 
         //Encoding location of friendly archons in the last 4 indicies of our comms array.  First number is the quadrant
         // number the archon is housed in and the last four digits is the x and y coordinates of the archon.
-        for (int i = 63; i >= 0; i--) {
-            if (rc.readSharedArray(i) == 0) {
-                int quad = 0;
-                if (rc.getLocation().x >= rc.getMapWidth() / 2 && rc.getLocation().y >= rc.getMapHeight() / 2) {
-                    quad = 1;
-                } else if (rc.getLocation().x >= rc.getMapWidth() / 2 && rc.getLocation().y < rc.getMapHeight() / 2) {
-                    quad = 4;
-                } else if (rc.getLocation().x < rc.getMapWidth() / 2 && rc.getLocation().y >= rc.getMapHeight() / 2) {
-                    quad = 2;
-                } else if (rc.getLocation().x < rc.getMapWidth() / 2 && rc.getLocation().y < rc.getMapHeight() / 2) {
-                    quad = 3;
-                } else {
-                    System.out.println("Error: not in a quadrant");
-                }
-                rc.writeSharedArray(i, quad * 10000 + rc.getLocation().x * 100 + rc.getLocation().y);
-                break;
-            }
-        }
+        Comms.writeToCommArray(rc, 0, rc.getLocation().x, rc.getLocation().y);
     }
 }

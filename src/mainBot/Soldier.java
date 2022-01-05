@@ -10,6 +10,21 @@ public class Soldier extends RobotPlayer {
     static MapLocation home = null;
     static Integer[][] enemyArchons = null;
 
+    static int getQuadrant(RobotController rc, int x, int y) {
+        int quad = 0;
+        if (x >= rc.getMapWidth() / 2 && y >= rc.getMapHeight() / 2) {
+            quad = 1;
+        } else if (x >= rc.getMapWidth() / 2 && y < rc.getMapHeight() / 2) {
+            quad = 4;
+        } else if (x < rc.getMapWidth() / 2 && y >= rc.getMapHeight() / 2) {
+            quad = 2;
+        } else if (x < rc.getMapWidth() / 2 && y < rc.getMapHeight() / 2) {
+            quad = 3;
+        } else {
+            System.out.println("Error: not in a quadrant");
+        }
+        return quad;
+    }
     /**
      * Run a single turn for a Soldier.
      * This code is wrapped inside the infinite loop in run(), so it is called once per turn.
@@ -53,9 +68,12 @@ public class Soldier extends RobotPlayer {
             Integer[] quads = new Integer[archonCount];
             Integer[][] coords = new Integer[archonCount][2];
             for (int i = archonCount - 1; i >= 0; i--) {
-                quads[i] = rc.readSharedArray(63 - i) / 10000;
-                coords[i][0] = (rc.readSharedArray(63 - i) % 10000) / 100;
-                coords[i][1] = (rc.readSharedArray(63 - i) % 100);
+                int[] msgContents = Comms.readFromCommsArray(rc, 63-i);
+                if (msgContents[0] == 0) {
+                    quads[i] = getQuadrant(rc, msgContents[1], msgContents[2]);
+                    coords[i][0] = msgContents[1];
+                    coords[i][1] = msgContents[2];
+                }
             }
 
             //initialize whether there's a friendly archon in each quad

@@ -42,7 +42,7 @@ public class Miner extends RobotPlayer {
         Direction dir = directions[rng.nextInt(directions.length)];
         if (!resources.isEmpty()) {
             MapLocation tgtResource = resources.get(0);
-            dir = rc.getLocation().directionTo(tgtResource);
+            dir = Pathfinder.getMoveDir(rc, tgtResource);
         }
         if (rc.canMove(dir)) {
             rc.move(dir);

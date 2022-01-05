@@ -125,7 +125,7 @@ public class Soldier extends RobotPlayer {
 
         //Attacks at one of the random spots of a potential enemy base after spending 100 turns home with no enemies attacking
         int randomAttackLoc = rc.getID() % (rc.getArchonCount() * 3) + attackOffset;
-        Direction dir = rc.getLocation().directionTo(new MapLocation(enemyArchons[randomAttackLoc][0],
+        Direction dir = Pathfinder.getMoveDir(rc, new MapLocation(enemyArchons[randomAttackLoc][0],
                 enemyArchons[randomAttackLoc][1]));
 
         //Changes targets after reaching the target and not killing things for 30 turns
@@ -138,9 +138,9 @@ public class Soldier extends RobotPlayer {
         if (archon != null && turnsNotKilledStuff < 100) {
             int sqDist = (int) (Math.pow(rc.getLocation().x - archon.x,2) + Math.pow(rc.getLocation().y - archon.y,2));
             if (sqDist < 9) {
-                dir = rc.getLocation().directionTo(rc.getLocation().subtract(rc.getLocation().directionTo(archon)));
+                dir = Pathfinder.getMoveDir(rc, archon).opposite();
             } else if (sqDist > 16) {
-                dir = rc.getLocation().directionTo(archon);
+                dir = Pathfinder.getMoveDir(rc, archon);
             }
         }
 

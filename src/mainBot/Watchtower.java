@@ -5,7 +5,7 @@ import battlecode.common.*;
 public class Watchtower extends RobotPlayer{
 
     static int turnsNotKilledStuff = 0;
-    static Integer[][] enemyArchons = null;
+    static MapLocation[] enemyArchons = null;
     static int turnsAlive = 0;
     static int attackOffset = 0;
 
@@ -49,7 +49,7 @@ public class Watchtower extends RobotPlayer{
 
         //Establishing potential enemy archon locations - same as soldier AI
         if (turnsAlive == 0) {
-            enemyArchons = new Integer[archonCount * 3][2];
+            enemyArchons = new MapLocation[archonCount * 3];
             //if all of the archons have written to the comms
             boolean quad1 = false;
             boolean quad2 = false;
@@ -58,13 +58,12 @@ public class Watchtower extends RobotPlayer{
 
             //Create an array for the quads each archon is contained in and another 2D array for each of the archons' coords
             Integer[] quads = new Integer[archonCount];
-            Integer[][] coords = new Integer[archonCount][2];
+            MapLocation[] coords = new MapLocation[archonCount];
             for (int i = archonCount - 1; i >= 0; i--) {
                 int[] msgContents = Comms.readFromCommsArray(rc, 63-i);
                 if (msgContents[0] == 0) {
                     quads[i] = getQuadrant(rc, msgContents[1], msgContents[2]);
-                    coords[i][0] = msgContents[1];
-                    coords[i][1] = msgContents[2];
+                    coords[i] = new MapLocation(msgContents[1], msgContents[2]);
                 }
             }
 
@@ -86,53 +85,43 @@ public class Watchtower extends RobotPlayer{
             if (quad1 && quad3 || quad2 && quad4) {
                 //System.out.println("Rotational Symmetry");
                 for (int i = archonCount - 1; i >= 0; i--) {
-                    enemyArchons[3 * i][0] = coords[i][0]; //vert flip
-                    enemyArchons[3 * i][1] = rc.getMapHeight() - 1 - coords[i][1]; //vert flip
-                    enemyArchons[3 * i + 1][0] = rc.getMapWidth() - 1 - coords[i][0]; // horz flip
-                    enemyArchons[3 * i + 1][1] = coords[i][1]; // horz flip
-                    enemyArchons[3 * i + 2][0] = rc.getMapWidth() - 1 - coords[i][0]; // 180 rotate
-                    enemyArchons[3 * i + 2][1] = rc.getMapHeight() - 1 - coords[i][1]; // 180 rotate
+                    enemyArchons[3 * i] = new MapLocation(coords[i].x, rc.getMapHeight() - 1 - coords[i].y); //vert flip
+                    enemyArchons[3 * i + 1] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, coords[i].y); // horz flip
+                    enemyArchons[3 * i + 2] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, rc.getMapHeight() - 1 - coords[i].y); // 180 rotate
                 }
 
             } else if (quad1 && quad2 || quad3 && quad4) {
                 //System.out.println("Horizontal Symmetry or Rotational Symmetry");
                 //thought that it was unecessary to check horizontal when its likely horizontally symmetric, so i just copied another vertical fip instead of using horz
                 for (int i = archonCount - 1; i >= 0; i--) {
-                    enemyArchons[3 * i][0] = coords[i][0]; //vert flip
-                    enemyArchons[3 * i][1] = rc.getMapHeight() - 1 - coords[i][1]; //vert flip
-                    enemyArchons[3 * i + 1][0] = coords[i][0]; //vert flip
-                    enemyArchons[3 * i + 1][1] = rc.getMapHeight() - 1 - coords[i][1]; //vert flip
-                    enemyArchons[3 * i + 2][0] = rc.getMapWidth() - 1 - coords[i][0]; // 180 rotate
-                    enemyArchons[3 * i + 2][1] = rc.getMapHeight() - 1 - coords[i][1]; // 180 rotate
+                    enemyArchons[3 * i] = new MapLocation(coords[i].x, rc.getMapHeight() - 1 - coords[i].y); //vert flip
+                    enemyArchons[3 * i + 1] = new MapLocation(coords[i].x, rc.getMapHeight() - 1 - coords[i].y); // vert flip
+                    enemyArchons[3 * i + 2] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, rc.getMapHeight() - 1 - coords[i].y); // 180 rotate
                 }
             } else if (quad1 && quad4 || quad2 && quad3) {
                 //System.out.println("Vertical Symmetry or Rotational Symmetry");
                 //thought that it was unecessary to check vertical when its likely vertically symmetric, so i just copied another horiz fip instead of using vert
                 for (int i = archonCount - 1; i >= 0; i--) {
-                    enemyArchons[3 * i][0] = rc.getMapWidth() - 1 - coords[i][0]; // horz flip
-                    enemyArchons[3 * i][1] = coords[i][1]; // horz flip
-                    enemyArchons[3 * i + 1][0] = rc.getMapWidth() - 1 - coords[i][0]; // horz flip
-                    enemyArchons[3 * i + 1][1] = coords[i][1]; // horz flip
-                    enemyArchons[3 * i + 2][0] = rc.getMapWidth() - 1 - coords[i][0]; // 180 rotate
-                    enemyArchons[3 * i + 2][1] = rc.getMapHeight() - 1 - coords[i][1]; // 180 rotate
+                    enemyArchons[3 * i] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, coords[i].y); //horz flip
+                    enemyArchons[3 * i + 1] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, coords[i].y); // horz flip
+                    enemyArchons[3 * i + 2] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, rc.getMapHeight() - 1 - coords[i].y); // 180 rotate
                 }
             } else {
                 //System.out.println("only in one quad so cannot tell");
                 for (int i = archonCount - 1; i >= 0; i--) {
-                    enemyArchons[3 * i][0] = coords[i][0]; //vert flip
-                    enemyArchons[3 * i][1] = rc.getMapHeight() - 1 - coords[i][1]; //vert flip
-                    enemyArchons[3 * i + 1][0] = rc.getMapWidth() - 1 - coords[i][0]; // horz flip
-                    enemyArchons[3 * i + 1][1] = coords[i][1]; // horz flip
-                    enemyArchons[3 * i + 2][0] = rc.getMapWidth() - 1 - coords[i][0]; // 180 rotate
-                    enemyArchons[3 * i + 2][1] = rc.getMapHeight() - 1 - coords[i][1]; // 180 rotate
+                    enemyArchons[3 * i] = new MapLocation(coords[i].x, rc.getMapHeight() - 1 - coords[i].y); //vert flip
+                    enemyArchons[3 * i + 1] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, coords[i].y); // horz flip
+                    enemyArchons[3 * i + 2] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, rc.getMapHeight() - 1 - coords[i].y); // 180 rotate
                 }
             }
         }
 
         //Attacks at one of the random spots of a potential enemy base after spending 100 turns home with no enemies attacking
-        int randomAttackLoc = (rc.getID() + attackOffset) % (archonCount * 3);
-        Direction dir = Pathfinder.getMoveDir(rc, new MapLocation(enemyArchons[randomAttackLoc][0],
-                enemyArchons[randomAttackLoc][1]));
+        int randomAttackLoc = 0;
+        if (archonCount > 0) {
+            randomAttackLoc = (rc.getID() + attackOffset) % (archonCount * 3);
+        }
+        Direction dir = Pathfinder.getMoveDir(rc, enemyArchons[randomAttackLoc]);
 
         //Changes targets after reaching the target and not killing things for 30 turns
         if (dir == Direction.CENTER && turnsNotKilledStuff > 30) {

@@ -39,11 +39,26 @@ public class Archon extends RobotPlayer {
             }
         }
 
+        //if theres a wounded soldier nearby, repair it
+        MapLocation woundedWarrior = null;
+        for (int i = alliedUnits.length - 1; i >= 0; i--) {
+            RobotInfo unit = alliedUnits[i];
+            if (unit.getType() == RobotType.SOLDIER && unit.getHealth() != RobotType.SOLDIER.getMaxHealth(unit.getLevel())) {
+                woundedWarrior = unit.getLocation();
+                break;
+            }
+        }
+
+        if (woundedWarrior != null && rc.canRepair(woundedWarrior)) {
+            rc.repair(woundedWarrior);
+        }
+
         Team opponent = rc.getTeam().opponent();
         RobotInfo[] opponentUnits = rc.senseNearbyRobots(senseRadius, opponent);
 
         // Building
-        Direction dir = rc.getLocation().directionTo(centerMap);
+        Direction dir = directions[rng.nextInt(directions.length)];
+
         //Bulders are built with an about 1:20 ratio to the number of total units owned
         if (rc.getRobotCount() > (buildersBuilt + 1) * 30 && buildersBuilt < 5 && nearbySoldiers > 3 && opponentUnits.length == 0) {
             if (rc.canBuildRobot(RobotType.BUILDER, dir)) {

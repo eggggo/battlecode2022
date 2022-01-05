@@ -1,4 +1,4 @@
-package examplefuncsplayer.betterJavaUtil;
+package mainBot.betterJavaUtil;
 
 public class Entry<K, V> {
     public K key;

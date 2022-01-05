@@ -1,4 +1,4 @@
-package examplefuncsplayer.betterJavaUtil;
+package mainBot.betterJavaUtil;
 
 public class HashMap<K, V> {
     public LinkedList<Entry<K, V>>[] table;

@@ -1,4 +1,4 @@
-package examplefuncsplayer.betterJavaUtil;
+package mainBot.betterJavaUtil;
 
 public class LinkedList<T> {
     public Node<T> head;

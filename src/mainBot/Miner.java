@@ -4,7 +4,6 @@ import battlecode.common.Direction;
 import battlecode.common.GameActionException;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
-import scala.Int;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +32,7 @@ public class Miner extends RobotPlayer {
 
         //Sensing Important information:
         List<MapLocation> resources = new ArrayList<MapLocation>();
-        MapLocation[] allLocs = rc.getAllLocationsWithinRadiusSquared(rc.getLocation(), Int.MaxValue()); // Second parameter defaults to robot sensing radius if too large
+        MapLocation[] allLocs = rc.getAllLocationsWithinRadiusSquared(rc.getLocation(), Integer.MAX_VALUE); // Second parameter defaults to robot sensing radius if too large
         for (int i = allLocs.length-1; i >= 0; i--) {
             if (rc.senseLead(allLocs[i]) > 20 || rc.senseGold(allLocs[i]) != 0) {
                 resources.add(allLocs[i]);

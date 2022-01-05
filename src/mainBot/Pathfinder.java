@@ -1,7 +1,7 @@
-package examplefuncsplayer;
+package mainBot;
 
 import battlecode.common.*;
-import examplefuncsplayer.betterJavaUtil.*;
+import mainBot.betterJavaUtil.*;
 
 public class Pathfinder {
 

@@ -1,4 +1,4 @@
-package examplefuncsplayer;
+package mainBot;
 
 import battlecode.common.*;
 import java.util.Random;
@@ -37,8 +37,6 @@ public strictfp class RobotPlayer {
         Direction.NORTHWEST,
     };
 
-    static boolean firstBot = true;
-
     /**
      * run() is the method that is called when a robot is instantiated in the Battlecode world.
      * It is like the main function for your robot. If this method returns, the robot dies!
@@ -51,10 +49,8 @@ public strictfp class RobotPlayer {
 
         // Hello world! Standard output is very useful for debugging.
         // Everything you say here will be directly viewable in your terminal when you run a match!
-
         // You can also use indicators to save debug notes in replays.
         rc.setIndicatorString("Hello world!");
-
 
         while (true) {
             // This code runs during the entire lifespan of the robot, which is why it is in an infinite

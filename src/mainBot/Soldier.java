@@ -136,7 +136,7 @@ public class Soldier extends RobotPlayer {
 
         //Stay within a 3 or 4 radius circle until 100 turns have passed without killing something, then attack
         if (archon != null && turnsNotKilledStuff < 100) {
-            int sqDist = (int) (Math.pow(rc.getLocation().x - archon.x,2) + Math.pow(rc.getLocation().y - archon.y,2));
+            int sqDist = rc.getLocation().distanceSquaredTo(archon);
             if (sqDist < 9) {
                 dir = Pathfinder.getMoveDir(rc, archon).opposite();
             } else if (sqDist > 16) {

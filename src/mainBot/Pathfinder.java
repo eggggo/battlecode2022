@@ -47,9 +47,12 @@ public class Pathfinder {
             immTgt = src.translate(deltaX, deltaY);
         }
 
-        HashMap<MapLocation, Double> costs = new HashMap<>(10);
+        HashMap<MapLocation, Double> costs = new HashMap<>(100);
         MapLocation moveTo = src.add(src.directionTo(immTgt));
         LinkedList<MapLocation> processQ = new LinkedList<>();
+        int tgtRubble = bot.senseRubble(immTgt);
+        costs.put(immTgt, Math.floor((1 + tgtRubble/10.0)*bot.getType().movementCooldown)
+        + Math.floor((1 + tgtRubble/10.0)*bot.getType().actionCooldown));
         processQ.add(immTgt);
         bot.setIndicatorString(immTgt.toString());
 
@@ -63,11 +66,15 @@ public class Pathfinder {
             }
 
             Direction straightDir = current.directionTo(src);
-            double currCds = 1 + bot.senseRubble(current)/10.0;
+            int currRubble = bot.senseRubble(current);
+            double currCds = Math.floor((1 + currRubble/10.0)*bot.getType().movementCooldown)
+                            + Math.floor((1 + currRubble/10.0)*bot.getType().actionCooldown);
             
             MapLocation towards = current.add(straightDir);
             if (onMap(bot, towards) && towards.isWithinDistanceSquared(src, range) && (towards.equals(src) || !bot.isLocationOccupied(towards))) {
-                double towardsCds = 1 + bot.senseRubble(towards)/10.0;
+                int toRubble = bot.senseRubble(towards);
+                double towardsCds = Math.floor((1 + toRubble/10.0)*bot.getType().movementCooldown)
+                                    + Math.floor((1 + toRubble/10.0)*bot.getType().actionCooldown);
                 if (!costs.contains(towards) || costs.get(towards) > towardsCds + currCds) {
                     costs.put(towards, towardsCds + currCds);
                     if (towards.equals(src)) {
@@ -81,7 +88,9 @@ public class Pathfinder {
 
             MapLocation left = current.add(straightDir.rotateLeft());
             if (onMap(bot, left) && left.isWithinDistanceSquared(src, range) && (left.equals(src) || !bot.isLocationOccupied(left))) {
-                double leftCds = 1 + bot.senseRubble(left)/10.0;
+                int leftRubble = bot.senseRubble(left);
+                double leftCds = Math.floor((1 + leftRubble/10.0)*bot.getType().movementCooldown)
+                                + Math.floor((1 + leftRubble/10.0)*bot.getType().actionCooldown);
                 if (!costs.contains(left) || costs.get(left) > leftCds + currCds) {
                     costs.put(left, leftCds + currCds);
                     if (left.equals(src)) {
@@ -95,7 +104,9 @@ public class Pathfinder {
 
             MapLocation right = current.add(straightDir.rotateRight());
             if (onMap(bot, right) && right.isWithinDistanceSquared(src, range) && (right.equals(src) || !bot.isLocationOccupied(right))) {
-                double rightCds = 1 + bot.senseRubble(right)/10.0;
+                int rightRubble = bot.senseRubble(right);
+                double rightCds = Math.floor((1 + rightRubble/10.0)*bot.getType().movementCooldown) 
+                                + Math.floor((1 + rightRubble/10.0)*bot.getType().actionCooldown);
                 if (!costs.contains(right) || costs.get(right) > rightCds + currCds) {
                     costs.put(right, rightCds + currCds);
                     if (right.equals(src)) {

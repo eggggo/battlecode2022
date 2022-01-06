@@ -1,5 +1,7 @@
 package mainBot;
 
+import java.util.Arrays;
+
 import battlecode.common.*;
 
 public class Comms {
@@ -55,17 +57,24 @@ public class Comms {
         int resourceCount = 0;
         int enemyCount = 0;
         int range = rc.getType().visionRadiusSquared;
+        int[] entry = readSectorInfo(rc, sector);
 
         if (rc.getType() == RobotType.ARCHON) {
             homeArchon = 1;
         } else {
-            RobotInfo[] friendlies = rc.senseNearbyRobots(range, rc.getTeam());
-            for (int i = friendlies.length - 1; i >= 0; i --) {
-                RobotInfo r = friendlies[i];
-                if (r.getType() == RobotType.ARCHON && withinSector(rc, r.getLocation(), sector)) {
-                    homeArchon = 1;
-                    break;
+            MapLocation mdpt = sectorMidpt(rc, sector);
+            boolean trueVision = rc.getLocation().distanceSquaredTo(mdpt) <= 2;
+            if (entry[0] == 0 || trueVision) {
+                RobotInfo[] friendlies = rc.senseNearbyRobots(range, rc.getTeam());
+                for (int i = friendlies.length - 1; i >= 0; i --) {
+                    RobotInfo r = friendlies[i];
+                    if (r.getType() == RobotType.ARCHON && withinSector(rc, r.getLocation(), sector)) {
+                        homeArchon = 1;
+                        break;
+                    }
                 }
+            } else {
+                homeArchon = entry[0];
             }
         }
 
@@ -99,6 +108,16 @@ public class Comms {
 
         int msg = (homeArchon << 15) | (enemyArchon << 14) | (resourceCount << 6) | (enemyCount);
 
+        if (sector == 28 && homeArchon == 0) {
+            System.out.println("i did this.");
+            System.out.println(rc.getID() + ", " + rc.getType());
+        }
         rc.writeSharedArray(sector, msg);
+    }
+
+    static void printComms(RobotController rc) throws GameActionException {
+        for (int i = 48; i >= 0; i --) {
+            System.out.println("sector: " + i + ", " + Arrays.toString(readSectorInfo(rc, i)));
+        }
     }
 }

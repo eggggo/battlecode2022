@@ -22,7 +22,7 @@ public class Archon extends RobotPlayer {
         //Printing anomaly schedule
         AnomalyScheduleEntry[] anomalySchedule = rc.getAnomalySchedule();
         for (int i = anomalySchedule.length-1; i >= 0; i--) {
-            System.out.println(anomalySchedule[anomalySchedule.length-1-i].anomalyType.toString());
+         //   System.out.println(anomalySchedule[anomalySchedule.length-1-i].anomalyType.toString());
         }
 
         //Countin nearby soldier and miner counts.

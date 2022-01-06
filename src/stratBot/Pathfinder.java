@@ -8,14 +8,14 @@ public class Pathfinder {
     static Direction getMoveDir(RobotController bot, MapLocation tgt) throws GameActionException {
         MapLocation src = bot.getLocation();
         int range = 8;
-
-        /*
+        
+/*
         //simple heuristic using only nearby 8
         Direction optimalDir = Direction.CENTER;
         double optimalCost = 9999;
         for (Direction dir : Direction.allDirections()) {
             MapLocation loc = src.add(dir);
-            if (!onMap(bot, loc) || bot.isLocationOccupied(loc)) {
+            if (!bot.onTheMap(loc) || bot.isLocationOccupied(loc)) {
                 continue;
             }
             double currCost = Math.sqrt(loc.distanceSquaredTo(tgt)) + (bot.senseRubble(loc));
@@ -25,7 +25,7 @@ public class Pathfinder {
             }
         }
         return optimalDir;*/
-
+        
         //sweep dijkstras/bellman ford from immediate tgt to src
         MapLocation immTgt;
 

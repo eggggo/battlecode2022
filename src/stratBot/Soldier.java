@@ -1,8 +1,9 @@
 package stratBot;
 
-import java.awt.*;
-
 import battlecode.common.*;
+
+
+import java.util.*;
 
 public class Soldier extends RobotPlayer {
 
@@ -39,16 +40,20 @@ public class Soldier extends RobotPlayer {
 
     int radius = rc.getType().actionRadiusSquared;
     int senseRadius = rc.getType().visionRadiusSquared;
-
     Team friendly = rc.getTeam();
     Team opponent = rc.getTeam().opponent();
     RobotInfo[] enemies = rc.senseNearbyRobots(radius, opponent);
-    RobotInfo[] friends = rc.senseNearbyRobots(senseRadius, friendly);
-
-
+    int archonCount = 4;
+    if (enemies.length > 0) {
+      MapLocation toAttack = enemies[0].location;
+      if (rc.canAttack(toAttack)) {
+        rc.attack(toAttack);
+        turnsNotKilledStuff = 0;
+      }
+    }
     if (turnsAlive == 0) {
-
-      homesSetup(rc, friends);
+      RobotInfo[] nearbyRobots = rc.senseNearbyRobots(senseRadius, friendly);
+      initializeSoldier(rc, nearbyRobots);
     }
     //Soldier rules order
     //0: If turn 0, setup home
@@ -56,6 +61,7 @@ public class Soldier extends RobotPlayer {
     //2: If enemy, attack
     //3: If an archon is under attack (defense or offense) go help
     //4: Defense pathing/Scout pathing/Attack pathing
+
 
     Direction dir = null;
     if (rc.getHealth() < RobotType.SOLDIER.getMaxHealth(rc.getLevel()) / 2 && home != null) { // If low health run home
@@ -98,20 +104,21 @@ public class Soldier extends RobotPlayer {
 
     turnsNotKilledStuff++;
     turnsAlive++;
+    Comms.updateSector(rc);
   }
 
-  static void homesSetup(RobotController rc, RobotInfo[] friends) throws GameActionException {
+  static void initializeSoldier(RobotController rc, RobotInfo[] nearbyRobots) throws GameActionException{
     role = rc.getID() % 2;
-    int archonCount = rc.getArchonCount();
-    for (int i = friends.length - 1; i >= 0; i--) {
-      if (friends[i].getType() == RobotType.ARCHON) {
-        home = friends[i].getLocation();
+    int archonCount = 4;
+    for (int i = nearbyRobots.length - 1; i >= 0; i--) {
+      if (nearbyRobots[i].getType() == RobotType.ARCHON) {
+        home = nearbyRobots[i].getLocation();
         break;
       }
     }
-    enemyArchons = new MapLocation[archonCount * 3];
-    attackLocation = (rc.getID() + attackOffset) % (enemyArchons.length);
 
+
+    enemyArchons = new MapLocation[archonCount * 3];
     //if all of the archons have written to the comms
     boolean quad1 = false;
     boolean quad2 = false;
@@ -119,14 +126,48 @@ public class Soldier extends RobotPlayer {
     boolean quad4 = false;
 
     //Create an array for the quads each archon is contained in and another 2D array for each of the archons' coords
-    Integer[] quads = new Integer[archonCount];
+    int currentArchonIndex = 0;
+    int[] quads = new int[archonCount];
     MapLocation[] coords = new MapLocation[archonCount];
-    for (int i = archonCount - 1; i >= 0; i--) {
-      int[] msgContents = Comms.readFromCommsArray(rc, 63 - i);
-      if (msgContents[0] == 0) {
-        quads[i] = getQuadrant(rc, msgContents[1], msgContents[2]);
-        coords[i] = new MapLocation(msgContents[1], msgContents[2]);
+    for (int i = 48; i >= 0; i--) {
+      int[] sector = Comms.readSectorInfo(rc, i);
+      if (sector[0] == 1) {
+        MapLocation mdpt = Comms.sectorMidpt(rc, i);
+        quads[currentArchonIndex] = getQuadrant(rc, mdpt.x, mdpt.y);
+        coords[currentArchonIndex] = mdpt;
+        currentArchonIndex++;
       }
+    }
+    if (coords[1] == null) {
+      archonCount = 1;
+      int[] tempQuads = new int[1];
+      MapLocation[] tempCoords = new MapLocation[1];
+      tempQuads[0] = quads[0];
+      quads = tempQuads;
+      tempCoords[0] = coords[0];
+      coords = tempCoords;
+    } else if (coords[2] == null) {
+      archonCount = 2;
+      int[] tempQuads = new int[2];
+      MapLocation[] tempCoords = new MapLocation[2];
+      tempQuads[0] = quads[0];
+      tempQuads[1] = quads[1];
+      quads = tempQuads;
+      tempCoords[0] = coords[0];
+      tempCoords[1] = coords[1];
+      coords = tempCoords;
+    } else if (coords[3] == null) {
+      archonCount = 3;
+      int[] tempQuads = new int[3];
+      MapLocation[] tempCoords = new MapLocation[3];
+      tempQuads[0] = quads[0];
+      tempQuads[1] = quads[1];
+      tempQuads[2] = quads[2];
+      quads = tempQuads;
+      tempCoords[0] = coords[0];
+      tempCoords[1] = coords[1];
+      tempCoords[2] = coords[2];
+      coords = tempCoords;
     }
 
     //initialize whether there's a friendly archon in each quad
@@ -176,7 +217,6 @@ public class Soldier extends RobotPlayer {
         enemyArchons[3 * i + 2] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, rc.getMapHeight() - 1 - coords[i].y); // 180 rotate
       }
     }
-
 
   }
 }

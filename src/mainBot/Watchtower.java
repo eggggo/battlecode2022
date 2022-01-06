@@ -26,7 +26,7 @@ public class Watchtower extends RobotPlayer{
     }
 
     public static void runWatchtower(RobotController rc) throws GameActionException {
-        int archonCount = rc.getArchonCount();
+        int archonCount = 4;
         int radius = rc.getType().actionRadiusSquared;
         Team opponent = rc.getTeam().opponent();
         RobotInfo[] enemies = rc.senseNearbyRobots(radius, opponent);
@@ -57,14 +57,48 @@ public class Watchtower extends RobotPlayer{
             boolean quad4 = false;
 
             //Create an array for the quads each archon is contained in and another 2D array for each of the archons' coords
-            Integer[] quads = new Integer[archonCount];
+            int currentArchonIndex = 0;
+            int[] quads = new int[archonCount];
             MapLocation[] coords = new MapLocation[archonCount];
-            for (int i = archonCount - 1; i >= 0; i--) {
-                int[] msgContents = Comms.readFromCommsArray(rc, 63-i);
-                if (msgContents[0] == 0) {
-                    quads[i] = getQuadrant(rc, msgContents[1], msgContents[2]);
-                    coords[i] = new MapLocation(msgContents[1], msgContents[2]);
+            for (int i = 48; i >= 0; i --) {
+                int[] sector = Comms.readSectorInfo(rc, i);
+                if (sector[0] == 1) {
+                    MapLocation mdpt = Comms.sectorMidpt(rc, i);
+                    quads[currentArchonIndex] = getQuadrant(rc, mdpt.x, mdpt.y);
+                    coords[currentArchonIndex] = mdpt;
+                    currentArchonIndex ++;
                 }
+            }
+            if (coords[1] == null) {
+                archonCount = 1;
+                int[] tempQuads = new int[1];
+                MapLocation[] tempCoords = new MapLocation[1];
+                tempQuads[0] = quads[0];
+                quads = tempQuads;
+                tempCoords[0] = coords[0];
+                coords = tempCoords;
+            } else if (coords[2] == null) {
+                archonCount = 2;
+                int[] tempQuads = new int[2];
+                MapLocation[] tempCoords = new MapLocation[2];
+                tempQuads[0] = quads[0];
+                tempQuads[1] = quads[1];
+                quads = tempQuads;
+                tempCoords[0] = coords[0];
+                tempCoords[1] = coords[1];
+                coords = tempCoords;
+            } else if (coords[2] == null) {
+                archonCount = 3;
+                int[] tempQuads = new int[3];
+                MapLocation[] tempCoords = new MapLocation[3];
+                tempQuads[0] = quads[0];
+                tempQuads[1] = quads[1];
+                tempQuads[2] = quads[2];
+                quads = tempQuads;
+                tempCoords[0] = coords[0];
+                tempCoords[1] = coords[1];
+                tempCoords[2] = coords[2];
+                coords = tempCoords;
             }
 
             //initialize whether there's a friendly archon in each quad
@@ -133,6 +167,9 @@ public class Watchtower extends RobotPlayer{
         if (rc.canMove(dir)) {
             rc.move(dir);
         }
+
+        //Comms stuff
+        Comms.updateSector(rc);
         turnsAlive++;
     }
 }

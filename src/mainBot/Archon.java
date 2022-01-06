@@ -75,9 +75,8 @@ public class Archon extends RobotPlayer {
             soldiersBuilt++;
         }
 
-        //Encoding location of friendly archons in the last 4 indicies of our comms array. 
-        Comms.writeToCommArray(rc, 0, rc.getLocation().x, rc.getLocation().y);
-
+        //Comms stuff
+        Comms.updateSector(rc);
         turnsAlive++;
     }
 }

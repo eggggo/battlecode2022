@@ -65,5 +65,8 @@ public class Builder extends RobotPlayer {
         if (rc.canMove(dir)) {
             rc.move(dir);
         }
+
+        //Comms stuff
+        Comms.updateSector(rc);
     }
 }

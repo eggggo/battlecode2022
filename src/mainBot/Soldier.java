@@ -104,6 +104,7 @@ public class Soldier extends RobotPlayer {
 
             //Predict location of enemy archons based on potential symmetry.  For each archon, I check the 180 rotation,
             // horizontal flip, and vertical flip.  These are only potential locations, as roataion can occur at other degrees of rotation.
+            // if there are meme maps that mess up our scouting we can edit here.
             if (quad1 && quad3 || quad2 && quad4) {
                 //System.out.println("Rotational Symmetry");
                 for (int i = archonCount - 1; i >= 0; i--) {

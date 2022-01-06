@@ -6,12 +6,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Miner extends RobotPlayer {
+
+    static int prevIncome = 0;
     /**
      * Run a single turn for a Miner.
      * This code is wrapped inside the infinite loop in run(), so it is called once per turn.
      */
     static void runMiner(RobotController rc) throws GameActionException {
-
+        int income = 0;
         int senseRadius = rc.getType().visionRadiusSquared;
         Team friendly = rc.getTeam();
         // Try to mine on squares around us.
@@ -23,9 +25,11 @@ public class Miner extends RobotPlayer {
                 // You can mine multiple times per turn!
                 while (rc.canMineGold(mineLocation)) {
                     rc.mineGold(mineLocation);
+                    income += 5;
                 }
                 while (rc.canMineLead(mineLocation) && rc.senseLead(mineLocation) > 1) {
                     rc.mineLead(mineLocation);
+                    income ++;
                 }
             }
         }
@@ -69,5 +73,10 @@ public class Miner extends RobotPlayer {
 
         //Comms stuff
         Comms.updateSector(rc);
+        int deltaIncome = income - prevIncome;
+        //index 49 is global income
+        int currentIncome = rc.readSharedArray(49);
+        rc.writeSharedArray(49, currentIncome + deltaIncome);
+        prevIncome = income;
     }
 }

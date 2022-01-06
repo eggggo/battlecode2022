@@ -10,6 +10,7 @@ public class Comms {
     //8 bit resource count(capped at 255), 6 bit enemy count(capped at 63)
     //indices 49 through 63 for other info:
     //49: global income
+    //50: healthy attacker count(attackers above 75% hp)
     static int locationToSector(RobotController rc, MapLocation loc) {
         int width = rc.getMapWidth();
         int height = rc.getMapHeight();

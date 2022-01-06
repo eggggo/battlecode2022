@@ -75,8 +75,7 @@ public class Archon extends RobotPlayer {
             soldiersBuilt++;
         }
 
-        //Encoding location of friendly archons in the last 4 indicies of our comms array.  First number is the quadrant
-        // number the archon is housed in and the last four digits is the x and y coordinates of the archon.
+        //Encoding location of friendly archons in the last 4 indicies of our comms array. 
         Comms.writeToCommArray(rc, 0, rc.getLocation().x, rc.getLocation().y);
 
         turnsAlive++;

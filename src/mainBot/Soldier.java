@@ -82,11 +82,7 @@ public class Soldier extends RobotPlayer {
         rc.attack(toAttack);
         turnsNotKilledStuff = 0;
       }
-    }// else if Communicated something is under attack do stuff
-    else if (role == 2) {
-      //Idk i think defense sucks but maybe we should setup to defend
-    } else if (role == 1) { //If attacker, go attack
-
+    } else {
       int distance = Integer.MAX_VALUE;
       MapLocation actualArchonsTarget = null;
       int enemySectorDistance = 9999;
@@ -121,13 +117,8 @@ public class Soldier extends RobotPlayer {
         }
         dir = Pathfinder.getMoveDir(rc, attackTarget);
       }
-    } else if (role == 0) {
-      //Same copy of random pathing code that miners have
-      //Needs to be fixed cause its random and garbage
-      dir = directions[rng.nextInt(directions.length)];
-
-
     }
+    
     if (dir != null && rc.canMove(dir)) {
       rc.move(dir);
     }

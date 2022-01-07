@@ -51,7 +51,7 @@ public class Miner extends RobotPlayer {
         Direction dir;
         //Is there a nearby soldier without a huge number of followers?
         if (nearbySoldier != null && nearbyRobots.length < 9) {
-            dir = Pathfinder.getMoveDir(rc, nearbySoldier);
+            dir = rc.getLocation().directionTo(nearbySoldier);
         } else {
             MapLocation resources = null;
             MapLocation[] allLocs = rc.getAllLocationsWithinRadiusSquared(rc.getLocation(), rc.getType().visionRadiusSquared); // Second parameter defaults to robot sensing radius if too large
@@ -71,12 +71,13 @@ public class Miner extends RobotPlayer {
             //Are there nearby resources?
             if (resources != null) {
                 MapLocation tgtResource = resources;
-                dir = Pathfinder.getMoveDir(rc, tgtResource);
+                dir = rc.getLocation().directionTo(tgtResource);
                 MapLocation newLocation = new MapLocation(me.x + dir.dx, me.y + dir.dy);
                 int newNeighbors = 0;
-                for (int i = 1; i <= -1; i -= 1) {
-                    for (int j = 1; j <= -1; j -= 1) {
-                        if (rc.senseRobotAtLocation(new MapLocation(me.x + dir.dx + i, me.y + dir.dy + j)) != null) {
+                for (int i = 1; i >= -1; i -= 1) {
+                    for (int j = 1; j >= -1; j -= 1) {
+                        if (rc.onTheMap(new MapLocation(me.x + dir.dx + i, me.y + dir.dy + j)) &&
+                                rc.senseRobotAtLocation(new MapLocation(me.x + dir.dx + i, me.y + dir.dy + j)) != null) {
                             newNeighbors += 1;
                         }
                     }
@@ -96,7 +97,7 @@ public class Miner extends RobotPlayer {
         }
 
         //Comms stuff
-        Comms.updateSector(rc);
+//        Comms.updateSector(rc);
         // int deltaIncome = income - prevIncome;
         // //index 49 is global income
         // int currentIncome = rc.readSharedArray(49);

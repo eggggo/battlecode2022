@@ -90,6 +90,9 @@ public class Comms {
         RobotInfo[] enemies = rc.senseNearbyRobots(range, rc.getTeam().opponent());
 
         for (int i = enemies.length - 1; i >= 0; i --) {
+            if (enemyArchon == 1 && enemyCount >= 63) {
+                break;
+            }
             RobotInfo r = enemies[i];
             if (r.getType() == RobotType.ARCHON && withinSector(rc, r.getLocation(), sector)) {
                 enemyArchon = 1;
@@ -108,6 +111,9 @@ public class Comms {
         } else {
             int leadCount = 0;
             for (int i = nearbyLead.length - 1; i >= 0; i --) {
+                if (leadCount >= 255) {
+                    break;
+                }
                 if (withinSector(rc, nearbyLead[i], sector)) {
                     leadCount += rc.senseLead(nearbyLead[i]);
                 }

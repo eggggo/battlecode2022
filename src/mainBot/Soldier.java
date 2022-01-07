@@ -78,7 +78,7 @@ public class Soldier extends RobotPlayer {
       if (closestAttackingEnemy != null) {
         toAttack = closestAttackingEnemy;
       }
-      if (rc.canAttack(toAttack)) {
+      if (toAttack != null && rc.canAttack(toAttack)) {
         rc.attack(toAttack);
         turnsNotKilledStuff = 0;
       }

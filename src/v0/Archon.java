@@ -33,7 +33,6 @@ public class Archon extends RobotPlayer {
         }
         double friendlyToEnemyRatio = ((double) soldierCount + wtCount + sageCount)/ (double) enemyCount;
         int targetMinerCount = (int) (.02 * scoutedResources * (1/(1+.02*turnCount)+.7) * friendlyToEnemyRatio*.5);
-        System.out.println(currentIncome);
         int senseRadius = rc.getType().visionRadiusSquared;
         Team friendly = rc.getTeam();
         Team opponent = rc.getTeam().opponent();

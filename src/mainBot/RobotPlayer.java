@@ -53,7 +53,7 @@ public strictfp class RobotPlayer {
         rc.setIndicatorString("Hello world!");
 
         while (true) {
-//            if (turnCount == 2000) {
+//            if (turnCount == 200) {
 //                rc.resign();
 //            }
             // This code runs during the entire lifespan of the robot, which is why it is in an infinite

@@ -1,5 +1,7 @@
 package v0;
 
+import java.util.Arrays;
+
 import battlecode.common.*;
 
 public class Watchtower extends RobotPlayer{
@@ -50,7 +52,6 @@ public class Watchtower extends RobotPlayer{
 
         //Establishing potential enemy archon locations - same as soldier AI
         if (turnsAlive == 0) {
-            enemyArchons = new MapLocation[archonCount * 3];
             //if all of the archons have written to the comms
             boolean quad1 = false;
             boolean quad2 = false;
@@ -79,6 +80,8 @@ public class Watchtower extends RobotPlayer{
             }
             quads = tempQuads;
             coords = tempCoords;
+
+            enemyArchons = new MapLocation[archonCount * 3];
 
             //initialize whether there's a friendly archon in each quad
             for (int a = archonCount - 1; a >= 0; a--) {
@@ -133,8 +136,9 @@ public class Watchtower extends RobotPlayer{
         //Attacks at one of the random spots of a potential enemy base after spending 100 turns home with no enemies attacking
         int randomAttackLoc = 0;
         if (archonCount > 0) {
-            randomAttackLoc = (rc.getID() + attackOffset) % (archonCount * 3);
+            randomAttackLoc = (rc.getID() + attackOffset) % (enemyArchons.length);
         }
+
         Direction dir = Pathfinder.getMoveDir(rc, enemyArchons[randomAttackLoc]);
 
         //Changes targets after reaching the target and not killing things for 30 turns

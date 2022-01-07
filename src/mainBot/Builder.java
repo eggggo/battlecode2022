@@ -8,7 +8,7 @@ public class Builder extends RobotPlayer {
     static int watchtowersBuilt = 0;
 
     public static void runBuilder(RobotController rc) throws GameActionException {
-
+        int currentIncome = rc.readSharedArray(49);
         int senseRadius = rc.getType().visionRadiusSquared;
         Team friendly = rc.getTeam();
         RobotInfo[] nearbyRobots = rc.senseNearbyRobots(senseRadius, friendly);
@@ -56,9 +56,9 @@ public class Builder extends RobotPlayer {
         //If there is a nearby building that can be repaired, repair it, otherwise go to the nearest repariable buidling and repair it.
         if (nearbyBuilding != null && rc.canRepair(nearbyBuilding)) {
             rc.repair(nearbyBuilding);
-        } else if (rc.canBuildRobot(RobotType.LABORATORY, Direction.SOUTH)) {
+        } else if (rc.getID() % 2 == 0 && laboratoriesBuilt == 0 && rc.canBuildRobot(RobotType.LABORATORY, Direction.SOUTH)) {
             rc.buildRobot(RobotType.LABORATORY, Direction.SOUTH);
-        } else if (rc.canBuildRobot(RobotType.WATCHTOWER, Direction.SOUTH) && 3*laboratoriesBuilt >= watchtowersBuilt && numNearbyWatchtowers < 3) {
+        } else if (rc.canBuildRobot(RobotType.WATCHTOWER, Direction.SOUTH) && numNearbyWatchtowers < 3 && currentIncome > 30) {
             rc.buildRobot(RobotType.WATCHTOWER, Direction.SOUTH);
         }
 

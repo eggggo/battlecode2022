@@ -58,9 +58,9 @@ public class Miner extends RobotPlayer {
         //3: Random direction
         Direction dir;
         //Is there a nearby soldier without a huge number of followers?
-        if (nearbySoldier != null && nearbyRobots.length < 9) {
-            dir = Pathfinder.getMoveDir(rc, nearbySoldier);
-        } else {
+//        if (nearbySoldier != null && nearbyRobots.length < 9) {
+//            dir = Pathfinder.getMoveDir(rc, nearbySoldier);
+//        } else {
             MapLocation resources = null;
             MapLocation[] allLocs = rc.getAllLocationsWithinRadiusSquared(rc.getLocation(), rc.getType().visionRadiusSquared); // Second parameter defaults to robot sensing radius if too large
             int highLead = 0;
@@ -95,9 +95,17 @@ public class Miner extends RobotPlayer {
                 }
                 //Else random direction
             } else {
-                dir = directions[rng.nextInt(directions.length)];
+                int sectorNumber = (int) (Math.random() * 48) + 1;
+                int distance = Integer.MAX_VALUE;
+                for (int i = 48; i >= 0; i--) {
+                    int[] sector = Comms.readSectorInfo(rc, i);
+                    if (sector[2] > 100 && rc.getLocation().distanceSquaredTo(Comms.sectorMidpt(rc, i)) < distance) {
+                        sectorNumber = i;
+                    }
+                }
+                dir = Pathfinder.getMoveDir(rc, Comms.sectorMidpt(rc, sectorNumber));
             }
-        }
+//        }
 
         if (rc.canMove(dir)) {
             rc.move(dir);

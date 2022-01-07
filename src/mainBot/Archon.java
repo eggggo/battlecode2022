@@ -12,6 +12,11 @@ public class Archon extends RobotPlayer {
     static int soldiersBuilt = 0;
     static int buildersBuilt = 0;
     static int turnsAlive = 0;
+    static int totalIncomeGathered = 0;
+    static int turnsNotActioning = 0;
+    static int soldiersBuiltInARow = 0;
+    static int turnsUntilFirstEnemy = 0;
+    static int minersBuiltInARow = 0;
     /**
      * Run a single turn for an Archon.
      * This code is wrapped inside the infinite loop in run(), so it is called once per turn.
@@ -20,6 +25,7 @@ public class Archon extends RobotPlayer {
 
         int targetBuilderCount = turnCount/50;
         int currentIncome = rc.readSharedArray(49);
+        totalIncomeGathered += currentIncome;
         int minerCount = rc.readSharedArray(50);
         int soldierCount = rc.readSharedArray(51);
         int wtCount = rc.readSharedArray(52);
@@ -31,8 +37,11 @@ public class Archon extends RobotPlayer {
             enemyCount += sector[3];
             scoutedResources += sector[2];
         }
+        if (enemyCount > 1 && turnsUntilFirstEnemy != 0) {
+            turnsUntilFirstEnemy = turnCount;
+        }
         double friendlyToEnemyRatio = ((double) soldierCount + wtCount + sageCount)/ (double) enemyCount;
-        int targetMinerCount = (int) (.02 * scoutedResources * (1/(1+.02*turnCount)+.7) * friendlyToEnemyRatio*.5);
+        int targetMinerCount = (int) (.02 * scoutedResources * (1/(1+.02*turnCount)+.7) * friendlyToEnemyRatio * .5);
         //System.out.println(currentIncome);
         int senseRadius = rc.getType().visionRadiusSquared;
         Team friendly = rc.getTeam();
@@ -55,29 +64,46 @@ public class Archon extends RobotPlayer {
         }
 
         // Building
+        MapLocation src = rc.getLocation();
         Direction dir = directions[rng.nextInt(directions.length)];
-
+        for (Direction dire : Direction.allDirections()) {
+            MapLocation loc = src.add(dire);
+            if (rc.senseRobotAtLocation(loc) == null) {
+                dir = dire;
+                break;
+            }
+        }
+        System.out.println(turnsUntilFirstEnemy);
         if (minersBuilt < 2 && rc.canBuildRobot(RobotType.MINER, dir)) {
             rc.buildRobot(RobotType.MINER,dir);
             minersBuilt++;
-        } else if (friendlyToEnemyRatio < 5 && rc.canBuildRobot(RobotType.SOLDIER, dir)) {
+        } else if (soldiersBuilt < 1 && rc.canBuildRobot(RobotType.SOLDIER, dir)) {
+            rc.buildRobot(RobotType.SOLDIER,dir);
+            soldiersBuilt++;
+        } else if ((friendlyToEnemyRatio < 5 || (turnCount % 2*turnsUntilFirstEnemy >
+                turnsUntilFirstEnemy && totalIncomeGathered*.0075 > soldierCount)) && rc.canBuildRobot(RobotType.SOLDIER, dir)) {
             rc.buildRobot(RobotType.SOLDIER, dir);
             soldiersBuilt++;
-        } else if (currentIncome > 30 && rc.canBuildRobot(RobotType.BUILDER, dir)) {
-            rc.buildRobot(RobotType.BUILDER, dir);
-            buildersBuilt++;
+            soldiersBuiltInARow++;
+            minersBuiltInARow = 0;
         } else if (rc.canBuildRobot(RobotType.MINER, dir) && targetMinerCount > minerCount) { //&& currentIncome > minerCount * 5
             rc.buildRobot(RobotType.MINER, dir);
             minersBuilt++;
+            soldiersBuiltInARow = 0;
+            minersBuiltInARow++;
             //Soldiers are built when none of the above conditions are satisfied.
-        } else if (rc.canBuildRobot(RobotType.SOLDIER, dir)) {
-            rc.buildRobot(RobotType.SOLDIER, dir);
-            soldiersBuilt++;
+        } else if (targetBuilderCount > buildersBuilt && currentIncome > 30 && rc.canBuildRobot(RobotType.BUILDER, dir)) {
+            rc.buildRobot(RobotType.BUILDER, dir);
+            buildersBuilt++;
+            soldiersBuiltInARow = 0;
+            minersBuiltInARow = 0;
+        } else if (rc.isActionReady()) {
+            turnsNotActioning++;
         }
 
         //Comms stuff
         Comms.updateSector(rc);
-
+        System.out.println(turnsNotActioning);
         //System.out.println("miners: " + minerCount + ", soldiers:" + soldierCount + ", wt:" + wtCount + ", " + sageCount);
         turnsAlive++;
     }

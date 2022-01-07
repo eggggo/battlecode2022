@@ -65,7 +65,7 @@ public class Soldier extends RobotPlayer {
 
 
     Direction dir = null;
-    if (rc.getHealth() < RobotType.SOLDIER.getMaxHealth(rc.getLevel()) / 2 && home != null) { // If low health run home
+    if (rc.getHealth() < RobotType.SOLDIER.getMaxHealth(rc.getLevel()) / 50 && home != null) { // If low health run home
       dir = Pathfinder.getMoveDir(rc, home);
     } else if (enemies.length > 0) { //If enemy, attack
       MapLocation toAttack = enemies[0].location;
@@ -77,20 +77,35 @@ public class Soldier extends RobotPlayer {
     else if (role == 2) {
       //Idk i think defense sucks but maybe we should setup to defend
     } else if (role == 1) { //If attacker, go attack
-      //Attacks at one of the random spots of a potential enemy base
 
-      MapLocation attackTarget = enemyArchons[attackLocation];
-
-      //Change target if theres nothing at the target
-      if (rc.canSenseLocation(attackTarget)) {
-        RobotInfo rb = rc.senseRobotAtLocation(attackTarget);
-        if (rb == null || rb.getType() != RobotType.ARCHON) {
-          attackOffset += 1;
-          attackLocation = (rc.getID() + attackOffset) % (enemyArchons.length);
-
+      int distance = Integer.MAX_VALUE;
+      MapLocation actualArchonsTarget = null;
+      for (int i = 48; i >= 0; i--) {
+        int[] sector = Comms.readSectorInfo(rc, i);
+        MapLocation loc = Comms.sectorMidpt(rc,i);
+        if (sector[1] == 1 && distance > rc.getLocation().distanceSquaredTo(loc)) {
+          actualArchonsTarget = loc;
         }
       }
-      dir = Pathfinder.getMoveDir(rc, attackTarget);
+
+      if (actualArchonsTarget != null) {
+        dir = Pathfinder.getMoveDir(rc, actualArchonsTarget);
+      } else {
+        //Attacks at one of the random spots of a potential enemy base
+
+        MapLocation attackTarget = enemyArchons[attackLocation];
+
+        //Change target if theres nothing at the target
+        if (rc.canSenseLocation(attackTarget)) {
+          RobotInfo rb = rc.senseRobotAtLocation(attackTarget);
+          if (rb == null || rb.getType() != RobotType.ARCHON) {
+            attackOffset += 1;
+            attackLocation = (rc.getID() + attackOffset) % (enemyArchons.length);
+
+          }
+        }
+        dir = Pathfinder.getMoveDir(rc, attackTarget);
+      }
     } else if (role == 0) {
       //Same copy of random pathing code that miners have
       //Needs to be fixed cause its random and garbage
@@ -116,7 +131,7 @@ public class Soldier extends RobotPlayer {
   }
 
   static void initializeSoldier(RobotController rc, RobotInfo[] nearbyRobots) throws GameActionException{
-    role = rc.getID() % 2;
+    role = 1;
     int archonCount = 4;
     for (int i = nearbyRobots.length - 1; i >= 0; i--) {
       if (nearbyRobots[i].getType() == RobotType.ARCHON) {

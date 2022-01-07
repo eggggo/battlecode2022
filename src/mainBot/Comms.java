@@ -14,6 +14,7 @@ public class Comms {
     //51: healthy soldier count(above 70%)
     //52: healthy watchtower count(above 70%)
     //53: healthy sage count(above 70%)
+    //54: healthy builder count(above 20% hp)
     static int locationToSector(RobotController rc, MapLocation loc) {
         int width = rc.getMapWidth();
         int height = rc.getMapHeight();

@@ -6,6 +6,8 @@ public class Builder extends RobotPlayer {
 
     static int laboratoriesBuilt = 0;
     static int watchtowersBuilt = 0;
+    static int turnsAlive = 0;
+    static boolean aboveHpThresh = true;
 
     public static void runBuilder(RobotController rc) throws GameActionException {
         int currentIncome = rc.readSharedArray(49);
@@ -68,5 +70,17 @@ public class Builder extends RobotPlayer {
 
         //Comms stuff
         Comms.updateSector(rc);
+
+        if (turnsAlive == 0) {
+            rc.writeSharedArray(54, rc.readSharedArray(54) + 1);
+        }
+        boolean currentHpThresh = (double)rc.getHealth()/rc.getType().getMaxHealth(1) > 0.2;
+        if (!currentHpThresh && aboveHpThresh) {
+            rc.writeSharedArray(54, rc.readSharedArray(54) - 1);
+        } else if (currentHpThresh && !aboveHpThresh) {
+            rc.writeSharedArray(54, rc.readSharedArray(54) + 1);
+        }
+        aboveHpThresh = currentHpThresh;
+        turnsAlive ++;
     }
 }

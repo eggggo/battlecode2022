@@ -15,10 +15,19 @@ public class Miner extends RobotPlayer {
      * Run a single turn for a Miner.
      * This code is wrapped inside the infinite loop in run(), so it is called once per turn.
      */
+    //action flow:
+    //1. mine
+    //2. if close enemy run away
+    //3. if close to resource go
+    //4. if close to other miners spread
+    //5. goto nearest sector with resource
     static void runMiner(RobotController rc) throws GameActionException {
         int income = 0;
         int senseRadius = rc.getType().visionRadiusSquared;
         Team friendly = rc.getTeam();
+        MapLocation src = rc.getLocation();
+        Direction dir = null;
+        MapLocation resources = null;
 
         if (turnsAlive == 0) {
             rc.writeSharedArray(50, rc.readSharedArray(50) + 1);
@@ -42,69 +51,80 @@ public class Miner extends RobotPlayer {
             }
         }
 
-        RobotInfo[] nearbyRobots = rc.senseNearbyRobots(senseRadius, friendly);
-        MapLocation nearbySoldier = null;
-        //Sensing Important information like a nearby friendly soldier
-        for (int i = nearbyRobots.length - 1; i >= 0; i--) {
-            if (nearbyRobots[i].getType() == RobotType.SOLDIER) {
-                nearbySoldier = nearbyRobots[i].getLocation();
-                break;
+        //run away from enemy attackers if we see them
+        RobotInfo[] enemies = rc.senseNearbyRobots(senseRadius, friendly.opponent());
+        MapLocation closestAttacker = null;
+        MapLocation[] nearbyLead = rc.senseNearbyLocationsWithLead(senseRadius);
+        MapLocation[] nearbyGold = rc.senseNearbyLocationsWithGold(senseRadius);
+        int highLead = 0;
+        for (int i = enemies.length - 1; i >= 0; i --) {
+            RobotInfo enemy = enemies[i];
+            if ((enemy.getType() == RobotType.SOLDIER || enemy.getType() == RobotType.SAGE 
+            || enemy.getType() == RobotType.WATCHTOWER) && (closestAttacker == null
+            || enemy.location.distanceSquaredTo(src) < closestAttacker.distanceSquaredTo(src))) {
+                closestAttacker = enemy.location;
             }
         }
+        for (int i = nearbyLead.length - 1; i >= 0; i --) {
+            int leadCount = rc.senseLead(nearbyLead[i]);
+            if (leadCount > 5 && leadCount > highLead) {
+                highLead = leadCount;
+                resources = nearbyLead[i];
+            }
+        }
+        if (nearbyGold.length > 0) {
+            resources = nearbyGold[0];
+        }
 
-        //Instruction order:
-        //1: Follow nearby soldier
-        //2: Walk to resource
-        //3: Random direction
-        Direction dir;
+        //main control structure
+        if (closestAttacker != null) {
+            Direction opposite = src.directionTo(closestAttacker).opposite();
+            MapLocation runawayTgt = src.add(opposite).add(opposite);
+            runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1), 
+            Math.min(Math.max(0, runawayTgt.y), rc.getMapHeight() - 1));
+            dir = Pathfinder.getMoveDir(rc, runawayTgt);
+        } else if (resources != null) {
+            MapLocation tgtResource = resources;
+            dir = Pathfinder.getMoveDir(rc, tgtResource);
+            MapLocation newLocation = new MapLocation(me.x + dir.dx, me.y + dir.dy);
+            int newNeighbors = 0;
+            for (int i = 1; i >= -1; i -= 1) {
+                for (int j = 1; j >= -1; j -= 1) {
+                    MapLocation loc = new MapLocation(me.x + dir.dx + i, me.y + dir.dy + j);
+                    if (rc.onTheMap(loc) && rc.senseRobotAtLocation(loc) != null) {
+                        newNeighbors += 1;
+                    }
+                }
+            }
+            if (newNeighbors >= 3) {
+                dir = directions[rng.nextInt(directions.length)];
+            }
+        } else {
+            int sectorNumber = (int) (Math.random() * 48) + 1;
+            int distance = Integer.MAX_VALUE;
+            for (int i = 48; i >= 0; i--) {
+                int[] sector = Comms.readSectorInfo(rc, i);
+                if (sector[2] > 100 && rc.getLocation().distanceSquaredTo(Comms.sectorMidpt(rc, i)) < distance) {
+                    sectorNumber = i;
+                }
+            }
+            dir = Pathfinder.getMoveDir(rc, Comms.sectorMidpt(rc, sectorNumber));
+        }
+
+        // RobotInfo[] nearbyRobots = rc.senseNearbyRobots(senseRadius, friendly);
+        // MapLocation nearbySoldier = null;
+        // //Sensing Important information like a nearby friendly soldier
+        // for (int i = nearbyRobots.length - 1; i >= 0; i--) {
+        //     if (nearbyRobots[i].getType() == RobotType.SOLDIER) {
+        //         nearbySoldier = nearbyRobots[i].getLocation();
+        //         break;
+        //     }
+        // }
+
         //Is there a nearby soldier without a huge number of followers?
 //        if (nearbySoldier != null && nearbyRobots.length < 9) {
 //            dir = Pathfinder.getMoveDir(rc, nearbySoldier);
 //        } else {
-            MapLocation resources = null;
-            MapLocation[] allLocs = rc.getAllLocationsWithinRadiusSquared(rc.getLocation(), rc.getType().visionRadiusSquared); // Second parameter defaults to robot sensing radius if too large
-            int highLead = 0;
-            int highGold = 0;
-            for (int i = allLocs.length - 1; i >= 0; i--) {
-                int leadAmount = rc.senseLead(allLocs[i]);
-                int goldAmount = rc.senseGold(allLocs[i]);
-                if (leadAmount > 5 || goldAmount != 0) {
-                    if (leadAmount > highLead || goldAmount > highGold) {
-                        resources = allLocs[i];
-                        highLead = leadAmount;
-                        highGold = goldAmount;
-                    }
-                }
-            }
-            //Are there nearby resources?
-            if (resources != null) {
-                MapLocation tgtResource = resources;
-                dir = Pathfinder.getMoveDir(rc, tgtResource);
-                MapLocation newLocation = new MapLocation(me.x + dir.dx, me.y + dir.dy);
-                int newNeighbors = 0;
-                for (int i = 1; i >= -1; i -= 1) {
-                    for (int j = 1; j >= -1; j -= 1) {
-                        MapLocation loc = new MapLocation(me.x + dir.dx + i, me.y + dir.dy + j);
-                        if (rc.onTheMap(loc) && rc.senseRobotAtLocation(loc) != null) {
-                            newNeighbors += 1;
-                        }
-                    }
-                }
-                if (newNeighbors >= 3) {
-                    dir = directions[rng.nextInt(directions.length)];
-                }
-                //Else random direction
-            } else {
-                int sectorNumber = (int) (Math.random() * 48) + 1;
-                int distance = Integer.MAX_VALUE;
-                for (int i = 48; i >= 0; i--) {
-                    int[] sector = Comms.readSectorInfo(rc, i);
-                    if (sector[2] > 100 && rc.getLocation().distanceSquaredTo(Comms.sectorMidpt(rc, i)) < distance) {
-                        sectorNumber = i;
-                    }
-                }
-                dir = Pathfinder.getMoveDir(rc, Comms.sectorMidpt(rc, sectorNumber));
-            }
 //        }
 
         if (rc.canMove(dir)) {

@@ -8,8 +8,18 @@ public class Builder extends RobotPlayer {
     static int watchtowersBuilt = 0;
     static int turnsAlive = 0;
     static boolean aboveHpThresh = true;
+    static MapLocation home = null;
 
     public static void runBuilder(RobotController rc) throws GameActionException {
+        if (turnsAlive == 0) {
+            RobotInfo[] nearbyRobots = rc.senseNearbyRobots();
+            for (int i = nearbyRobots.length - 1; i >= 0; i--) {
+                if (nearbyRobots[i].getType() == RobotType.ARCHON) {
+                    home = nearbyRobots[i].getLocation();
+                    break;
+                }
+            }
+        }
         int currentIncome = rc.readSharedArray(49);
         int senseRadius = rc.getType().visionRadiusSquared;
         Team friendly = rc.getTeam();
@@ -49,19 +59,37 @@ public class Builder extends RobotPlayer {
         //If there is no nearby repariable building, follow a nearby non-crowded soldier, otherwise move randomly
         if (nearbyBuilding != null) {
             dir = Pathfinder.getMoveDir(rc, nearbyBuilding);
-        } else if (nearbySoldier == null || nearbyRobots.length > 9) {
-            dir = directions[rng.nextInt(directions.length)];
+        } else if (home != null) {
+            dir = rc.getLocation().directionTo(home).opposite();
         } else {
-            dir = Pathfinder.getMoveDir(rc, nearbySoldier);
+            dir = directions[rng.nextInt(directions.length)];
+        }
+
+        MapLocation src = rc.getLocation();
+        Direction builddir = directions[rng.nextInt(directions.length)];
+        for (Direction dire : Direction.allDirections()) {
+            MapLocation loc = src.add(dire);
+            if (rc.onTheMap(loc) && rc.senseRobotAtLocation(loc) == null) {
+                builddir = dire;
+                break;
+            }
         }
 
         //If there is a nearby building that can be repaired, repair it, otherwise go to the nearest repariable buidling and repair it.
         if (nearbyBuilding != null && rc.canRepair(nearbyBuilding)) {
             rc.repair(nearbyBuilding);
-        } else if (rc.getID() % 2 == 0 && laboratoriesBuilt == 0 && rc.canBuildRobot(RobotType.LABORATORY, Direction.SOUTH)) {
-            rc.buildRobot(RobotType.LABORATORY, Direction.SOUTH);
-        } else if (rc.canBuildRobot(RobotType.WATCHTOWER, Direction.SOUTH) && numNearbyWatchtowers < 3 && currentIncome > 30) {
-            rc.buildRobot(RobotType.WATCHTOWER, Direction.SOUTH);
+        } else if (rc.getID() % 10 == 1 && laboratoriesBuilt == 0 && rc.canBuildRobot(RobotType.LABORATORY, builddir)) {
+            if (home != null && rc.getLocation().distanceSquaredTo(home) > 9) {
+                rc.buildRobot(RobotType.LABORATORY, builddir);
+            } else if (home == null){
+                rc.buildRobot(RobotType.LABORATORY, builddir);
+            }
+        } else if (rc.canBuildRobot(RobotType.WATCHTOWER, builddir) && numNearbyWatchtowers < 3 && currentIncome > 30 && rc.getTeamLeadAmount(rc.getTeam()) > 200) {
+            if (home != null && rc.getLocation().distanceSquaredTo(home) > 9) {
+                rc.buildRobot(RobotType.WATCHTOWER, builddir);
+            } else if (home == null){
+                rc.buildRobot(RobotType.WATCHTOWER, builddir);
+            }
         }
 
         if (rc.canMove(dir)) {

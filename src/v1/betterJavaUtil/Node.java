@@ -1,4 +1,4 @@
-package mainBot.betterJavaUtil;
+package v1.betterJavaUtil;
 
 public class Node<T> {
     public T val;

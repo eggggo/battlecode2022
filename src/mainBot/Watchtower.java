@@ -10,7 +10,9 @@ public class Watchtower extends RobotPlayer{
     static MapLocation[] enemyArchons = null;
     static int turnsAlive = 0;
     static int attackOffset = 0;
+    static int attackLocation = 0;
     static boolean aboveHpThresh = true;
+    static int archonCount = 4;
 
     static int getQuadrant(RobotController rc, int x, int y) {
         int quad = 0;
@@ -29,7 +31,9 @@ public class Watchtower extends RobotPlayer{
     }
 
     public static void runWatchtower(RobotController rc) throws GameActionException {
-        int archonCount = 4;
+        if (turnsAlive == 0) {
+            initialize(rc);
+        }
         int radius = rc.getType().actionRadiusSquared;
         Team opponent = rc.getTeam().opponent();
         RobotInfo[] enemies = rc.senseNearbyRobots(radius, opponent);
@@ -37,22 +41,106 @@ public class Watchtower extends RobotPlayer{
         if (enemies.length > 0 && rc.getMode() == RobotMode.PORTABLE && rc.canTransform()) {
             rc.transform();
         }
+
+        Direction dir = null;
         //Attacks nearby enemies if it can attack
         if (enemies.length > 0) {
-            MapLocation toAttack = enemies[0].location;
+            MapLocation src = rc.getLocation();
+            MapLocation closestEnemy = null;
+            MapLocation closestAttackingEnemy = null;
+            for (int i = enemies.length - 1; i >= 0; i --) {
+            RobotInfo enemy = enemies[i];
+            if (closestEnemy == null || enemy.location.distanceSquaredTo(src) < closestEnemy.distanceSquaredTo(src)) {
+                closestEnemy = enemy.location;
+            } else if ((enemy.getType() == RobotType.SOLDIER || enemy.getType() == RobotType.SAGE 
+            || enemy.getType() == RobotType.WATCHTOWER) && (closestAttackingEnemy == null 
+            || enemy.location.distanceSquaredTo(src) < closestAttackingEnemy.distanceSquaredTo(src))) {
+                closestAttackingEnemy = enemy.location;
+            }
+            }
+            MapLocation toAttack = closestEnemy;
+            if (closestAttackingEnemy != null) {
+            toAttack = closestAttackingEnemy;
+            }
             if (rc.canAttack(toAttack)) {
                 rc.attack(toAttack);
                 turnsNotKilledStuff = 0;
             }
+        } else {
+            int distance = Integer.MAX_VALUE;
+            MapLocation actualArchonsTarget = null;
+            int enemySectorDistance = 9999;
+            MapLocation closestEnemies = null;
+            for (int i = 48; i >= 0; i--) {
+                int[] sector = Comms.readSectorInfo(rc, i);
+                MapLocation loc = Comms.sectorMidpt(rc,i);
+                if (sector[3] > 5 && enemySectorDistance > rc.getLocation().distanceSquaredTo(loc)) {
+                closestEnemies = loc;
+                enemySectorDistance = rc.getLocation().distanceSquaredTo(loc);
+                } if (sector[1] == 1 && distance > rc.getLocation().distanceSquaredTo(loc)) {
+                actualArchonsTarget = loc;
+                distance = rc.getLocation().distanceSquaredTo(loc);
+                }
+            }
+
+            if (actualArchonsTarget != null) {
+                dir = Pathfinder.getMoveDir(rc, actualArchonsTarget);
+            } else {
+                //Attacks at one of the random spots of a potential enemy base
+
+                MapLocation attackTarget = enemyArchons[attackLocation];
+
+                //Change target if theres nothing at the targets
+                if (rc.canSenseLocation(attackTarget)) {
+                    RobotInfo rb = rc.senseRobotAtLocation(attackTarget);
+                    if (rb == null || rb.getType() != RobotType.ARCHON) {
+                        attackOffset += 1;
+                        attackLocation = (rc.getID() + attackOffset) % (enemyArchons.length);
+
+                    }
+                }
+                dir = Pathfinder.getMoveDir(rc, attackTarget);
+            }
         }
+
         //Transforms to protable if it hasn't killed anything in 30 turns.
         if (turnsNotKilledStuff > 30 && rc.getMode() == RobotMode.TURRET && rc.canTransform()) {
             rc.transform();
         }
 
-        //Establishing potential enemy archon locations - same as soldier AI
-        if (turnsAlive == 0) {
-            //if all of the archons have written to the comms
+        //Attacks at one of the random spots of a potential enemy base after spending 100 turns home with no enemies attacking
+        int randomAttackLoc = 0;
+        if (archonCount > 0) {
+            randomAttackLoc = (rc.getID() + attackOffset) % (enemyArchons.length);
+        }
+
+        dir = Pathfinder.getMoveDir(rc, enemyArchons[randomAttackLoc]);
+
+        //Changes targets after reaching the target and not killing things for 30 turns
+        if (dir == Direction.CENTER && turnsNotKilledStuff > 30) {
+            attackOffset++;
+        }
+
+        turnsNotKilledStuff++;
+
+        if (rc.canMove(dir)) {
+            rc.move(dir);
+        }
+
+        //Comms stuff
+        Comms.updateSector(rc);
+
+        boolean currentHpThresh = (double)rc.getHealth()/rc.getType().getMaxHealth(1) > 0.7;
+        if (!currentHpThresh && aboveHpThresh) {
+            rc.writeSharedArray(52, rc.readSharedArray(52) - 1);
+        } else if (currentHpThresh && !aboveHpThresh) {
+            rc.writeSharedArray(52, rc.readSharedArray(52) + 1);
+        }
+        aboveHpThresh = currentHpThresh;
+        turnsAlive++;
+    }
+
+    static void initialize(RobotController rc) throws GameActionException {
             boolean quad1 = false;
             boolean quad2 = false;
             boolean quad3 = false;
@@ -131,37 +219,5 @@ public class Watchtower extends RobotPlayer{
             }
         }
             rc.writeSharedArray(52, rc.readSharedArray(52) + 1);
-        }
-
-        //Attacks at one of the random spots of a potential enemy base after spending 100 turns home with no enemies attacking
-        int randomAttackLoc = 0;
-        if (archonCount > 0) {
-            randomAttackLoc = (rc.getID() + attackOffset) % (enemyArchons.length);
-        }
-
-        Direction dir = Pathfinder.getMoveDir(rc, enemyArchons[randomAttackLoc]);
-
-        //Changes targets after reaching the target and not killing things for 30 turns
-        if (dir == Direction.CENTER && turnsNotKilledStuff > 30) {
-            attackOffset++;
-        }
-
-        turnsNotKilledStuff++;
-
-        if (rc.canMove(dir)) {
-            rc.move(dir);
-        }
-
-        //Comms stuff
-        Comms.updateSector(rc);
-
-        boolean currentHpThresh = (double)rc.getHealth()/rc.getType().getMaxHealth(1) > 0.7;
-        if (!currentHpThresh && aboveHpThresh) {
-            rc.writeSharedArray(52, rc.readSharedArray(52) - 1);
-        } else if (currentHpThresh && !aboveHpThresh) {
-            rc.writeSharedArray(52, rc.readSharedArray(52) + 1);
-        }
-        aboveHpThresh = currentHpThresh;
-        turnsAlive++;
     }
 }

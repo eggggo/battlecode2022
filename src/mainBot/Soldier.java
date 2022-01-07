@@ -45,13 +45,7 @@ public class Soldier extends RobotPlayer {
     Team opponent = rc.getTeam().opponent();
     RobotInfo[] enemies = rc.senseNearbyRobots(radius, opponent);
     int archonCount = 4;
-    if (enemies.length > 0) {
-      MapLocation toAttack = enemies[0].location;
-      if (rc.canAttack(toAttack)) {
-        rc.attack(toAttack);
-        turnsNotKilledStuff = 0;
-      }
-    }
+
     if (turnsAlive == 0) {
       RobotInfo[] nearbyRobots = rc.senseNearbyRobots(senseRadius, friendly);
       initializeSoldier(rc, nearbyRobots);
@@ -63,12 +57,27 @@ public class Soldier extends RobotPlayer {
     //3: If an archon is under attack (defense or offense) go help
     //4: Defense pathing/Scout pathing/Attack pathing
 
-
     Direction dir = null;
     if (rc.getHealth() < RobotType.SOLDIER.getMaxHealth(rc.getLevel()) / 50 && home != null) { // If low health run home
       dir = Pathfinder.getMoveDir(rc, home);
     } else if (enemies.length > 0) { //If enemy, attack
-      MapLocation toAttack = enemies[0].location;
+      MapLocation src = rc.getLocation();
+      MapLocation closestEnemy = null;
+      MapLocation closestAttackingEnemy = null;
+      for (int i = enemies.length - 1; i >= 0; i --) {
+        RobotInfo enemy = enemies[i];
+        if (closestEnemy == null || enemy.location.distanceSquaredTo(src) < closestEnemy.distanceSquaredTo(src)) {
+          closestEnemy = enemy.location;
+        } else if ((enemy.getType() == RobotType.SOLDIER || enemy.getType() == RobotType.SAGE 
+        || enemy.getType() == RobotType.WATCHTOWER) && (closestAttackingEnemy == null 
+        || enemy.location.distanceSquaredTo(src) < closestAttackingEnemy.distanceSquaredTo(src))) {
+          closestAttackingEnemy = enemy.location;
+        }
+      }
+      MapLocation toAttack = closestEnemy;
+      if (closestAttackingEnemy != null) {
+        toAttack = closestAttackingEnemy;
+      }
       if (rc.canAttack(toAttack)) {
         rc.attack(toAttack);
         turnsNotKilledStuff = 0;
@@ -80,11 +89,17 @@ public class Soldier extends RobotPlayer {
 
       int distance = Integer.MAX_VALUE;
       MapLocation actualArchonsTarget = null;
+      int enemySectorDistance = 9999;
+      MapLocation closestEnemies = null;
       for (int i = 48; i >= 0; i--) {
         int[] sector = Comms.readSectorInfo(rc, i);
         MapLocation loc = Comms.sectorMidpt(rc,i);
-        if (sector[1] == 1 && distance > rc.getLocation().distanceSquaredTo(loc)) {
+        if (sector[3] > 5 && enemySectorDistance > rc.getLocation().distanceSquaredTo(loc)) {
+          closestEnemies = loc;
+          enemySectorDistance = rc.getLocation().distanceSquaredTo(loc);
+        } if (sector[1] == 1 && distance > rc.getLocation().distanceSquaredTo(loc)) {
           actualArchonsTarget = loc;
+          distance = rc.getLocation().distanceSquaredTo(loc);
         }
       }
 

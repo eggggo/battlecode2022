@@ -1,4 +1,4 @@
-package mainBot.betterJavaUtil;
+package v1.betterJavaUtil;
 
 public class LinkedList<T> {
     public Node<T> head;

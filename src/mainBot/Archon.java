@@ -73,7 +73,7 @@ public class Archon extends RobotPlayer {
                 break;
             }
         }
-        System.out.println(turnsUntilFirstEnemy);
+        //System.out.println(turnsUntilFirstEnemy);
         if (minersBuilt < 2 && rc.canBuildRobot(RobotType.MINER, dir)) {
             rc.buildRobot(RobotType.MINER,dir);
             minersBuilt++;
@@ -109,7 +109,7 @@ public class Archon extends RobotPlayer {
 
         //Comms stuff
         Comms.updateSector(rc);
-        System.out.println(turnsNotActioning);
+        //System.out.println(turnsNotActioning);
         //System.out.println("miners: " + minerCount + ", soldiers:" + soldierCount + ", wt:" + wtCount + ", " + sageCount);
         turnsAlive++;
     }

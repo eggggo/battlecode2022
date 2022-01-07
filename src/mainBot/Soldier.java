@@ -38,7 +38,7 @@ public class Soldier extends RobotPlayer {
    * This code is wrapped inside the infinite loop in run(), so it is called once per turn.
    */
   static void runSoldier(RobotController rc) throws GameActionException {
-
+    MapLocation src = rc.getLocation();
     int radius = rc.getType().actionRadiusSquared;
     int senseRadius = rc.getType().visionRadiusSquared;
     Team friendly = rc.getTeam();
@@ -57,11 +57,7 @@ public class Soldier extends RobotPlayer {
     //3: If an archon is under attack (defense or offense) go help
     //4: Defense pathing/Scout pathing/Attack pathing
 
-    Direction dir = null;
-    if (rc.getHealth() < RobotType.SOLDIER.getMaxHealth(rc.getLevel()) / 50 && home != null) { // If low health run home
-      dir = Pathfinder.getMoveDir(rc, home);
-    } else if (enemies.length > 0) { //If enemy, attack
-      MapLocation src = rc.getLocation();
+    if (enemies.length > 0) {
       MapLocation closestEnemy = null;
       MapLocation closestAttackingEnemy = null;
       for (int i = enemies.length - 1; i >= 0; i --) {
@@ -82,6 +78,28 @@ public class Soldier extends RobotPlayer {
         rc.attack(toAttack);
         turnsNotKilledStuff = 0;
       }
+    }
+
+    Direction dir = null;
+    if (rc.getHealth() < RobotType.SOLDIER.getMaxHealth(rc.getLevel()) / 50 && home != null) { // If low health run home
+      dir = Pathfinder.getMoveDir(rc, home);
+    } else if (turnsNotKilledStuff < 2) {
+      int currRubble = rc.senseRubble(src);
+      int minRubble = currRubble;
+      MapLocation minRubbleLoc = src;
+      if (currRubble > 0) {
+        for (Direction d : Direction.allDirections()) {
+          MapLocation test = src.add(d);
+          if (rc.onTheMap(test) && !rc.isLocationOccupied(test) && rc.canSenseLocation(test)) {
+            int rubbleHere = rc.senseRubble(test);
+            if (rubbleHere < minRubble) {
+              minRubble = rubbleHere;
+              minRubbleLoc = test;
+            }
+          }
+        }
+      }
+      dir = Pathfinder.getMoveDir(rc, minRubbleLoc);
     } else {
       int distance = Integer.MAX_VALUE;
       MapLocation actualArchonsTarget = null;

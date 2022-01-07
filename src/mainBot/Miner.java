@@ -56,7 +56,7 @@ public class Miner extends RobotPlayer {
         MapLocation closestAttacker = null;
         MapLocation[] nearbyLead = rc.senseNearbyLocationsWithLead(senseRadius);
         MapLocation[] nearbyGold = rc.senseNearbyLocationsWithGold(senseRadius);
-        int highLead = 0;
+        double highLead = 0;
         for (int i = enemies.length - 1; i >= 0; i --) {
             RobotInfo enemy = enemies[i];
             if ((enemy.getType() == RobotType.SOLDIER || enemy.getType() == RobotType.SAGE 
@@ -66,7 +66,7 @@ public class Miner extends RobotPlayer {
             }
         }
         for (int i = nearbyLead.length - 1; i >= 0; i --) {
-            int leadCount = rc.senseLead(nearbyLead[i]);
+            double leadCount = rc.senseLead(nearbyLead[i])/(1 + rc.senseRubble(nearbyLead[i])/10.0);
             if (leadCount > 5 && leadCount > highLead) {
                 highLead = leadCount;
                 resources = nearbyLead[i];

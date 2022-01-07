@@ -97,6 +97,12 @@ public class Archon extends RobotPlayer {
             buildersBuilt++;
             soldiersBuiltInARow = 0;
             minersBuiltInARow = 0;
+        } else if (rc.canBuildRobot(RobotType.MINER, dir)) { //&& currentIncome > minerCount * 5
+            rc.buildRobot(RobotType.MINER, dir);
+            minersBuilt++;
+            soldiersBuiltInARow = 0;
+            minersBuiltInARow++;
+            //Soldiers are built when none of the above conditions are satisfied.
         } else if (rc.isActionReady()) {
             turnsNotActioning++;
         }

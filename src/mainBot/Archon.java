@@ -18,6 +18,7 @@ public class Archon extends RobotPlayer {
      */
     static void runArchon(RobotController rc) throws GameActionException {
 
+        int targetBuilderCount = turnCount/50;
         int currentIncome = rc.readSharedArray(49);
         int minerCount = rc.readSharedArray(50);
         int soldierCount = rc.readSharedArray(51);
@@ -32,7 +33,7 @@ public class Archon extends RobotPlayer {
         }
         double friendlyToEnemyRatio = ((double) soldierCount + wtCount + sageCount)/ (double) enemyCount;
         int targetMinerCount = (int) (.02 * scoutedResources * (1/(1+.02*turnCount)+.7) * friendlyToEnemyRatio*.5);
-        System.out.println(targetMinerCount);
+        System.out.println(currentIncome);
         int senseRadius = rc.getType().visionRadiusSquared;
         Team friendly = rc.getTeam();
         Team opponent = rc.getTeam().opponent();
@@ -59,7 +60,10 @@ public class Archon extends RobotPlayer {
         if (minersBuilt < 2 && rc.canBuildRobot(RobotType.MINER, dir)) {
             rc.buildRobot(RobotType.MINER,dir);
             minersBuilt++;
-        } else if (turnCount % 500 == 0 && rc.canBuildRobot(RobotType.BUILDER, dir)) {
+        } else if (friendlyToEnemyRatio < 5 && rc.canBuildRobot(RobotType.SOLDIER, dir)) {
+            rc.buildRobot(RobotType.SOLDIER, dir);
+            soldiersBuilt++;
+        } else if (targetBuilderCount > buildersBuilt && currentIncome > 30 && rc.canBuildRobot(RobotType.BUILDER, dir)) {
             rc.buildRobot(RobotType.BUILDER, dir);
             buildersBuilt++;
         } else if (rc.canBuildRobot(RobotType.MINER, dir) && targetMinerCount > minerCount) { //&& currentIncome > minerCount * 5

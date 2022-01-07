@@ -106,12 +106,11 @@ public class Miner extends RobotPlayer {
 
         //Comms stuff
         Comms.updateSector(rc);
-        /*
         int deltaIncome = income - prevIncome;
         //index 49 is global income
         int currentIncome = rc.readSharedArray(49);
-        rc.writeSharedArray(49, currentIncome + deltaIncome);
-        prevIncome = income;*/
+        rc.writeSharedArray(49, Math.max(0, currentIncome + deltaIncome));
+        prevIncome = income;
 
         boolean currentHpThresh = rc.getHealth()/rc.getType().getMaxHealth(1) > 0.2;
         if (!currentHpThresh && aboveHpThresh) {

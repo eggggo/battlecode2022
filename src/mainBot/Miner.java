@@ -99,6 +99,7 @@ public class Miner extends RobotPlayer {
             if (newNeighbors >= 3) {
                 dir = directions[rng.nextInt(directions.length)];
             }
+            //ADD SPREAD STUFF HERE IF TOO MANY NEARBY GUYS
         } else {
             int sectorNumber = (int) (Math.random() * 48) + 1;
             int distance = Integer.MAX_VALUE;
@@ -110,22 +111,6 @@ public class Miner extends RobotPlayer {
             }
             dir = Pathfinder.getMoveDir(rc, Comms.sectorMidpt(rc, sectorNumber));
         }
-
-        // RobotInfo[] nearbyRobots = rc.senseNearbyRobots(senseRadius, friendly);
-        // MapLocation nearbySoldier = null;
-        // //Sensing Important information like a nearby friendly soldier
-        // for (int i = nearbyRobots.length - 1; i >= 0; i--) {
-        //     if (nearbyRobots[i].getType() == RobotType.SOLDIER) {
-        //         nearbySoldier = nearbyRobots[i].getLocation();
-        //         break;
-        //     }
-        // }
-
-        //Is there a nearby soldier without a huge number of followers?
-//        if (nearbySoldier != null && nearbyRobots.length < 9) {
-//            dir = Pathfinder.getMoveDir(rc, nearbySoldier);
-//        } else {
-//        }
 
         if (rc.canMove(dir)) {
             rc.move(dir);

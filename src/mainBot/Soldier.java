@@ -15,6 +15,7 @@ public class Soldier extends RobotPlayer {
   static int attackLocation = 0;
   //Role: 2 for defense, 1 for attack, 0 for scout
   static int role;
+  static boolean aboveHpThresh = true;
 
   static int getQuadrant(RobotController rc, int x, int y) {
     int quad = 0;
@@ -105,6 +106,14 @@ public class Soldier extends RobotPlayer {
     turnsNotKilledStuff++;
     turnsAlive++;
     Comms.updateSector(rc);
+
+    boolean currentHpThresh = rc.getHealth()/rc.getType().getMaxHealth(1) > 0.7;
+    if (!currentHpThresh && aboveHpThresh) {
+        rc.writeSharedArray(51, rc.readSharedArray(51) - 1);
+    } else if (currentHpThresh && !aboveHpThresh) {
+        rc.writeSharedArray(51, rc.readSharedArray(51) + 1);
+    }
+    aboveHpThresh = currentHpThresh;
   }
 
   static void initializeSoldier(RobotController rc, RobotInfo[] nearbyRobots) throws GameActionException{
@@ -217,6 +226,6 @@ public class Soldier extends RobotPlayer {
         enemyArchons[3 * i + 2] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, rc.getMapHeight() - 1 - coords[i].y); // 180 rotate
       }
     }
-
+    rc.writeSharedArray(51, rc.readSharedArray(51) + 1);
   }
 }

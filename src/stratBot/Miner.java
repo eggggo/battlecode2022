@@ -97,10 +97,10 @@ public class Miner extends RobotPlayer {
 
         //Comms stuff
         Comms.updateSector(rc);
-        int deltaIncome = income - prevIncome;
-        //index 49 is global income
-        int currentIncome = rc.readSharedArray(49);
-        rc.writeSharedArray(49, currentIncome + deltaIncome);
-        prevIncome = income;
+        // int deltaIncome = income - prevIncome;
+        // //index 49 is global income
+        // int currentIncome = rc.readSharedArray(49);
+        // rc.writeSharedArray(49, currentIncome + deltaIncome);
+        // prevIncome = income;
     }
 }

@@ -8,6 +8,7 @@ public class Watchtower extends RobotPlayer{
     static MapLocation[] enemyArchons = null;
     static int turnsAlive = 0;
     static int attackOffset = 0;
+    static boolean aboveHpThresh = true;
 
     static int getQuadrant(RobotController rc, int x, int y) {
         int quad = 0;
@@ -126,6 +127,7 @@ public class Watchtower extends RobotPlayer{
                     enemyArchons[3 * i + 2] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, rc.getMapHeight() - 1 - coords[i].y); // 180 rotate
                 }
             }
+            rc.writeSharedArray(52, rc.readSharedArray(52) + 1);
         }
 
         //Attacks at one of the random spots of a potential enemy base after spending 100 turns home with no enemies attacking
@@ -148,6 +150,14 @@ public class Watchtower extends RobotPlayer{
 
         //Comms stuff
         Comms.updateSector(rc);
+
+        boolean currentHpThresh = rc.getHealth()/rc.getType().getMaxHealth(1) > 0.7;
+        if (!currentHpThresh && aboveHpThresh) {
+            rc.writeSharedArray(52, rc.readSharedArray(52) - 1);
+        } else if (currentHpThresh && !aboveHpThresh) {
+            rc.writeSharedArray(52, rc.readSharedArray(52) + 1);
+        }
+        aboveHpThresh = currentHpThresh;
         turnsAlive++;
     }
 }

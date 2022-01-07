@@ -10,7 +10,10 @@ public class Comms {
     //8 bit resource count(capped at 255), 6 bit enemy count(capped at 63)
     //indices 49 through 63 for other info:
     //49: global income
-    //50: healthy attacker count(attackers above 75% hp)
+    //50: healthy miner count(above 20% hp)
+    //51: healthy soldier count(above 70%)
+    //52: healthy watchtower count(above 70%)
+    //53: healthy sage count(above 70%)
     static int locationToSector(RobotController rc, MapLocation loc) {
         int width = rc.getMapWidth();
         int height = rc.getMapHeight();
@@ -108,11 +111,6 @@ public class Comms {
         }
 
         int msg = (homeArchon << 15) | (enemyArchon << 14) | (resourceCount << 6) | (enemyCount);
-
-        if (sector == 28 && homeArchon == 0) {
-            System.out.println("i did this.");
-            System.out.println(rc.getID() + ", " + rc.getType());
-        }
         rc.writeSharedArray(sector, msg);
     }
 

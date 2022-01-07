@@ -11,7 +11,7 @@ public class Pathfinder {
         
         //simple heuristic using only nearby 8
         MapLocation immTgt;
-        if (Clock.getBytecodesLeft() < 5500) {
+        if (Clock.getBytecodesLeft() < 6000) {
             Direction optimalDir = Direction.CENTER;
             double optimalCost = 9999;
             for (Direction dir : Direction.allDirections()) {

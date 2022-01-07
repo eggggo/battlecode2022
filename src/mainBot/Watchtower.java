@@ -90,14 +90,14 @@ public class Watchtower extends RobotPlayer{
 
                 MapLocation attackTarget = enemyArchons[attackLocation];
 
-                //Change target if theres nothing at the targets
+                //Change target if theres nothing at the target
                 if (rc.canSenseLocation(attackTarget)) {
-                    RobotInfo rb = rc.senseRobotAtLocation(attackTarget);
-                    if (rb == null || rb.getType() != RobotType.ARCHON) {
-                        attackOffset += 1;
-                        attackLocation = (rc.getID() + attackOffset) % (enemyArchons.length);
+                RobotInfo rb = rc.senseRobotAtLocation(attackTarget);
+                if (rb == null || rb.getType() != RobotType.ARCHON) {
+                    attackOffset += 1;
+                    attackLocation = (rc.getID() + attackOffset) % (enemyArchons.length);
 
-                    }
+                }
                 }
                 dir = Pathfinder.getMoveDir(rc, attackTarget);
             }
@@ -108,22 +108,9 @@ public class Watchtower extends RobotPlayer{
             rc.transform();
         }
 
-        //Attacks at one of the random spots of a potential enemy base after spending 100 turns home with no enemies attacking
-        int randomAttackLoc = 0;
-        if (archonCount > 0) {
-            randomAttackLoc = (rc.getID() + attackOffset) % (enemyArchons.length);
-        }
-
-        dir = Pathfinder.getMoveDir(rc, enemyArchons[randomAttackLoc]);
-
-        //Changes targets after reaching the target and not killing things for 30 turns
-        if (dir == Direction.CENTER && turnsNotKilledStuff > 30) {
-            attackOffset++;
-        }
-
         turnsNotKilledStuff++;
 
-        if (rc.canMove(dir)) {
+        if (dir != null && rc.canMove(dir)) {
             rc.move(dir);
         }
 

@@ -68,7 +68,7 @@ public class Archon extends RobotPlayer {
         Direction dir = directions[rng.nextInt(directions.length)];
         for (Direction dire : Direction.allDirections()) {
             MapLocation loc = src.add(dire);
-            if (rc.senseRobotAtLocation(loc) == null) {
+            if (rc.onTheMap(loc) && rc.senseRobotAtLocation(loc) == null) {
                 dir = dire;
                 break;
             }

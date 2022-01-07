@@ -19,7 +19,7 @@ public class Pathfinder {
                 if (!bot.onTheMap(loc) || bot.isLocationOccupied(loc)) {
                     continue;
                 }
-                double currCost = Math.sqrt(loc.distanceSquaredTo(tgt))*4 + (bot.senseRubble(loc));
+                double currCost = Math.sqrt(loc.distanceSquaredTo(tgt))*10 + (bot.senseRubble(loc));
                 if (currCost < optimalCost) {
                     optimalDir = dir;
                     optimalCost = currCost;

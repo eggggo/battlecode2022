@@ -84,7 +84,7 @@ public class Archon extends RobotPlayer {
             }
         }
         System.out.println(soldierCount * 1.5 < minerCount);
-        if (minersBuilt < 2 && rc.canBuildRobot(RobotType.MINER, dir)) {
+        if (minersBuilt < 3 && rc.canBuildRobot(RobotType.MINER, dir)) {
             rc.buildRobot(RobotType.MINER,dir);
             minersBuilt++;
         } else if (soldiersBuilt < 1 && rc.canBuildRobot(RobotType.SOLDIER, dir)) {

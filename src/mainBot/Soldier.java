@@ -104,14 +104,13 @@ public class Soldier extends RobotPlayer {
       } else {
         //Attacks at one of the random spots of a potential enemy base
 
-        MapLocation attackTarget = enemyArchons[attackLocation];
+        MapLocation attackTarget = enemyArchons[(rc.getID() + attackOffset) % (enemyArchons.length)];
 
         //Change target if theres nothing at the target
         if (rc.canSenseLocation(attackTarget)) {
           RobotInfo rb = rc.senseRobotAtLocation(attackTarget);
           if (rb == null || rb.getType() != RobotType.ARCHON) {
             attackOffset += 1;
-            attackLocation = (rc.getID() + attackOffset) % (enemyArchons.length);
 
           }
         }

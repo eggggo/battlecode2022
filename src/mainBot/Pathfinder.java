@@ -19,7 +19,7 @@ public class Pathfinder {
                 if (!bot.onTheMap(loc) || bot.isLocationOccupied(loc)) {
                     continue;
                 }
-                double currCost = Math.sqrt(loc.distanceSquaredTo(tgt))*2 + (bot.senseRubble(loc));
+                double currCost = Math.sqrt(loc.distanceSquaredTo(tgt))*4 + (bot.senseRubble(loc));
                 if (currCost < optimalCost) {
                     optimalDir = dir;
                     optimalCost = currCost;
@@ -44,12 +44,16 @@ public class Pathfinder {
                 immTgt = src.translate(deltaX, deltaY);
             }
 
-            HashMap<MapLocation, Double> costs = new HashMap<>(10);
+            int[][] costs = new int[5][5];
+            for (int i = 4; i >= 0; i --) {
+                for (int j = 4; j >= 0; j --) {
+                    costs[i][j] = -1;
+                }
+            }
             MapLocation moveTo = src.add(src.directionTo(immTgt));
             LinkedList<MapLocation> processQ = new LinkedList<>();
             int tgtRubble = bot.senseRubble(immTgt);
-            costs.put(immTgt, Math.floor((1 + tgtRubble/10.0)*bot.getType().movementCooldown)
-            + Math.floor((1 + tgtRubble/10.0)*bot.getType().actionCooldown));
+            costs[immTgt.x - src.x + 2][immTgt.y - src.y + 2] = tgtRubble;
             processQ.add(immTgt);
             bot.setIndicatorString(immTgt.toString());
 
@@ -63,33 +67,15 @@ public class Pathfinder {
                 }
 
                 Direction straightDir = current.directionTo(src);
-                int currRubble = bot.senseRubble(current);
-                double currCds = Math.floor((1 + currRubble/10.0)*bot.getType().movementCooldown)
-                                + Math.floor((1 + currRubble/10.0)*bot.getType().actionCooldown);
-                
-                MapLocation towards = current.add(straightDir);
-                if (bot.onTheMap(towards) && towards.isWithinDistanceSquared(src, range) && (towards.equals(src) || !bot.isLocationOccupied(towards))) {
-                    int toRubble = bot.senseRubble(towards);
-                    double towardsCds = Math.floor((1 + toRubble/10.0)*bot.getType().movementCooldown)
-                                        + Math.floor((1 + toRubble/10.0)*bot.getType().actionCooldown);
-                    if (!costs.contains(towards) || costs.get(towards) > towardsCds + currCds) {
-                        costs.put(towards, towardsCds + currCds);
-                        if (towards.equals(src)) {
-                            moveTo = current;
-                        }
-                        if (!processQ.contains(towards)) {
-                            processQ.add(towards);
-                        }
-                    }
-                }
+                int currRubble = costs[current.x - src.x + 2][current.y - src.y + 2];
+                int currCds = currRubble;
 
                 MapLocation left = current.add(straightDir.rotateLeft());
                 if (bot.onTheMap(left) && left.isWithinDistanceSquared(src, range) && (left.equals(src) || !bot.isLocationOccupied(left))) {
                     int leftRubble = bot.senseRubble(left);
-                    double leftCds = Math.floor((1 + leftRubble/10.0)*bot.getType().movementCooldown)
-                                    + Math.floor((1 + leftRubble/10.0)*bot.getType().actionCooldown);
-                    if (!costs.contains(left) || costs.get(left) > leftCds + currCds) {
-                        costs.put(left, leftCds + currCds);
+                    int leftCds = leftRubble;
+                    if (costs[left.x - src.x + 2][left.y - src.y + 2] == -1 || costs[left.x - src.x + 2][left.y - src.y + 2] > leftCds + currCds) {
+                        costs[left.x - src.x + 2][left.y - src.y + 2] = leftCds + currCds;
                         if (left.equals(src)) {
                             moveTo = current;
                         }
@@ -102,15 +88,29 @@ public class Pathfinder {
                 MapLocation right = current.add(straightDir.rotateRight());
                 if (bot.onTheMap(right) && right.isWithinDistanceSquared(src, range) && (right.equals(src) || !bot.isLocationOccupied(right))) {
                     int rightRubble = bot.senseRubble(right);
-                    double rightCds = Math.floor((1 + rightRubble/10.0)*bot.getType().movementCooldown) 
-                                    + Math.floor((1 + rightRubble/10.0)*bot.getType().actionCooldown);
-                    if (!costs.contains(right) || costs.get(right) > rightCds + currCds) {
-                        costs.put(right, rightCds + currCds);
+                    int rightCds = rightRubble;
+                    if (costs[right.x - src.x + 2][right.y - src.y + 2] == -1 || costs[right.x - src.x + 2][right.y - src.y + 2] > rightCds + currCds) {
+                        costs[right.x - src.x + 2][right.y - src.y + 2] = rightCds + currCds;
                         if (right.equals(src)) {
                             break;
                         }
                         if (!processQ.contains(right)) {
                             processQ.add(right);
+                        }
+                    }
+                }
+
+                MapLocation towards = current.add(straightDir);
+                if (bot.onTheMap(towards) && towards.isWithinDistanceSquared(src, range) && (towards.equals(src) || !bot.isLocationOccupied(towards))) {
+                    int toRubble = bot.senseRubble(towards);
+                    int towardsCds = toRubble;
+                    if (costs[towards.x - src.x + 2][towards.y - src.y + 2] == -1 || costs[towards.x - src.x + 2][towards.y - src.y + 2] > towardsCds + currCds) {
+                        costs[towards.x - src.x + 2][towards.y - src.y + 2] = towardsCds + currCds;
+                        if (towards.equals(src)) {
+                            moveTo = current;
+                        }
+                        if (!processQ.contains(towards)) {
+                            processQ.add(towards);
                         }
                     }
                 }

@@ -71,7 +71,7 @@ public class Archon extends RobotPlayer {
         //Comms stuff
         Comms.updateSector(rc);
         currentIncome = rc.readSharedArray(49);
-        System.out.println("income: " + currentIncome);
+        //System.out.println("income: " + currentIncome);
         turnsAlive++;
     }
 }

@@ -81,7 +81,6 @@ public class Soldier extends RobotPlayer {
 
       MapLocation attackTarget = enemyArchons[attackLocation];
 
-
       //Change target if theres nothing at the target
       if (rc.canSenseLocation(attackTarget)) {
         RobotInfo rb = rc.senseRobotAtLocation(attackTarget);
@@ -107,7 +106,7 @@ public class Soldier extends RobotPlayer {
     turnsAlive++;
     Comms.updateSector(rc);
 
-    boolean currentHpThresh = rc.getHealth()/rc.getType().getMaxHealth(1) > 0.7;
+    boolean currentHpThresh = (double)rc.getHealth()/rc.getType().getMaxHealth(1) > 0.7;
     if (!currentHpThresh && aboveHpThresh) {
         rc.writeSharedArray(51, rc.readSharedArray(51) - 1);
     } else if (currentHpThresh && !aboveHpThresh) {
@@ -127,7 +126,6 @@ public class Soldier extends RobotPlayer {
     }
 
 
-    enemyArchons = new MapLocation[archonCount * 3];
     //if all of the archons have written to the comms
     boolean quad1 = false;
     boolean quad2 = false;
@@ -140,6 +138,7 @@ public class Soldier extends RobotPlayer {
     MapLocation[] coords = new MapLocation[archonCount];
     for (int i = 48; i >= 0; i--) {
       int[] sector = Comms.readSectorInfo(rc, i);
+      //System.out.println("sector " + i + ": " + Arrays.toString(sector));
       if (sector[0] == 1) {
         MapLocation mdpt = Comms.sectorMidpt(rc, i);
         quads[currentArchonIndex] = getQuadrant(rc, mdpt.x, mdpt.y);
@@ -147,37 +146,17 @@ public class Soldier extends RobotPlayer {
         currentArchonIndex++;
       }
     }
-    if (coords[1] == null) {
-      archonCount = 1;
-      int[] tempQuads = new int[1];
-      MapLocation[] tempCoords = new MapLocation[1];
-      tempQuads[0] = quads[0];
-      quads = tempQuads;
-      tempCoords[0] = coords[0];
-      coords = tempCoords;
-    } else if (coords[2] == null) {
-      archonCount = 2;
-      int[] tempQuads = new int[2];
-      MapLocation[] tempCoords = new MapLocation[2];
-      tempQuads[0] = quads[0];
-      tempQuads[1] = quads[1];
-      quads = tempQuads;
-      tempCoords[0] = coords[0];
-      tempCoords[1] = coords[1];
-      coords = tempCoords;
-    } else if (coords[3] == null) {
-      archonCount = 3;
-      int[] tempQuads = new int[3];
-      MapLocation[] tempCoords = new MapLocation[3];
-      tempQuads[0] = quads[0];
-      tempQuads[1] = quads[1];
-      tempQuads[2] = quads[2];
-      quads = tempQuads;
-      tempCoords[0] = coords[0];
-      tempCoords[1] = coords[1];
-      tempCoords[2] = coords[2];
-      coords = tempCoords;
+    archonCount = currentArchonIndex;
+    int[] tempQuads = new int[currentArchonIndex];
+    MapLocation[] tempCoords = new MapLocation[currentArchonIndex];
+    for (int i = currentArchonIndex - 1; i >= 0; i --) {
+        tempQuads[i] = quads[i];
+        tempCoords[i] = coords[i];
     }
+    quads = tempQuads;
+    coords = tempCoords;
+
+    enemyArchons = new MapLocation[archonCount * 3];
 
     //initialize whether there's a friendly archon in each quad
     for (int a = archonCount - 1; a >= 0; a--) {

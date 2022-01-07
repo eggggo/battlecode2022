@@ -64,8 +64,12 @@ public class Comms {
         int[] entry = readSectorInfo(rc, sector);
 
         if (rc.getType() == RobotType.ARCHON) {
-            homeArchon = 1;
-        } else {
+            if ((double)rc.getHealth()/rc.getType().getMaxHealth(1) > 0.1) {
+                homeArchon = 1;
+            } else {
+                homeArchon = 0;
+            }
+        } else {/*
             MapLocation mdpt = sectorMidpt(rc, sector);
             boolean trueVision = rc.getLocation().distanceSquaredTo(mdpt) <= 2;
             if (entry[0] == 0 || trueVision) {
@@ -77,9 +81,9 @@ public class Comms {
                         break;
                     }
                 }
-            } else {
+            } else {*/
                 homeArchon = entry[0];
-            }
+            //}
         }
 
         RobotInfo[] enemies = rc.senseNearbyRobots(range, rc.getTeam().opponent());

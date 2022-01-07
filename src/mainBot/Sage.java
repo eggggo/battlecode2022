@@ -11,7 +11,7 @@ public class Sage extends RobotPlayer{
         if (turnsAlive == 0) {
             rc.writeSharedArray(53, rc.readSharedArray(53) + 1);
         }
-        boolean currentHpThresh = rc.getHealth()/rc.getType().getMaxHealth(1) > 0.7;
+        boolean currentHpThresh = (double)rc.getHealth()/rc.getType().getMaxHealth(1) > 0.7;
         if (!currentHpThresh && aboveHpThresh) {
             rc.writeSharedArray(53, rc.readSharedArray(53) - 1);
         } else if (currentHpThresh && !aboveHpThresh) {

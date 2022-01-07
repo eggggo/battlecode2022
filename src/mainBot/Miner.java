@@ -58,7 +58,6 @@ public class Miner extends RobotPlayer {
         //3: Random direction
         Direction dir;
         //Is there a nearby soldier without a huge number of followers?
-
         if (nearbySoldier != null && nearbyRobots.length < 9) {
             dir = Pathfinder.getMoveDir(rc, nearbySoldier);
         } else {
@@ -103,7 +102,6 @@ public class Miner extends RobotPlayer {
         if (rc.canMove(dir)) {
             rc.move(dir);
         }
-
         //Comms stuff
         Comms.updateSector(rc);
         /*
@@ -113,7 +111,7 @@ public class Miner extends RobotPlayer {
         rc.writeSharedArray(49, currentIncome + deltaIncome);
         prevIncome = income;*/
 
-        boolean currentHpThresh = rc.getHealth()/rc.getType().getMaxHealth(1) > 0.2;
+        boolean currentHpThresh = (double)rc.getHealth()/rc.getType().getMaxHealth(1) > 0.2;
         if (!currentHpThresh && aboveHpThresh) {
             rc.writeSharedArray(50, rc.readSharedArray(50) - 1);
         } else if (currentHpThresh && !aboveHpThresh) {

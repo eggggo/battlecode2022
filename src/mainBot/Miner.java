@@ -53,6 +53,7 @@ public class Miner extends RobotPlayer {
 
         //run away from enemy attackers if we see them
         RobotInfo[] enemies = rc.senseNearbyRobots(senseRadius, friendly.opponent());
+        RobotInfo[] friendlies = rc.senseNearbyRobots(senseRadius, friendly);
         MapLocation closestAttacker = null;
         MapLocation[] nearbyLead = rc.senseNearbyLocationsWithLead(senseRadius);
         MapLocation[] nearbyGold = rc.senseNearbyLocationsWithGold(senseRadius);
@@ -107,6 +108,7 @@ public class Miner extends RobotPlayer {
                 int[] sector = Comms.readSectorInfo(rc, i);
                 if (sector[2] > 100 && rc.getLocation().distanceSquaredTo(Comms.sectorMidpt(rc, i)) < distance) {
                     sectorNumber = i;
+                    distance = rc.getLocation().distanceSquaredTo(Comms.sectorMidpt(rc, i));
                 }
             }
             dir = Pathfinder.getMoveDir(rc, Comms.sectorMidpt(rc, sectorNumber));

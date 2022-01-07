@@ -1,4 +1,4 @@
-package mainBot;
+package v0;
 
 import battlecode.common.*;
 
@@ -63,7 +63,7 @@ public class Archon extends RobotPlayer {
         } else if (friendlyToEnemyRatio < 5 && rc.canBuildRobot(RobotType.SOLDIER, dir)) {
             rc.buildRobot(RobotType.SOLDIER, dir);
             soldiersBuilt++;
-        } else if (currentIncome > 30 && rc.canBuildRobot(RobotType.BUILDER, dir)) {
+        } else if (targetBuilderCount > buildersBuilt && currentIncome > 30 && rc.canBuildRobot(RobotType.BUILDER, dir)) {
             rc.buildRobot(RobotType.BUILDER, dir);
             buildersBuilt++;
         } else if (rc.canBuildRobot(RobotType.MINER, dir) && targetMinerCount > minerCount) { //&& currentIncome > minerCount * 5

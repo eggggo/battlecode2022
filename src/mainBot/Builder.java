@@ -59,6 +59,8 @@ public class Builder extends RobotPlayer {
         //If there is no nearby repariable building, follow a nearby non-crowded soldier, otherwise move randomly
         if (nearbyBuilding != null) {
             dir = Pathfinder.getMoveDir(rc, nearbyBuilding);
+        } else if (nearbySoldier != null && nearbyRobots.length < 9) {
+            dir = Pathfinder.getMoveDir(rc, nearbySoldier);
         } else if (home != null) {
             dir = rc.getLocation().directionTo(home).opposite();
         } else {

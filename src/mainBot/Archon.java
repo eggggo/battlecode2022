@@ -90,13 +90,15 @@ public class Archon extends RobotPlayer {
         } else if (soldiersBuilt < 1 && rc.canBuildRobot(RobotType.SOLDIER, dir)) {
             rc.buildRobot(RobotType.SOLDIER,dir);
             soldiersBuilt++;
-        } else if ((targetMinerCount < minerCount || soldierCount * 1.5 < minerCount) && rc.canBuildRobot(RobotType.SOLDIER, dir) && !(rc.getTeamLeadAmount(rc.getTeam())>400 && builderCount < maxBuilderCount && buildersBuiltInARow < 1)) {
+        } else if ((targetMinerCount < minerCount || soldierCount * 1.5 < minerCount) &&
+                rc.canBuildRobot(RobotType.SOLDIER, dir) && !(rc.getTeamLeadAmount(rc.getTeam())>400 && builderCount < maxBuilderCount && buildersBuiltInARow < 1)) {
             rc.buildRobot(RobotType.SOLDIER, dir);
             soldiersBuilt++;
             soldiersBuiltInARow++;
             minersBuiltInARow = 0;
             buildersBuiltInARow = 0;
-        } else if (soldiersBuilt>0 && rc.canBuildRobot(RobotType.MINER, dir) && (targetMinerCount > minerCount) && !(rc.getTeamLeadAmount(rc.getTeam())>400 && builderCount < maxBuilderCount && buildersBuiltInARow < 1)) { //&& currentIncome > minerCount * 5
+        } else if (soldiersBuilt>0 && rc.canBuildRobot(RobotType.MINER, dir) && (targetMinerCount > minerCount) &&
+                !(rc.getTeamLeadAmount(rc.getTeam())>400 && builderCount < maxBuilderCount && buildersBuiltInARow < 1)) { //&& currentIncome > minerCount * 5
             rc.buildRobot(RobotType.MINER, dir);
             minersBuilt++;
             soldiersBuiltInARow = 0;

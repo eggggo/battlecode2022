@@ -1,4 +1,4 @@
-package mainBot.betterJavaUtil;
+package v0.betterJavaUtil;
 
 public class Entry<K, V> {
     public K key;

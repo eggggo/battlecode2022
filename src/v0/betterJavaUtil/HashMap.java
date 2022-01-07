@@ -1,4 +1,4 @@
-package mainBot.betterJavaUtil;
+package v0.betterJavaUtil;
 
 public class HashMap<K, V> {
     public LinkedList<Entry<K, V>>[] table;

@@ -1,4 +1,4 @@
-package v2;
+package v3;
 
 import battlecode.common.*;
 
@@ -50,6 +50,9 @@ public class Archon extends RobotPlayer {
             friendlyToEnemyRatio = 5;
         }
         int targetMinerCount = (int) (.02 * scoutedResources * (1/(1+.02*turnCount)+.15) * friendlyToEnemyRatio * friendlyToEnemyRatio * .5);
+//        System.out.println("scouted Resources:" + scoutedResources);
+//        System.out.println("feratio:" + friendlyToEnemyRatio);
+//        System.out.println("current Income:" + currentIncome);
         int senseRadius = rc.getType().visionRadiusSquared;
         Team friendly = rc.getTeam();
         Team opponent = rc.getTeam().opponent();
@@ -86,7 +89,14 @@ public class Archon extends RobotPlayer {
         } else if (soldiersBuilt < 1 && rc.canBuildRobot(RobotType.SOLDIER, dir)) {
             rc.buildRobot(RobotType.SOLDIER,dir);
             soldiersBuilt++;
-        } else if ((targetMinerCount < minerCount || soldierCount * 1.5 < minerCount) &&
+        }
+        else if ((targetMinerCount < minerCount || (sageCount + soldierCount) * 1.5 < minerCount) &&
+                rc.canBuildRobot(RobotType.SAGE, dir) && !(rc.getTeamLeadAmount(rc.getTeam())>400 && builderCount < maxBuilderCount && buildersBuiltInARow < 1)) {
+            rc.buildRobot(RobotType.SAGE, dir);
+            minersBuiltInARow = 0;
+            buildersBuiltInARow = 0;
+        }
+        else if ((targetMinerCount < minerCount || (sageCount + soldierCount) * 1.5 < minerCount) &&
                 rc.canBuildRobot(RobotType.SOLDIER, dir) && !(rc.getTeamLeadAmount(rc.getTeam())>400 && builderCount < maxBuilderCount && buildersBuiltInARow < 1)) {
             rc.buildRobot(RobotType.SOLDIER, dir);
             soldiersBuilt++;
@@ -124,6 +134,7 @@ public class Archon extends RobotPlayer {
 
         //Comms stuff
         Comms.updateSector(rc);
+//        System.out.println("turnsAFK:" +turnsNotActioning);
         turnsAlive++;
     }
 }

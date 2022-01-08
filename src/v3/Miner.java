@@ -1,7 +1,6 @@
-package mainBot;
+package v3;
 
 import battlecode.common.*;
-import mainBot.Pathfinder;
 
 import java.util.ArrayList;
 import java.util.List;

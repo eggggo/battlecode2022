@@ -37,6 +37,7 @@ public class Soldier extends RobotPlayer {
   //Stay within vision radius, but out of action radius
   //enemy can be called with null, signifying no enemy seen. this robot will try to path towards last seen enemy
   //assume enemy bot location, if specified is within vision radius
+  //Only call when we cannot win a trade but want to retain map/space control
   static MapLocation lastSeenClosestEnemy = null;
   static void kiteVision(RobotController rc, MapLocation src, MapLocation enemy) throws GameActionException {
     int distance = enemy.distanceSquaredTo(src);
@@ -72,6 +73,46 @@ public class Soldier extends RobotPlayer {
     }
   }
 
+  //Same as previous method KiteVision, but looking to trade (will combine with previous method, adding a boolean parameter)
+  //Only call when determined we can win a trade
+  static MapLocation lastSeenClosestEnemyF = null;
+  static void kiteFight(RobotController rc, MapLocation src, MapLocation enemy) throws GameActionException{
+    int distance = enemy.distanceSquaredTo(src);
+
+    if(distance > rc.getType().actionRadiusSquared && distance < rc.getType().visionRadiusSquared){
+
+      //if distance is between vision and action, move and attack enemy
+      // can always get into action range if in vision range, provided we have enough cooldown
+      lastSeenClosestEnemyF = enemy;
+    }
+    else if(distance < rc.getType().actionRadiusSquared){
+
+      //detect how many enemy bots are within action radius vs vision radius.
+      // We want only one enemy bot in action radius at a time, so the action can be either
+      // attack -> not moving or attack -> moving away
+      lastSeenClosestEnemyF = enemy;
+      if (rc.canAttack(enemy)) {
+        rc.attack(enemy);
+      }
+
+
+    }
+    else if(enemy == null){
+
+      //move towards lastSeenEnemy
+      Direction dir = Pathfinder.getMoveDir(rc, lastSeenClosestEnemyF);
+      if (dir != null && rc.canMove(dir)) {
+        rc.move(dir);
+      }
+
+      //if we see enemies, update lastSeenEnemy to the closest, and attack it.
+      // out of vision -> in action will only happen if enemy is 25 away and after moving we get to 13 away, but it is possible
+
+    }
+    else{//somehow, function was called with no enemy seen and noLastSeenEnemy.
+      //explore
+    }
+  }
 
   /**
    * Run a single turn for a Soldier.

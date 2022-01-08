@@ -74,6 +74,7 @@ public class Soldier extends RobotPlayer {
   }
 
   //Same as previous method KiteVision, but looking to trade (will combine with previous method, adding a boolean parameter)
+  //eventually put into DroidActions Class, since kiting (for vision) is applicable to miners as well
   //Only call when determined we can win a trade
   static MapLocation lastSeenClosestEnemyF = null;
   static void kiteFight(RobotController rc, MapLocation src, MapLocation enemy) throws GameActionException{

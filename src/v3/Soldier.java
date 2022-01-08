@@ -33,6 +33,46 @@ public class Soldier extends RobotPlayer {
     return quad;
   }
 
+
+  //Stay within vision radius, but out of action radius
+  //enemy can be called with null, signifying no enemy seen. this robot will try to path towards last seen enemy
+  //assume enemy bot location, if specified is within vision radius
+  static MapLocation lastSeenClosestEnemy = null;
+  static void kiteVision(RobotController rc, MapLocation src, MapLocation enemy) throws GameActionException {
+    int distance = enemy.distanceSquaredTo(src);
+
+    if(distance > rc.getType().actionRadiusSquared && distance < rc.getType().visionRadiusSquared){
+
+      //if distance is between vision and action, maintain distance, unless we can get a kill
+      lastSeenClosestEnemy = enemy;
+    }
+    else if(distance < rc.getType().actionRadiusSquared){
+      lastSeenClosestEnemy = enemy;
+      if (rc.canAttack(enemy)) {
+        rc.attack(enemy);
+      }
+
+      //move away from enemy, update lastSeenEnemy to the closest
+      //Direction dir = Pathfinder.getMoveDir(rc, minRubbleLoc);
+
+    }
+    else if(enemy == null){
+
+      //move towards lastSeenEnemy
+      Direction dir = Pathfinder.getMoveDir(rc, lastSeenClosestEnemy);
+      if (dir != null && rc.canMove(dir)) {
+        rc.move(dir);
+      }
+
+      //if we see enemies, update lastSeenEnemy to the closest, and attack it.
+
+    }
+    else{//somehow, function was called with no enemy seen and noLastSeenEnemy.
+      //explore
+    }
+  }
+
+
   /**
    * Run a single turn for a Soldier.
    * This code is wrapped inside the infinite loop in run(), so it is called once per turn.
@@ -57,6 +97,7 @@ public class Soldier extends RobotPlayer {
     //3: If an archon is under attack (defense or offense) go help
     //4: Defense pathing/Scout pathing/Attack pathing
 
+    //tracks the closest attack enemy and the closest non attacking enemy
     if (enemies.length > 0) {
       MapLocation closestEnemy = null;
       MapLocation closestAttackingEnemy = null;

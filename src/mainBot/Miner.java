@@ -53,6 +53,7 @@ public class Miner extends RobotPlayer {
 
         //run away from enemy attackers if we see them
         RobotInfo[] enemies = rc.senseNearbyRobots(senseRadius, friendly.opponent());
+        RobotInfo[] friendlies = rc.senseNearbyRobots(senseRadius, friendly);
         MapLocation closestAttacker = null;
         MapLocation[] nearbyLead = rc.senseNearbyLocationsWithLead(senseRadius);
         MapLocation[] nearbyGold = rc.senseNearbyLocationsWithGold(senseRadius);
@@ -66,7 +67,7 @@ public class Miner extends RobotPlayer {
             }
         }
         for (int i = nearbyLead.length - 1; i >= 0; i --) {
-            double leadCount = rc.senseLead(nearbyLead[i])/(1 + rc.senseRubble(nearbyLead[i])/10.0);
+            double leadCount = (double)rc.senseLead(nearbyLead[i])/(1 + rc.senseRubble(nearbyLead[i])/10.0);
             if (leadCount > 5 && leadCount > highLead) {
                 highLead = leadCount;
                 resources = nearbyLead[i];
@@ -86,31 +87,42 @@ public class Miner extends RobotPlayer {
         } else if (resources != null) {
             MapLocation tgtResource = resources;
             dir = Pathfinder.getMoveDir(rc, tgtResource);
-            MapLocation newLocation = new MapLocation(me.x + dir.dx, me.y + dir.dy);
-            int newNeighbors = 0;
-            for (int i = 1; i >= -1; i -= 1) {
-                for (int j = 1; j >= -1; j -= 1) {
-                    MapLocation loc = new MapLocation(me.x + dir.dx + i, me.y + dir.dy + j);
-                    if (rc.onTheMap(loc) && rc.senseRobotAtLocation(loc) != null) {
-                        newNeighbors += 1;
-                    }
-                }
-            }
-            if (newNeighbors >= 3) {
-                dir = directions[rng.nextInt(directions.length)];
-            }
+            // MapLocation newLocation = new MapLocation(me.x + dir.dx, me.y + dir.dy);
+            // int newNeighbors = 0;
+            // for (int i = 1; i >= -1; i -= 1) {
+            //     for (int j = 1; j >= -1; j -= 1) {
+            //         MapLocation loc = new MapLocation(me.x + dir.dx + i, me.y + dir.dy + j);
+            //         if (rc.onTheMap(loc) && rc.senseRobotAtLocation(loc) != null) {
+            //             newNeighbors += 1;
+            //         }
+            //     }
+            // }
+            // if (newNeighbors >= 3) {
+            //     dir = directions[rng.nextInt(directions.length)];
+            // }
             //ADD SPREAD STUFF HERE IF TOO MANY NEARBY GUYS
         } else {
             int sectorNumber = (int) (Math.random() * 48) + 1;
-            int distance = Integer.MAX_VALUE;
+            int distance = 9999;
             for (int i = 48; i >= 0; i--) {
                 int[] sector = Comms.readSectorInfo(rc, i);
-                if (sector[2] > 100 && rc.getLocation().distanceSquaredTo(Comms.sectorMidpt(rc, i)) < distance) {
+                if (sector[2] > 30 && rc.getLocation().distanceSquaredTo(Comms.sectorMidpt(rc, i)) < distance) {
                     sectorNumber = i;
                     distance = rc.getLocation().distanceSquaredTo(Comms.sectorMidpt(rc, i));
                 }
             }
             dir = Pathfinder.getMoveDir(rc, Comms.sectorMidpt(rc, sectorNumber));
+            double xVector = dir.dx;
+            double yVector = dir.dy;
+            for (int i = friendlies.length - 1; i >= 0; i --) {
+                MapLocation friendlyLoc = friendlies[i].getLocation();
+                double d = Math.sqrt(src.distanceSquaredTo(friendlyLoc));
+                Direction opposite = src.directionTo(friendlyLoc).opposite();
+                xVector += opposite.dx*(1.0/d);
+                yVector += opposite.dy*(1.0/d);
+            }
+            MapLocation vectorTgt = src.translate((int)xVector, (int)yVector);
+            dir = Pathfinder.getMoveDir(rc, vectorTgt);
         }
 
         if (rc.canMove(dir)) {

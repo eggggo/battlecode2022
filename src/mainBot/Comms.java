@@ -50,19 +50,25 @@ public class Comms {
         int height = rc.getMapHeight();
         double xSize = width/7.0;
         double ySize = height/7.0;
-        MapLocation bottomLeft = new MapLocation((int)((sector%7)*xSize), (int)((sector / 7)*ySize));
-        MapLocation topRight = new MapLocation((int)Math.ceil(((sector%7)+1)*xSize), (int)Math.ceil(((sector/7)+1)*ySize));
-        return (loc.x >= bottomLeft.x && loc.x < topRight.x && loc.y >= bottomLeft.y && loc.y < topRight.y);
+        int lowerX = (int)((sector%7)*xSize);
+        int lowerY = (int)((sector / 7)*ySize);
+        return (loc.x >= lowerX && loc.x < lowerX + xSize && loc.y >= lowerY && loc.y < lowerY + ySize);
     }
 
     static void updateSector(RobotController rc) throws GameActionException {
         int sector = locationToSector(rc, rc.getLocation());
+        int width = rc.getMapWidth();
+        int height = rc.getMapHeight();
+        double xSize = width/7.0;
+        double ySize = height/7.0;
         int homeArchon = 0;
         int enemyArchon = 0;
         int resourceCount = 0;
         int enemyCount = 0;
         int range = rc.getType().visionRadiusSquared;
         int[] entry = readSectorInfo(rc, sector);
+        int lowerX = (int)((sector%7)*xSize);
+        int lowerY = (int)((sector/7)*xSize);
 
         if (rc.getType() == RobotType.ARCHON) {
             if ((double)rc.getHealth()/rc.getType().getMaxHealth(1) > 0.1) {
@@ -111,10 +117,13 @@ public class Comms {
         } else {
             int leadCount = 0;
             for (int i = nearbyLead.length - 1; i >= 0; i --) {
-                if (leadCount >= 255) {
+                int locX = nearbyLead[i].x;
+                int locY = nearbyLead[i].y;
+                if (leadCount >= 255 || nearbyLead.length > 20) {
+                    leadCount = 255;
                     break;
                 }
-                if (withinSector(rc, nearbyLead[i], sector)) {
+                if (locX >= lowerX && locX < lowerX + xSize && locY >= lowerY && locY < lowerY + ySize) {
                     leadCount += rc.senseLead(nearbyLead[i]);
                 }
             }

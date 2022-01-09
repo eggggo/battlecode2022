@@ -12,6 +12,7 @@ public class Soldier extends RobotPlayer {
   static int attackOffset = 0;
   static MapLocation home = null;
   static MapLocation[] enemyArchons = null;
+  static MapLocation[] copyEnemyArchons = null;
   static int attackLocation = 0;
   //Role: 2 for defense, 1 for attack, 0 for scout
   static int role;
@@ -225,7 +226,7 @@ public class Soldier extends RobotPlayer {
         MapLocation attackTarget = enemyArchon;
 
         //Change target if theres nothing at the target
-        if (rc.canSenseLocation(attackTarget)) {
+        if (attackTarget != null && rc.canSenseLocation(attackTarget)) {
           RobotInfo rb = rc.senseRobotAtLocation(attackTarget);
           if (rb == null || rb.getType() != RobotType.ARCHON) {
             for (int i = enemyArchons.length-1; i >= 0; i--) {
@@ -236,7 +237,11 @@ public class Soldier extends RobotPlayer {
 
           }
         }
-        dir = Pathfinder.getMoveDir(rc, attackTarget);
+        if (attackTarget != null) {
+          dir = Pathfinder.getMoveDir(rc, attackTarget);
+        } else {
+          enemyArchons = copyEnemyArchons;
+        }
       }
     }
     
@@ -345,6 +350,7 @@ public class Soldier extends RobotPlayer {
         enemyArchons[3 * i + 2] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, rc.getMapHeight() - 1 - coords[i].y); // 180 rotate
       }
     }
+    copyEnemyArchons = enemyArchons;
     rc.writeSharedArray(51, rc.readSharedArray(51) + 1);
   }
 }

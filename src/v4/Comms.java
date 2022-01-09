@@ -6,7 +6,7 @@ import battlecode.common.*;
 
 public class Comms {
     //revamped comms agane, each index corresponds to a sector on the map where 0 is bottom left and 48 is top right
-    //each sector info contains 1 bit home archon presence, 1 bit enemy archon presence, 
+    //each sector info contains 1 bit home archon presence, 1 bit enemy archon presence,
     //8 bit resource count(capped at 255), 5 bit enemy count(capped at 63), 1 bit turnMod
     //indices 49 through 63 for other info:
     //49: global income
@@ -15,6 +15,7 @@ public class Comms {
     //52: healthy watchtower count(above 70%)
     //53: healthy sage count(above 70%)
     //54: healthy builder count(above 20% hp)
+    //55: last 6 bits sector of first seen enemy
     static int locationToSector(RobotController rc, MapLocation loc) {
         int width = rc.getMapWidth();
         int height = rc.getMapHeight();
@@ -71,6 +72,7 @@ public class Comms {
         int lowerX = (int)((sector%7)*xSize);
         int lowerY = (int)((sector/7)*xSize);
         int turnMod = turn % 2;
+        boolean firstSeenEnemy = rc.readSharedArray(55) == 0;
 
         if (rc.getType() == RobotType.ARCHON) {
             if ((double)rc.getHealth()/rc.getType().getMaxHealth(1) > 0.1) {
@@ -91,11 +93,15 @@ public class Comms {
                     }
                 }
             } else {*/
-                homeArchon = entry[0];
+            homeArchon = entry[0];
             //}
         }
 
         RobotInfo[] enemies = rc.senseNearbyRobots(range, rc.getTeam().opponent());
+
+        if (enemies.length > 0 && firstSeenEnemy) {
+            rc.writeSharedArray(55, sector+1);
+        }
 
         for (int i = enemies.length - 1; i >= 0; i --) {
             if (enemyArchon == 1 && enemyCount >= 31) {
@@ -107,7 +113,7 @@ public class Comms {
             } else if ((r.getType() == RobotType.SOLDIER
                     || r.getType() == RobotType.SAGE
                     || r.getType() == RobotType.WATCHTOWER) && withinSector(rc, r.getLocation(), sector)) {
-                        enemyCount ++;
+                enemyCount ++;
             }
         }
         enemyCount = Math.min(31, enemyCount);

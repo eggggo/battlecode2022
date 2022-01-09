@@ -39,11 +39,17 @@ public class Archon extends RobotPlayer {
         int sageCount = rc.readSharedArray(53);
         int enemyCount = 0;
         int scoutedResources = 0;
-        int combatSector = 50;
+        int combatSector = rc.readSharedArray(55)-1;
+        if (combatSector == -1) {
+            combatSector = 50;
+        } else {
+            enemyCount++;
+        }
         int[] friendlyArchonSectors = new int[rc.getArchonCount()];
         for (int i = friendlyArchonSectors.length-1; i >=0; i--) {
             friendlyArchonSectors[i] = 50;
         }
+
         for (int i = 48; i >= 0; i--) {
             int[] sector = Comms.readSectorInfo(rc, i);
             if (sector[0] == 1) {

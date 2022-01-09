@@ -18,6 +18,7 @@ public class Soldier extends RobotPlayer {
   static int role;
   static boolean aboveHpThresh = true;
   static boolean notRepaired = false;
+  static MapLocation[] sectorMdpts = new MapLocation[49];
 
   static int getQuadrant(RobotController rc, int x, int y) {
     int quad = 0;
@@ -320,7 +321,7 @@ public class Soldier extends RobotPlayer {
       MapLocation closestEnemies = null;
       for (int i = 48; i >= 0; i--) {
         int[] sector = Comms.readSectorInfo(rc, i);
-        MapLocation loc = Comms.sectorMidpt(rc,i);
+        MapLocation loc = sectorMdpts[i];
         if ((sector[3] > 0 || sector[1] == 1) && enemySectorDistance > rc.getLocation().distanceSquaredTo(loc)) {
           closestEnemies = loc;
           enemySectorDistance = rc.getLocation().distanceSquaredTo(loc);
@@ -379,6 +380,7 @@ public class Soldier extends RobotPlayer {
     aboveHpThresh = currentHpThresh;
   }
 
+
   static void initializeSoldier(RobotController rc, RobotInfo[] nearbyRobots) throws GameActionException {
     role = 1;
     int archonCount = 4;
@@ -403,8 +405,9 @@ public class Soldier extends RobotPlayer {
     for (int i = 48; i >= 0; i--) {
       int[] sector = Comms.readSectorInfo(rc, i);
       //System.out.println("sector " + i + ": " + Arrays.toString(sector));
+      MapLocation mdpt = Comms.sectorMidpt(rc, i);
+      sectorMdpts[i] = mdpt;
       if (sector[0] == 1) {
-        MapLocation mdpt = Comms.sectorMidpt(rc, i);
         quads[currentArchonIndex] = getQuadrant(rc, mdpt.x, mdpt.y);
         coords[currentArchonIndex] = mdpt;
         currentArchonIndex++;

@@ -92,7 +92,7 @@ public class Soldier extends RobotPlayer {
       }
 
       //move away from enemy, update lastSeenEnemy to the closest
-      //Direction dir = Pathfinder.getMoveDir(rc, minRubbleLoc);
+      Direction dir = Pathfinder.getAwayDir(rc, lastSeenClosestEnemy);
 
     }
     else if(enemy == null){

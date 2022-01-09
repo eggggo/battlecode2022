@@ -120,25 +120,4 @@ public class Pathfinder {
         }
     }
 
-    //return direction away from a location
-    static Direction getAwayDir(RobotController rc, MapLocation loc) throws GameActionException {
-        MapLocation src = rc.getLocation();
-
-        Direction opposite = src.directionTo(loc).opposite();
-
-        MapLocation runawayTgt = src.add(opposite).add(opposite);
-        runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1),
-                Math.min(Math.max(0, runawayTgt.y), rc.getMapHeight() - 1));
-        Direction toReturn = Pathfinder.getMoveDir(rc, runawayTgt);
-
-        if(rc.canMove(toReturn)){
-            return toReturn;
-        }
-        else if(rc.canMove(toReturn.rotateRight() )){
-            return toReturn.rotateRight();
-        }
-        else{
-            return toReturn.rotateRight().rotateRight();
-        }
-    }
 }

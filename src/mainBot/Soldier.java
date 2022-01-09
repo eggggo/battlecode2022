@@ -20,9 +20,6 @@ public class Soldier extends RobotPlayer {
   static boolean notRepaired = false;
 
   static int getQuadrant(RobotController rc, int x, int y) {
-    if (rc.getHealth() == RobotType.SOLDIER.getMaxHealth(rc.getLevel())) {
-      notRepaired = false;
-    }
     int quad = 0;
     if (x >= rc.getMapWidth() / 2 && y >= rc.getMapHeight() / 2) {
       quad = 1;
@@ -100,24 +97,24 @@ public class Soldier extends RobotPlayer {
           rc.attack(closestEnemy);
         }
       }
-    }
+    } else {
 
-    int distance = enemy.distanceSquaredTo(src);
+        int distance = enemy.distanceSquaredTo(src);
 
-    if(distance > rc.getType().actionRadiusSquared && distance < rc.getType().visionRadiusSquared){
-      //if distance is between vision and action, maintain distance (don't move)
-      lastSeenClosestEnemy = enemy;
-    }
-    else if(distance < rc.getType().actionRadiusSquared){
-      lastSeenClosestEnemy = enemy;
-      if (rc.canAttack(enemy)) {
-        rc.attack(enemy);
-      }
-
-      //move away from enemy, update lastSeenEnemy to the closest
-      Direction dir = Pathfinder.getAwayDir(rc, lastSeenClosestEnemy);
-      if (dir != null && rc.canMove(dir)) {
-        rc.move(dir);
+        if(distance > rc.getType().actionRadiusSquared && distance < rc.getType().visionRadiusSquared){
+          //if distance is between vision and action, maintain distance (don't move)
+          lastSeenClosestEnemy = enemy;
+        }
+        else if(distance < rc.getType().actionRadiusSquared){
+          lastSeenClosestEnemy = enemy;
+        if (rc.canAttack(enemy)) {
+          rc.attack(enemy);
+        }
+        //move away from enemy, update lastSeenEnemy to the closest
+        Direction dir = Pathfinder.getAwayDir(rc, lastSeenClosestEnemy);
+        if (dir != null && rc.canMove(dir)) {
+          rc.move(dir);
+        }
       }
     }
   }
@@ -147,58 +144,59 @@ public class Soldier extends RobotPlayer {
         }
       }
 
-    }
+    } else {
 
-    int distance = enemy.distanceSquaredTo(src);
+      int distance = enemy.distanceSquaredTo(src);
 
-    if(distance > rc.getType().actionRadiusSquared && distance < rc.getType().visionRadiusSquared){
+      if(distance > rc.getType().actionRadiusSquared && distance < rc.getType().visionRadiusSquared){
 
-      //if distance is between vision and action, move and attack enemy
-      // can always get into action range if in vision range, provided we have enough cooldown
-      lastSeenClosestEnemyF = enemy;
+        //if distance is between vision and action, move and attack enemy
+        // can always get into action range if in vision range, provided we have enough cooldown
+        lastSeenClosestEnemyF = enemy;
 
-      Direction dir = Pathfinder.getMoveDir(rc, enemy);
-      if (dir != null && rc.canMove(dir)) {
-        rc.move(dir);
-      }
-
-      if(rc.canAttack(enemy)){
-        rc.attack(enemy);
-      }
-
-
-    }
-    else if(distance < rc.getType().actionRadiusSquared){
-    //ok we are assuming we want to fight here so the below comments will be in decision making
-      //here, we will either attack and move or move and attack depending on rubble
-
-      //detect how many enemy bots are within action radius vs vision radius.
-      // We want only one enemy bot in action radius at a time, so the action can be either
-      // attack -> not moving or attack -> moving away
-
-
-      lastSeenClosestEnemyF = enemy;
-
-      Direction dir = Pathfinder.getMoveDir(rc, enemy);
-      if( rc.senseRubble(src) < rc.senseRubble(src.add(dir)) ){
-        //shoot then move
-        if(rc.canAttack(enemy)){
-          rc.attack(enemy);
-        }
+        Direction dir = Pathfinder.getMoveDir(rc, enemy);
         if (dir != null && rc.canMove(dir)) {
           rc.move(dir);
         }
 
-      }
-      else{
-        //move then shoot
-        if (dir != null && rc.canMove(dir)) {
-          rc.move(dir);
-        }
         if(rc.canAttack(enemy)){
           rc.attack(enemy);
         }
 
+
+      }
+      else if(distance < rc.getType().actionRadiusSquared){
+      //ok we are assuming we want to fight here so the below comments will be in decision making
+        //here, we will either attack and move or move and attack depending on rubble
+
+        //detect how many enemy bots are within action radius vs vision radius.
+        // We want only one enemy bot in action radius at a time, so the action can be either
+        // attack -> not moving or attack -> moving away
+
+
+        lastSeenClosestEnemyF = enemy;
+
+        Direction dir = Pathfinder.getMoveDir(rc, enemy);
+        if( rc.senseRubble(src) < rc.senseRubble(src.add(dir)) ){
+          //shoot then move
+          if(rc.canAttack(enemy)){
+            rc.attack(enemy);
+          }
+          if (dir != null && rc.canMove(dir)) {
+            rc.move(dir);
+          }
+
+        }
+        else{
+          //move then shoot
+          if (dir != null && rc.canMove(dir)) {
+            rc.move(dir);
+          }
+          if(rc.canAttack(enemy)){
+            rc.attack(enemy);
+          }
+
+        }
       }
     }
   }
@@ -213,12 +211,23 @@ public class Soldier extends RobotPlayer {
     int senseRadius = rc.getType().visionRadiusSquared;
     Team friendly = rc.getTeam();
     Team opponent = rc.getTeam().opponent();
-    RobotInfo[] enemies = rc.senseNearbyRobots(radius, opponent);
+    RobotInfo[] enemies = rc.senseNearbyRobots(senseRadius, opponent);
+    RobotInfo[] friendlies = rc.senseNearbyRobots(senseRadius, friendly);
+    MapLocation closestEnemy = null;
+    MapLocation closestAttackingEnemy = null;
+    MapLocation closestAttackingEnemyVision = null;
+    int enemyHealth = 0;
+    int enemyDamage = 0;
+    int friendlyHealth = 0;
+    int friendlyDamage = 0;
     int archonCount = 4;
 
     if (turnsAlive == 0) {
-      RobotInfo[] nearbyRobots = rc.senseNearbyRobots(senseRadius, friendly);
-      initializeSoldier(rc, nearbyRobots);
+      initializeSoldier(rc, friendlies);
+    }
+
+    if (rc.getHealth() == RobotType.SOLDIER.getMaxHealth(rc.getLevel())) {
+      notRepaired = false;
     }
     //Soldier rules order
     //0: If turn 0, setup home
@@ -228,20 +237,28 @@ public class Soldier extends RobotPlayer {
     //4: Defense pathing/Scout pathing/Attack pathing
 
     if (enemies.length > 0) {
-      MapLocation closestEnemy = null;
-      MapLocation closestAttackingEnemy = null;
       for (int i = enemies.length - 1; i >= 0; i --) {
         RobotInfo enemy = enemies[i];
-        if (closestEnemy == null || enemy.location.distanceSquaredTo(src) < closestEnemy.distanceSquaredTo(src)) {
-          closestEnemy = enemy.location;
-          if ((enemy.getType() == RobotType.SOLDIER || enemy.getType() == RobotType.SAGE 
-          || enemy.getType() == RobotType.WATCHTOWER)) {
-            closestAttackingEnemy = closestEnemy;
+        if (enemy.getLocation().distanceSquaredTo(src) <= radius) {
+          if (closestEnemy == null || enemy.location.distanceSquaredTo(src) < closestEnemy.distanceSquaredTo(src)) {
+            closestEnemy = enemy.location;
+            if ((enemy.getType() == RobotType.SOLDIER || enemy.getType() == RobotType.SAGE 
+            || enemy.getType() == RobotType.WATCHTOWER)) {
+              closestAttackingEnemy = closestEnemy;
+            }
+          } else if ((enemy.getType() == RobotType.SOLDIER || enemy.getType() == RobotType.SAGE 
+          || enemy.getType() == RobotType.WATCHTOWER) && (closestAttackingEnemy == null 
+          || enemy.location.distanceSquaredTo(src) < closestAttackingEnemy.distanceSquaredTo(src))) {
+            closestAttackingEnemy = enemy.location;
           }
-        } else if ((enemy.getType() == RobotType.SOLDIER || enemy.getType() == RobotType.SAGE 
-        || enemy.getType() == RobotType.WATCHTOWER) && (closestAttackingEnemy == null 
-        || enemy.location.distanceSquaredTo(src) < closestAttackingEnemy.distanceSquaredTo(src))) {
-          closestAttackingEnemy = enemy.location;
+        }
+        if ((enemy.getType() == RobotType.SOLDIER || enemy.getType() == RobotType.SAGE 
+          || enemy.getType() == RobotType.WATCHTOWER)) {
+            if (closestAttackingEnemyVision == null || enemy.getLocation().distanceSquaredTo(src) < closestAttackingEnemyVision.distanceSquaredTo(src)) {
+              closestAttackingEnemyVision = enemy.location;
+            }
+            enemyHealth += enemy.getHealth();
+            enemyDamage += enemy.getType().damage;
         }
       }
       MapLocation toAttack = closestEnemy;
@@ -254,11 +271,31 @@ public class Soldier extends RobotPlayer {
       }
     }
 
+    if (friendlies.length > 0) {
+      for (int i = friendlies.length - 1; i >= 0; i --) {
+        RobotInfo robot = friendlies[i];
+        if ((robot.getType() == RobotType.SOLDIER || robot.getType() == RobotType.SAGE || robot.getType() == RobotType.WATCHTOWER)
+            && robot.getLocation().distanceSquaredTo(src) < radius) {
+          friendlyHealth += robot.getHealth();
+          friendlyDamage += robot.getType().damage;
+        }
+      }
+    }
+
     Direction dir = null;
 
-    if ((notRepaired || (rc.getHealth() < RobotType.SOLDIER.getMaxHealth(rc.getLevel()) / 5)) && home != null && rc.getLocation().distanceSquaredTo(home) > 9 && rc.getArchonCount() > 2) { // If low health run home
+    //1: if less than 5 hp go back and repair
+    if ((notRepaired || (rc.getHealth() < RobotType.SOLDIER.getMaxHealth(rc.getLevel()) / 10)) && home != null && rc.getLocation().distanceSquaredTo(home) > 9 && rc.getArchonCount() > 2) { // If low health run home
       dir = Pathfinder.getMoveDir(rc, home);
       notRepaired = true;
+    //2: if we cannot win the fight we are going into kite and run
+    } else if (closestAttackingEnemyVision != null && Math.ceil(friendlyHealth/(double)enemyDamage) < 1.2*Math.ceil(enemyHealth/(double)friendlyDamage)) {
+      Direction opposite = src.directionTo(closestAttackingEnemyVision).opposite();
+      MapLocation runawayTgt = src.add(opposite).add(opposite);
+      runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1), 
+      Math.min(Math.max(0, runawayTgt.y), rc.getMapHeight() - 1));
+      dir = Pathfinder.getMoveDir(rc, runawayTgt);
+    //3: if we are fighting go to nearest best rubble spot to max damage
     } else if (turnsNotKilledStuff < 2) {
       int currRubble = rc.senseRubble(src);
       int minRubble = currRubble;
@@ -276,6 +313,11 @@ public class Soldier extends RobotPlayer {
         }
       }
       dir = Pathfinder.getMoveDir(rc, minRubbleLoc);
+    //4: if there are enemies in a nearby sector go there
+
+    //TODO
+    
+    //5: otherwise, go to nearest scouted enemy archon or guess if no scouted
     } else {
       int distance = Integer.MAX_VALUE;
       MapLocation actualArchonsTarget = null;

@@ -16,8 +16,12 @@ public class Soldier extends RobotPlayer {
   //Role: 2 for defense, 1 for attack, 0 for scout
   static int role;
   static boolean aboveHpThresh = true;
+  static boolean notRepaired = false;
 
   static int getQuadrant(RobotController rc, int x, int y) {
+    if (rc.getHealth() == RobotType.SOLDIER.getMaxHealth(rc.getLevel())) {
+      notRepaired = false;
+    }
     int quad = 0;
     if (x >= rc.getMapWidth() / 2 && y >= rc.getMapHeight() / 2) {
       quad = 1;
@@ -164,8 +168,10 @@ public class Soldier extends RobotPlayer {
     }
 
     Direction dir = null;
-    if (rc.getHealth() < RobotType.SOLDIER.getMaxHealth(rc.getLevel()) / 50 && home != null) { // If low health run home
+
+    if ((notRepaired || (rc.getHealth() < RobotType.SOLDIER.getMaxHealth(rc.getLevel()) / 5)) && home != null && rc.getLocation().distanceSquaredTo(home) > 9 && rc.getArchonCount() > 2) { // If low health run home
       dir = Pathfinder.getMoveDir(rc, home);
+      notRepaired = true;
     } else if (turnsNotKilledStuff < 2) {
       int currRubble = rc.senseRubble(src);
       int minRubble = currRubble;
@@ -205,13 +211,28 @@ public class Soldier extends RobotPlayer {
       } else {
         //Attacks at one of the random spots of a potential enemy base
 
-        MapLocation attackTarget = enemyArchons[(rc.getID() + attackOffset) % (enemyArchons.length)];
+        MapLocation enemyArchon = null;
+        int shortestDist = Integer.MAX_VALUE;
+        for (int i = enemyArchons.length-1; i >= 0; i--) {
+          if (enemyArchons[i] != null) {
+            MapLocation target = enemyArchons[i];
+            if (rc.getLocation().distanceSquaredTo(target) < shortestDist) {
+              enemyArchon = target;
+            }
+          }
+        }
+
+        MapLocation attackTarget = enemyArchon;
 
         //Change target if theres nothing at the target
         if (rc.canSenseLocation(attackTarget)) {
           RobotInfo rb = rc.senseRobotAtLocation(attackTarget);
           if (rb == null || rb.getType() != RobotType.ARCHON) {
-            attackOffset += 1;
+            for (int i = enemyArchons.length-1; i >= 0; i--) {
+              if (enemyArchons[i] == attackTarget) {
+                enemyArchons[i] = null;
+              }
+            }
 
           }
         }
@@ -307,7 +328,6 @@ public class Soldier extends RobotPlayer {
       //thought that it was unecessary to check horizontal when its likely horizontally symmetric, so i just copied another vertical fip instead of using horz
       for (int i = archonCount - 1; i >= 0; i--) {
         enemyArchons[3 * i] = new MapLocation(coords[i].x, rc.getMapHeight() - 1 - coords[i].y); //vert flip
-        enemyArchons[3 * i + 1] = new MapLocation(coords[i].x, rc.getMapHeight() - 1 - coords[i].y); // vert flip
         enemyArchons[3 * i + 2] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, rc.getMapHeight() - 1 - coords[i].y); // 180 rotate
       }
     } else if (quad1 && quad4 || quad2 && quad3) {
@@ -315,7 +335,6 @@ public class Soldier extends RobotPlayer {
       //thought that it was unecessary to check vertical when its likely vertically symmetric, so i just copied another horiz fip instead of using vert
       for (int i = archonCount - 1; i >= 0; i--) {
         enemyArchons[3 * i] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, coords[i].y); //horz flip
-        enemyArchons[3 * i + 1] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, coords[i].y); // horz flip
         enemyArchons[3 * i + 2] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, rc.getMapHeight() - 1 - coords[i].y); // 180 rotate
       }
     } else {

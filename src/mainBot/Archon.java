@@ -40,10 +40,31 @@ public class Archon extends RobotPlayer {
         int enemyCount = 0;
         int scoutedResources = 0;
         int combatSector = 50;
+        int[] friendlyArchonSectors = new int[rc.getArchonCount()];
+        for (int i = friendlyArchonSectors.length-1; i >=0; i--) {
+            friendlyArchonSectors[i] = 50;
+        }
+        for (int i = 48; i >= 0; i--) {
+            int[] sector = Comms.readSectorInfo(rc, i);
+            if (sector[0] == 1) {
+                for (int j = friendlyArchonSectors.length-1; j >=0; j--) {
+                    if (friendlyArchonSectors[j] == 50) {
+                        friendlyArchonSectors[j] = i;
+                        break;
+                    }
+                }
+            }
+        }
+
+        int closestDistToAnyArchon = Integer.MAX_VALUE;
         for (int i = 48; i >= 0; i--) {
             int[] sector = Comms.readSectorInfo(rc, i);
             if (sector[3] > 0) {
-                combatSector = i;
+                for (int j = friendlyArchonSectors.length-1; j >=0; j--) {
+                    if (Comms.sectorMidpt(rc, friendlyArchonSectors[j]).distanceSquaredTo(Comms.sectorMidpt(rc, i)) < closestDistToAnyArchon) {
+                        combatSector = i;
+                    }
+                }
             }
             enemyCount += sector[3];
             scoutedResources += sector[2];
@@ -85,22 +106,52 @@ public class Archon extends RobotPlayer {
                 break;
             }
         }
-        boolean shouldBuildSoldier = true;
-//        System.out.println(combatSector);
-//        System.out.println(rc.getID() + " " + rc.canBuildRobot(RobotType.SOLDIER, dir));
-        if (combatSector < 50 && rc.canBuildRobot(RobotType.SOLDIER, dir)) {
-            MapLocation combatSectorLoc = Comms.sectorMidpt(rc, combatSector);
-            int distToCombatSector = rc.getLocation().distanceSquaredTo(combatSectorLoc);
-            if (rc.getTeamLeadAmount(rc.getTeam()) < 150) {
-                for (int i = 48; i >= 0; i--) {
-                    int[] sector = Comms.readSectorInfo(rc, i);
-                    if (!Comms.withinSector(rc, rc.getLocation(), i) && sector[0] == 1 && Comms.sectorMidpt(rc, i).distanceSquaredTo(combatSectorLoc) < distToCombatSector) {
-                        shouldBuildSoldier = false;
+
+        int soldiersCanBuild = rc.getTeamLeadAmount(rc.getTeam()) / 75;
+        if (soldiersCanBuild > rc.getArchonCount()) {
+            soldiersCanBuild = rc.getArchonCount();
+        }
+
+        boolean shouldBuildSoldier = false;
+        if (combatSector < 50 && soldiersCanBuild < rc.getArchonCount()) {
+            // friendlyArchonSector -> int[] that has the sector num of each friendly archon
+            // closest enemy -> int that has the sector num of the closest enemy
+            // sort friendlyArchonSector based on distance to closest enemy.
+            int[] friendlyArchonSectorsDists = new int[friendlyArchonSectors.length];
+            MapLocation combatMdpt = Comms.sectorMidpt(rc, combatSector);
+            for (int i = friendlyArchonSectors.length - 1; i >= 0; i--) {
+                friendlyArchonSectorsDists[i] = Comms.sectorMidpt(rc, friendlyArchonSectors[i]).distanceSquaredTo(combatMdpt);
+            }
+
+            int n = friendlyArchonSectorsDists.length;
+            for (int i = 1; i < n; ++i) {
+                int key = friendlyArchonSectorsDists[i];
+                int j = i - 1;
+
+                /*
+                 * Move elements of arr[0..i-1], that are greater than key, to one
+                 * position ahead of their current position
+                 */
+                while (j >= 0 && friendlyArchonSectorsDists[j] > key) {
+                    friendlyArchonSectorsDists[j + 1] = friendlyArchonSectorsDists[j];
+                    j = j - 1;
+                }
+                friendlyArchonSectorsDists[j + 1] = key;
+            }
+
+            System.out.println(Arrays.toString(friendlyArchonSectorsDists));
+
+            if (soldiersCanBuild > 0) {
+                for (int i = soldiersCanBuild - 1; i >= 0; i--) {
+                    if (friendlyArchonSectorsDists[(soldiersCanBuild - 1)-i] == Comms.sectorMidpt(rc, Comms.locationToSector(rc, rc.getLocation())).distanceSquaredTo(combatMdpt)) {
+                        shouldBuildSoldier = true;
                     }
                 }
             }
+        } else {
+            shouldBuildSoldier = true;
         }
-
+        System.out.println(shouldBuildSoldier);
         if (soldierCount == 0) {
             soldierCount = 1;
         }
@@ -115,9 +166,6 @@ public class Archon extends RobotPlayer {
             soldierToMinerRatioAdj = -3*friendlyToEnemyRatio + 3;
         }
         int targetMinerCount = (int) (.02 * scoutedResources * (1/(1+.02*turnCount)+.15) * friendlyToEnemyRatio * friendlyToEnemyRatio * .5);
-//        System.out.println("scouted Resources:" + scoutedResources);
-//        System.out.println("feratio:" + friendlyToEnemyRatio);
-//        System.out.println("current Income:" + currentIncome);
         Team friendly = rc.getTeam();
         RobotInfo[] alliedUnits = rc.senseNearbyRobots(senseRadius, friendly);
 
@@ -139,28 +187,20 @@ public class Archon extends RobotPlayer {
         if (roundStartLead >= (rc.getArchonCount() - minerDiff) * 50) {
             spreadCooldown = 0;
         }
-//        System.out.println(rc.getID() + " has " + spreadCooldown);
-//        System.out.println(rc.getID() + " has " + minerDiff + " diff");
-//        System.out.println(rc.getID() + " has " + minerCount + " miner");
-//        System.out.println(friendlyToEnemyRatio);
-//        System.out.println(firstEnemySeen);
-//        System.out.println(rc.canBuildRobot(RobotType.MINER, dir));
         if (!firstEnemySeen && rc.canBuildRobot(RobotType.MINER, dir)) {
             if (spreadCooldown == 0) {
                 rc.buildRobot(RobotType.MINER, dir);
                 minersBuilt++;
                 spreadCooldown+= rc.getArchonCount() -1;
             }
-//            rc.buildRobot(RobotType.MINER, dir);
-//            minersBuilt++;
         }
-        else if ((targetMinerCount < minerCount || (sageCount + soldierCount) * (1.5 + soldierToMinerRatioAdj) < minerCount) &&
+        else if ((targetMinerCount < minerCount || (sageCount + soldierCount) * (1.5 - soldierToMinerRatioAdj) < minerCount) &&
                 rc.canBuildRobot(RobotType.SAGE, dir) && !(rc.getTeamLeadAmount(rc.getTeam())>400 && builderCount < maxBuilderCount && buildersBuiltInARow < 1)) {
             rc.buildRobot(RobotType.SAGE, dir);
             minersBuiltInARow = 0;
             buildersBuiltInARow = 0;
         }
-        else if ((targetMinerCount < minerCount || (sageCount + soldierCount) * (1.5 + soldierToMinerRatioAdj) < minerCount) &&
+        else if ((targetMinerCount < minerCount || (sageCount + soldierCount) * (1.5 - soldierToMinerRatioAdj) < minerCount) &&
                 rc.canBuildRobot(RobotType.SOLDIER, dir) && !(rc.getTeamLeadAmount(rc.getTeam())>400 && builderCount < maxBuilderCount && buildersBuiltInARow < 1)) {
             if (shouldBuildSoldier) {
                 rc.buildRobot(RobotType.SOLDIER, dir);

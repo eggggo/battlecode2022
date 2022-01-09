@@ -346,7 +346,7 @@ public class Soldier extends RobotPlayer {
     aboveHpThresh = currentHpThresh;
   }
 
-  static void initializeSoldier(RobotController rc, RobotInfo[] nearbyRobots) throws GameActionException{
+  static void initializeSoldier(RobotController rc, RobotInfo[] nearbyRobots) throws GameActionException {
     role = 1;
     int archonCount = 4;
     for (int i = nearbyRobots.length - 1; i >= 0; i--) {

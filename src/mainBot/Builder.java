@@ -83,8 +83,10 @@ public class Builder extends RobotPlayer {
         } else if (rc.getID() % 10 == 1 && laboratoriesBuilt == 0 && rc.canBuildRobot(RobotType.LABORATORY, builddir)) {
             if (home != null && rc.getLocation().distanceSquaredTo(home) > 9) {
                 rc.buildRobot(RobotType.LABORATORY, builddir);
+                laboratoriesBuilt++;
             } else if (home == null){
                 rc.buildRobot(RobotType.LABORATORY, builddir);
+                laboratoriesBuilt++;
             }
         } else if (rc.canBuildRobot(RobotType.WATCHTOWER, builddir) && numNearbyWatchtowers < 3 && currentIncome > 30 && rc.getTeamLeadAmount(rc.getTeam()) > 200) {
             if (home != null && rc.getLocation().distanceSquaredTo(home) > 9) {

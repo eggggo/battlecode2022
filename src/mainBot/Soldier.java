@@ -43,8 +43,8 @@ public class Soldier extends RobotPlayer {
   static MapLocation closestEnemy (RobotController rc, boolean hostile){
     MapLocation src = rc.getLocation();
     int radius = rc.getType().actionRadiusSquared;
-    int senseRadius = rc.getType().visionRadiusSquared;
-    Team friendly = rc.getTeam();
+    //int senseRadius = rc.getType().visionRadiusSquared;
+    //Team friendly = rc.getTeam();
     Team opponent = rc.getTeam().opponent();
     RobotInfo[] enemies = rc.senseNearbyRobots(radius, opponent);
 
@@ -71,8 +71,8 @@ public class Soldier extends RobotPlayer {
       }
     }
     return null;
-
   }
+
   //Stay within vision radius, but out of action radius
   //enemy can be called with null, signifying no enemy seen. this robot will try to path towards last seen enemy
   //assume enemy bot location, if specified is within vision radius
@@ -82,8 +82,7 @@ public class Soldier extends RobotPlayer {
     int distance = enemy.distanceSquaredTo(src);
 
     if(distance > rc.getType().actionRadiusSquared && distance < rc.getType().visionRadiusSquared){
-
-      //if distance is between vision and action, maintain distance
+      //if distance is between vision and action, maintain distance (don't move)
       lastSeenClosestEnemy = enemy;
     }
     else if(distance < rc.getType().actionRadiusSquared){

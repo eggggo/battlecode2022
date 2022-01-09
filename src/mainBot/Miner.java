@@ -107,11 +107,17 @@ public class Miner extends RobotPlayer {
         } else {
             int sectorNumber = (int) (Math.random() * 48) + 1;
             int distance = 9999;
+            int archonDistance = 9999;
+            MapLocation closestHomeArchon = null;
             for (int i = 48; i >= 0; i--) {
                 int[] sector = Comms.readSectorInfo(rc, i);
                 if (sector[2] > 30 && rc.getLocation().distanceSquaredTo(sectorMdpts[i]) < distance) {
                     sectorNumber = i;
                     distance = rc.getLocation().distanceSquaredTo(sectorMdpts[i]);
+                }
+                if (sector[0] == 1 && sectorMdpts[i].distanceSquaredTo(src) < archonDistance) {
+                    archonDistance = sectorMdpts[i].distanceSquaredTo(src);
+                    closestHomeArchon = sectorMdpts[i];
                 }
             }
             dir = Pathfinder.getMoveDir(rc, sectorMdpts[sectorNumber]);
@@ -124,6 +130,9 @@ public class Miner extends RobotPlayer {
                 xVector += opposite.dx*(2.0/d);
                 yVector += opposite.dy*(2.0/d);
             }
+            Direction oppositeClosestHomeArchon = src.directionTo(closestHomeArchon).opposite();
+            xVector += oppositeClosestHomeArchon.dx/1.5;
+            yVector += oppositeClosestHomeArchon.dy/1.5;
             MapLocation vectorTgt = src.translate((int)xVector, (int)yVector);
             MapLocation inBounds = new MapLocation(Math.min(Math.max(0, vectorTgt.x), rc.getMapWidth() - 1), 
             Math.min(Math.max(0, vectorTgt.y), rc.getMapHeight() - 1));

@@ -181,14 +181,23 @@ public class Archon extends RobotPlayer {
         }
         int roundStartLead = rc.getTeamLeadAmount(rc.getTeam());
         int minerDiff = minerCount - lastTurnMiners;
+        spreadCooldown -= minerDiff;
+        if (spreadCooldown < 0) {
+            spreadCooldown = 0;
+        }
         if (roundStartLead >= (rc.getArchonCount() - minerDiff) * 50) {
             spreadCooldown = 0;
         }
+        System.out.println("sc: "+spreadCooldown);
+        System.out.println("count" + minerCount);
+        System.out.println("lastTurn" + lastTurnMiners);
+        System.out.println("diff: " +minerDiff);
         if (!firstEnemySeen && rc.canBuildRobot(RobotType.MINER, dir)) {
             if (spreadCooldown == 0) {
                 rc.buildRobot(RobotType.MINER, dir);
                 minersBuilt++;
                 spreadCooldown+= rc.getArchonCount() -1;
+                rc.writeSharedArray(50, rc.readSharedArray(50) + 1);
             }
         }
         else if ((targetMinerCount < minerCount || (sageCount + soldierCount) * (1.5 - soldierToMinerRatioAdj) < minerCount) &&
@@ -196,6 +205,7 @@ public class Archon extends RobotPlayer {
             rc.buildRobot(RobotType.SAGE, dir);
             minersBuiltInARow = 0;
             buildersBuiltInARow = 0;
+            rc.writeSharedArray(51, rc.readSharedArray(51) + 1);
         }
         else if ((targetMinerCount < minerCount || (sageCount + soldierCount) * (1.5 - soldierToMinerRatioAdj) < minerCount) &&
                 rc.canBuildRobot(RobotType.SOLDIER, dir) && !(rc.getTeamLeadAmount(rc.getTeam())>400 && builderCount < maxBuilderCount && buildersBuiltInARow < 1)) {
@@ -205,6 +215,7 @@ public class Archon extends RobotPlayer {
                 soldiersBuiltInARow++;
                 minersBuiltInARow = 0;
                 buildersBuiltInARow = 0;
+                rc.writeSharedArray(51, rc.readSharedArray(51) + 1);
             }
         } else if (soldiersBuilt>0 && rc.canBuildRobot(RobotType.MINER, dir) && (targetMinerCount > minerCount) &&
                 !(rc.getTeamLeadAmount(rc.getTeam())>400 && builderCount < maxBuilderCount && buildersBuiltInARow < 1)) { //&& currentIncome > minerCount * 5
@@ -213,6 +224,8 @@ public class Archon extends RobotPlayer {
             soldiersBuiltInARow = 0;
             minersBuiltInARow++;
             buildersBuiltInARow = 0;
+            lastTurnMiners++;
+            rc.writeSharedArray(50, rc.readSharedArray(50) + 1);
             //Soldiers are built when none of the above conditions are satisfied.
         }
         else if (((soldiersBuilt>0 && currentIncome > 50 && targetMinerCount
@@ -223,6 +236,7 @@ public class Archon extends RobotPlayer {
             soldiersBuiltInARow = 0;
             minersBuiltInARow = 0;
             buildersBuiltInARow++;
+            rc.writeSharedArray(54, rc.readSharedArray(54) + 1);
         }
 //        else if (soldiersBuilt>1 && rc.canBuildRobot(RobotType.MINER, dir)) { //&& currentIncome > minerCount * 5
 //            rc.buildRobot(RobotType.MINER, dir);
@@ -235,13 +249,14 @@ public class Archon extends RobotPlayer {
             turnsNotActioning++;
         }
 
+        lastTurnMiners = rc.readSharedArray(50);
         //Comms stuff
         Comms.updateSector(rc, turnCount);
 //        System.out.println("turnsAFK:" +turnsNotActioning);
+
         turnsAlive++;
-        spreadCooldown -= minerDiff;
-        lastTurnMiners = minerCount;
-        if (spreadCooldown < 0 || roundStartLead >= (rc.getArchonCount()-minerDiff) * 50) {
+
+        if (roundStartLead >= (rc.getArchonCount()-minerDiff) * 50) {
             spreadCooldown = 0;
         }
     }

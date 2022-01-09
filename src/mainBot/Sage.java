@@ -271,6 +271,5 @@ public class Sage extends RobotPlayer{
                 enemyArchons[3 * i + 2] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, rc.getMapHeight() - 1 - coords[i].y); // 180 rotate
             }
         }
-        rc.writeSharedArray(51, rc.readSharedArray(51) + 1);
     }
 }

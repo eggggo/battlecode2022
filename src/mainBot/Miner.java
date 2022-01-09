@@ -29,10 +29,6 @@ public class Miner extends RobotPlayer {
         Direction dir = null;
         MapLocation resources = null;
 
-        if (turnsAlive == 0) {
-            rc.writeSharedArray(50, rc.readSharedArray(50) + 1);
-        }
-
         // Try to mine on squares around us.
         MapLocation me = rc.getLocation();
         for (int dx = -1; dx <= 1; dx++) {

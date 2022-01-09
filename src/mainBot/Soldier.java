@@ -477,6 +477,5 @@ public class Soldier extends RobotPlayer {
       }
     }
     copyEnemyArchons = enemyArchons;
-    rc.writeSharedArray(51, rc.readSharedArray(51) + 1);
   }
 }

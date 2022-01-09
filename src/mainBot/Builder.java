@@ -36,17 +36,20 @@ public class Builder extends RobotPlayer {
             }
         }
 
+        int distanceFromBuilding = Integer.MAX_VALUE;
         //If theres a nearby watchtower or laboratory that needs to be repaired, set the nearbyBulding to it.
         for (int i = nearbyRobots.length - 1; i >= 0; i--) {
-            if (nearbyRobots[i].getType() == RobotType.WATCHTOWER && nearbyRobots[i].getHealth() != RobotType.WATCHTOWER.getMaxHealth(nearbyRobots[i].getLevel())) {
+            if (nearbyRobots[i].getType() == RobotType.WATCHTOWER && nearbyRobots[i].getHealth() !=
+                    RobotType.WATCHTOWER.getMaxHealth(nearbyRobots[i].getLevel()) && rc.getLocation().distanceSquaredTo(nearbyRobots[i].getLocation()) < distanceFromBuilding) {
                 nearbyBuilding = nearbyRobots[i].getLocation();
-                break;
-            } else if (nearbyRobots[i].getType() == RobotType.LABORATORY && nearbyRobots[i].getHealth() != RobotType.LABORATORY.getMaxHealth(nearbyRobots[i].getLevel())) {
+                distanceFromBuilding = rc.getLocation().distanceSquaredTo(nearbyRobots[i].getLocation());
+            } else if (nearbyRobots[i].getType() == RobotType.LABORATORY && nearbyRobots[i].getHealth() !=
+                    RobotType.LABORATORY.getMaxHealth(nearbyRobots[i].getLevel()) && rc.getLocation().distanceSquaredTo(nearbyRobots[i].getLocation()) < distanceFromBuilding) {
                 nearbyBuilding = nearbyRobots[i].getLocation();
-                break;
+                distanceFromBuilding = rc.getLocation().distanceSquaredTo(nearbyRobots[i].getLocation());
             }
         }
-
+        System.out.println(distanceFromBuilding);
         //Tracking nearby Watchtower amount
         for (int i = nearbyRobots.length - 1; i >= 0; i--) {
             if (nearbyRobots[i].getType() == RobotType.WATCHTOWER) {
@@ -88,7 +91,7 @@ public class Builder extends RobotPlayer {
                 rc.buildRobot(RobotType.LABORATORY, builddir);
                 laboratoriesBuilt++;
             }
-        } else if (rc.canBuildRobot(RobotType.WATCHTOWER, builddir) && numNearbyWatchtowers < 3 && currentIncome > 30 && rc.getTeamLeadAmount(rc.getTeam()) > 200) {
+        } else if (rc.canBuildRobot(RobotType.WATCHTOWER, builddir) && currentIncome > 30 && rc.getTeamLeadAmount(rc.getTeam()) > 200) {
             if (home != null && rc.getLocation().distanceSquaredTo(home) > 9) {
                 rc.buildRobot(RobotType.WATCHTOWER, builddir);
             } else if (home == null){

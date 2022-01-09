@@ -139,8 +139,6 @@ public class Archon extends RobotPlayer {
                 friendlyArchonSectorsDists[j + 1] = key;
             }
 
-            System.out.println(Arrays.toString(friendlyArchonSectorsDists));
-
             if (soldiersCanBuild > 0) {
                 for (int i = soldiersCanBuild - 1; i >= 0; i--) {
                     if (friendlyArchonSectorsDists[(soldiersCanBuild - 1)-i] == Comms.sectorMidpt(rc, Comms.locationToSector(rc, rc.getLocation())).distanceSquaredTo(combatMdpt)) {
@@ -151,7 +149,6 @@ public class Archon extends RobotPlayer {
         } else {
             shouldBuildSoldier = true;
         }
-        System.out.println(shouldBuildSoldier);
         if (soldierCount == 0) {
             soldierCount = 1;
         }

@@ -152,6 +152,10 @@ public class Soldier extends RobotPlayer {
         RobotInfo enemy = enemies[i];
         if (closestEnemy == null || enemy.location.distanceSquaredTo(src) < closestEnemy.distanceSquaredTo(src)) {
           closestEnemy = enemy.location;
+          if ((enemy.getType() == RobotType.SOLDIER || enemy.getType() == RobotType.SAGE 
+          || enemy.getType() == RobotType.WATCHTOWER)) {
+            closestAttackingEnemy = closestEnemy;
+          }
         } else if ((enemy.getType() == RobotType.SOLDIER || enemy.getType() == RobotType.SAGE 
         || enemy.getType() == RobotType.WATCHTOWER) && (closestAttackingEnemy == null 
         || enemy.location.distanceSquaredTo(src) < closestAttackingEnemy.distanceSquaredTo(src))) {

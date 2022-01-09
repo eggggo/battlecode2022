@@ -121,6 +121,7 @@ public class Pathfinder {
     }
 
     //return direction away from a location
+    //will try to find a way to maximize distance even if it's not directly away
     static Direction getAwayDir(RobotController rc, MapLocation loc) throws GameActionException {
         MapLocation src = rc.getLocation();
 
@@ -136,6 +137,12 @@ public class Pathfinder {
         }
         else if(rc.canMove(toReturn.rotateRight() )){
             return toReturn.rotateRight();
+        }
+        else if(rc.canMove(toReturn.rotateLeft() )){
+            return toReturn.rotateLeft();
+        }
+        else if(rc.canMove(toReturn.rotateLeft().rotateLeft() )){
+            return toReturn.rotateLeft().rotateLeft();
         }
         else{
             return toReturn.rotateRight().rotateRight();

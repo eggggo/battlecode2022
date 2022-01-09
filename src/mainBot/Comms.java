@@ -15,7 +15,7 @@ public class Comms {
     //52: healthy watchtower count(above 70%)
     //53: healthy sage count(above 70%)
     //54: healthy builder count(above 20% hp)
-    //55: last 6 bits sector of first seen enemy
+    //55: 1 bit first soldier, last 6 bits sector of first seen enemy
     static int locationToSector(RobotController rc, MapLocation loc) {
         int width = rc.getMapWidth();
         int height = rc.getMapHeight();
@@ -72,7 +72,7 @@ public class Comms {
         int lowerX = (int)((sector%7)*xSize);
         int lowerY = (int)((sector/7)*xSize);
         int turnMod = turn % 2;
-        boolean firstSeenEnemy = rc.readSharedArray(55) == 0;
+        boolean firstSeenEnemy = (rc.readSharedArray(55) & 0b111111) == 0;
 
         if (rc.getType() == RobotType.ARCHON) {
             if ((double)rc.getHealth()/rc.getType().getMaxHealth(1) > 0.1) {

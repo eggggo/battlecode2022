@@ -471,5 +471,16 @@ public class Soldier extends RobotPlayer {
       }
     }
     copyEnemyArchons = enemyArchons;
+
+    if (rc.readSharedArray(55) >> 6 == 0) {
+      for (int i = enemyArchons.length - 1; i >= 0; i --) {
+        MapLocation archon = enemyArchons[i];
+        if (archon != null) {
+          int sector = Comms.locationToSector(rc, archon);
+          rc.writeSharedArray(sector, rc.readSharedArray(sector) | 0b0100000000000000);
+        }
+      }
+      rc.writeSharedArray(55, rc.readSharedArray(55) | 0b1000000);
+    }
   }
 }

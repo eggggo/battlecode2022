@@ -81,12 +81,12 @@ public class Sage extends RobotPlayer{
                 toAttack = closestAttackingEnemy;
             }
 
-            if (units >= 5 && rc.canEnvision(AnomalyType.CHARGE)) {
+            if (units >= 9 && rc.canEnvision(AnomalyType.CHARGE)) {
                 rc.envision(AnomalyType.CHARGE);
                 turnsNotKilledStuff = 0;
                 System.out.println("Charged");
                 castNum++;
-            } else if ((archons >= 1 || buildings >= 3) && rc.canEnvision(AnomalyType.FURY)) {
+            } else if ((archons >= 1 || buildings >= 4) && rc.canEnvision(AnomalyType.FURY)) {
                 rc.envision(AnomalyType.FURY);
                 turnsNotKilledStuff = 0;
                 System.out.println("Envisioned");

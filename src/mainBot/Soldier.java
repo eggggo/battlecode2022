@@ -38,8 +38,8 @@ public class Soldier extends RobotPlayer {
     return quad;
   }
 
-  //specify hostile = true if only want to check for hostile enemies. hostile = false means any enemy.
-  //can return null if the enemy specified doesn't exist (such as no attacking enemy)
+  //specify hostile = true if we prefer hostile enemies, but any enemy is fine. hostile = false means any enemy.
+  //can return null no enemies we can see
   static MapLocation closestEnemy (RobotController rc, boolean hostile){
     MapLocation src = rc.getLocation();
     int radius = rc.getType().actionRadiusSquared;
@@ -64,7 +64,10 @@ public class Soldier extends RobotPlayer {
       }
       MapLocation toAttack = closestEnemy;
       if (hostile) {
-        return closestAttackingEnemy;
+        if(closestAttackingEnemy != null){
+          return closestAttackingEnemy;
+        }
+        return closestEnemy;
       }
       else {
         return closestEnemy;
@@ -79,6 +82,26 @@ public class Soldier extends RobotPlayer {
   //Only call when we cannot win a trade but want to retain map/space control
   static MapLocation lastSeenClosestEnemy = null;
   static void kiteVision(RobotController rc, MapLocation src, MapLocation enemy) throws GameActionException {
+    if(enemy == null && lastSeenClosestEnemy == null){
+      //do default action
+    }
+    else if (enemy == null){
+      //move towards lastSeenEnemy
+      Direction dir = Pathfinder.getMoveDir(rc, lastSeenClosestEnemy);
+      if (dir != null && rc.canMove(dir)) {
+        rc.move(dir);
+      }
+
+      //if we see enemies, update lastSeenEnemy to the closest, and attack it.
+      MapLocation closestEnemy = closestEnemy(rc,true);
+      if (closestEnemy != null) {
+        lastSeenClosestEnemy = closestEnemy;
+        if(rc.canAttack(closestEnemy)){
+          rc.attack(closestEnemy);
+        }
+      }
+    }
+
     int distance = enemy.distanceSquaredTo(src);
 
     if(distance > rc.getType().actionRadiusSquared && distance < rc.getType().visionRadiusSquared){
@@ -93,21 +116,9 @@ public class Soldier extends RobotPlayer {
 
       //move away from enemy, update lastSeenEnemy to the closest
       Direction dir = Pathfinder.getAwayDir(rc, lastSeenClosestEnemy);
-
-    }
-    else if(enemy == null){
-
-      //move towards lastSeenEnemy
-      Direction dir = Pathfinder.getMoveDir(rc, lastSeenClosestEnemy);
       if (dir != null && rc.canMove(dir)) {
         rc.move(dir);
       }
-
-      //if we see enemies, update lastSeenEnemy to the closest, and attack it.
-
-    }
-    else{//somehow, function was called with no enemy seen and noLastSeenEnemy.
-      //explore
     }
   }
 
@@ -116,6 +127,28 @@ public class Soldier extends RobotPlayer {
   //Only call when determined we can win a trade
   static MapLocation lastSeenClosestEnemyF = null;
   static void kiteFight(RobotController rc, MapLocation src, MapLocation enemy) throws GameActionException{
+    if(enemy == null && lastSeenClosestEnemy == null){
+      //do default action
+    }
+    else if (enemy == null){
+      //move towards lastSeenEnemy
+      Direction dir = Pathfinder.getMoveDir(rc, lastSeenClosestEnemy);
+      if (dir != null && rc.canMove(dir)) {
+        rc.move(dir);
+      }
+
+      //if we see enemies, update lastSeenEnemy to the closest, and attack it.
+      // out of vision -> in action will only happen if enemy is 25 away and after moving we get to 13 away, but it is possible
+      MapLocation closestEnemy = closestEnemy(rc,true);
+      if (closestEnemy != null) {
+        lastSeenClosestEnemy = closestEnemy;
+        if(rc.canAttack(closestEnemy)){
+          rc.attack(closestEnemy);
+        }
+      }
+
+    }
+
     int distance = enemy.distanceSquaredTo(src);
 
     if(distance > rc.getType().actionRadiusSquared && distance < rc.getType().visionRadiusSquared){
@@ -123,33 +156,50 @@ public class Soldier extends RobotPlayer {
       //if distance is between vision and action, move and attack enemy
       // can always get into action range if in vision range, provided we have enough cooldown
       lastSeenClosestEnemyF = enemy;
-    }
-    else if(distance < rc.getType().actionRadiusSquared){
 
-      //detect how many enemy bots are within action radius vs vision radius.
-      // We want only one enemy bot in action radius at a time, so the action can be either
-      // attack -> not moving or attack -> moving away
-      lastSeenClosestEnemyF = enemy;
-      if (rc.canAttack(enemy)) {
+      Direction dir = Pathfinder.getMoveDir(rc, enemy);
+      if (dir != null && rc.canMove(dir)) {
+        rc.move(dir);
+      }
+
+      if(rc.canAttack(enemy)){
         rc.attack(enemy);
       }
 
 
     }
-    else if(enemy == null){
+    else if(distance < rc.getType().actionRadiusSquared){
+    //ok we are assuming we want to fight here so the below comments will be in decision making
+      //here, we will either attack and move or move and attack depending on rubble
 
-      //move towards lastSeenEnemy
-      Direction dir = Pathfinder.getMoveDir(rc, lastSeenClosestEnemyF);
-      if (dir != null && rc.canMove(dir)) {
-        rc.move(dir);
+      //detect how many enemy bots are within action radius vs vision radius.
+      // We want only one enemy bot in action radius at a time, so the action can be either
+      // attack -> not moving or attack -> moving away
+
+
+      lastSeenClosestEnemyF = enemy;
+
+      Direction dir = Pathfinder.getMoveDir(rc, enemy);
+      if( rc.senseRubble(src) < rc.senseRubble(src.add(dir)) ){
+        //shoot then move
+        if(rc.canAttack(enemy)){
+          rc.attack(enemy);
+        }
+        if (dir != null && rc.canMove(dir)) {
+          rc.move(dir);
+        }
+
       }
+      else{
+        //move then shoot
+        if (dir != null && rc.canMove(dir)) {
+          rc.move(dir);
+        }
+        if(rc.canAttack(enemy)){
+          rc.attack(enemy);
+        }
 
-      //if we see enemies, update lastSeenEnemy to the closest, and attack it.
-      // out of vision -> in action will only happen if enemy is 25 away and after moving we get to 13 away, but it is possible
-
-    }
-    else{//somehow, function was called with no enemy seen and noLastSeenEnemy.
-      //explore
+      }
     }
   }
 

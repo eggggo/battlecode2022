@@ -210,7 +210,6 @@ public class Soldier extends RobotPlayer {
         dir = Pathfinder.getMoveDir(rc, actualArchonsTarget);
       } else {
         //Attacks at one of the random spots of a potential enemy base
-
         MapLocation enemyArchon = null;
         int shortestDist = Integer.MAX_VALUE;
         for (int i = enemyArchons.length-1; i >= 0; i--) {
@@ -233,7 +232,6 @@ public class Soldier extends RobotPlayer {
                 enemyArchons[i] = null;
               }
             }
-
           }
         }
         dir = Pathfinder.getMoveDir(rc, attackTarget);
@@ -246,7 +244,7 @@ public class Soldier extends RobotPlayer {
 
     turnsNotKilledStuff++;
     turnsAlive++;
-    Comms.updateSector(rc);
+    Comms.updateSector(rc, turnCount);
 
     boolean currentHpThresh = (double)rc.getHealth()/rc.getType().getMaxHealth(1) > 0.7;
     if (!currentHpThresh && aboveHpThresh) {

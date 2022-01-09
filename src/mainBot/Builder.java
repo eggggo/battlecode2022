@@ -99,7 +99,7 @@ public class Builder extends RobotPlayer {
         }
 
         //Comms stuff
-        Comms.updateSector(rc);
+        Comms.updateSector(rc, turnCount);
 
         if (turnsAlive == 0) {
             rc.writeSharedArray(54, rc.readSharedArray(54) + 1);

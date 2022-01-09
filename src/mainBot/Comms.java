@@ -7,7 +7,7 @@ import battlecode.common.*;
 public class Comms {
     //revamped comms agane, each index corresponds to a sector on the map where 0 is bottom left and 48 is top right
     //each sector info contains 1 bit home archon presence, 1 bit enemy archon presence, 
-    //8 bit resource count(capped at 255), 6 bit enemy count(capped at 63)
+    //8 bit resource count(capped at 255), 5 bit enemy count(capped at 63), 1 bit turnMod
     //indices 49 through 63 for other info:
     //49: global income
     //50: healthy miner count(above 20% hp)
@@ -36,12 +36,13 @@ public class Comms {
     }
 
     static int[] readSectorInfo(RobotController rc, int sector) throws GameActionException {
-        int[] res = new int[4];
+        int[] res = new int[5];
         int entry = rc.readSharedArray(sector);
         res[0] = (entry >> 15);
         res[1] = (entry >> 14) & 0b1;
         res[2] = (entry >> 6) & 0b11111111;
-        res[3] = entry & 0b111111;
+        res[3] = (entry >> 1) & 0b11111;
+        res[4] = entry & 0b1;
         return res;
     }
 
@@ -55,7 +56,7 @@ public class Comms {
         return (loc.x >= lowerX && loc.x < lowerX + xSize && loc.y >= lowerY && loc.y < lowerY + ySize);
     }
 
-    static void updateSector(RobotController rc) throws GameActionException {
+    static void updateSector(RobotController rc, int turn) throws GameActionException {
         int sector = locationToSector(rc, rc.getLocation());
         int width = rc.getMapWidth();
         int height = rc.getMapHeight();
@@ -69,6 +70,7 @@ public class Comms {
         int[] entry = readSectorInfo(rc, sector);
         int lowerX = (int)((sector%7)*xSize);
         int lowerY = (int)((sector/7)*xSize);
+        int turnMod = turn % 2;
 
         if (rc.getType() == RobotType.ARCHON) {
             if ((double)rc.getHealth()/rc.getType().getMaxHealth(1) > 0.1) {
@@ -96,7 +98,7 @@ public class Comms {
         RobotInfo[] enemies = rc.senseNearbyRobots(range, rc.getTeam().opponent());
 
         for (int i = enemies.length - 1; i >= 0; i --) {
-            if (enemyArchon == 1 && enemyCount >= 63) {
+            if (enemyArchon == 1 && enemyCount >= 31) {
                 break;
             }
             RobotInfo r = enemies[i];
@@ -108,7 +110,7 @@ public class Comms {
                         enemyCount ++;
             }
         }
-        enemyCount = Math.min(63, enemyCount);
+        enemyCount = Math.min(31, enemyCount);
 
         MapLocation[] nearbyLead = rc.senseNearbyLocationsWithLead(range);
         MapLocation[] nearbyGold = rc.senseNearbyLocationsWithGold(range);
@@ -130,7 +132,13 @@ public class Comms {
             resourceCount = Math.min(leadCount, 255);
         }
 
-        int msg = (homeArchon << 15) | (enemyArchon << 14) | (resourceCount << 6) | (enemyCount);
+        if (entry[4] == turnMod) {
+            enemyArchon = Math.max(enemyArchon, entry[1]);
+            enemyCount = Math.max(enemyCount, entry[3]);
+            resourceCount = Math.max(resourceCount, entry[2]);
+        }
+
+        int msg = (homeArchon << 15) | (enemyArchon << 14) | (resourceCount << 6) | (enemyCount << 1) | turnMod;
         rc.writeSharedArray(sector, msg);
     }
 

@@ -176,7 +176,7 @@ public class Sage extends RobotPlayer{
             rc.writeSharedArray(53, rc.readSharedArray(53) + 1);
         }
         turnsNotKilledStuff++;
-        Comms.updateSector(rc);
+        Comms.updateSector(rc, turnCount);
         aboveHpThresh = currentHpThresh;
         turnsAlive ++;
     }

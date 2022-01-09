@@ -32,7 +32,7 @@ public class Archon extends RobotPlayer {
         int builderCount = rc.readSharedArray(54);
         int currentIncome = rc.readSharedArray(49);
         totalIncomeGathered += currentIncome;
-        System.out.println("income: " + currentIncome);
+        //System.out.println("income: " + currentIncome);
         int minerCount = rc.readSharedArray(50);
         int soldierCount = rc.readSharedArray(51);
         int wtCount = rc.readSharedArray(52);
@@ -199,7 +199,7 @@ public class Archon extends RobotPlayer {
         }
 
         //Comms stuff
-        Comms.updateSector(rc);
+        Comms.updateSector(rc, turnCount);
 //        System.out.println("turnsAFK:" +turnsNotActioning);
         turnsAlive++;
         spreadCooldown -= minerDiff;

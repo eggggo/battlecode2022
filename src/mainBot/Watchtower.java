@@ -115,7 +115,7 @@ public class Watchtower extends RobotPlayer{
         }
 
         //Comms stuff
-        Comms.updateSector(rc);
+        Comms.updateSector(rc, turnCount);
 
         boolean currentHpThresh = (double)rc.getHealth()/rc.getType().getMaxHealth(1) > 0.7;
         if (!currentHpThresh && aboveHpThresh) {

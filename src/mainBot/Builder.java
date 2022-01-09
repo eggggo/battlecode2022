@@ -49,7 +49,7 @@ public class Builder extends RobotPlayer {
                 distanceFromBuilding = rc.getLocation().distanceSquaredTo(nearbyRobots[i].getLocation());
             }
         }
-        System.out.println(distanceFromBuilding);
+        //System.out.println(distanceFromBuilding);
         //Tracking nearby Watchtower amount
         for (int i = nearbyRobots.length - 1; i >= 0; i--) {
             if (nearbyRobots[i].getType() == RobotType.WATCHTOWER) {

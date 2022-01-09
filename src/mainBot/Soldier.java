@@ -314,29 +314,20 @@ public class Soldier extends RobotPlayer {
       }
       dir = Pathfinder.getMoveDir(rc, minRubbleLoc);
     //4: if there are enemies in a nearby sector go there
-
-    //TODO
-    
-    //5: otherwise, go to nearest scouted enemy archon or guess if no scouted
+    //otherwise, go to nearest scouted enemy archon or guess if no scouted
     } else {
-      int distance = Integer.MAX_VALUE;
-      MapLocation actualArchonsTarget = null;
       int enemySectorDistance = 9999;
       MapLocation closestEnemies = null;
       for (int i = 48; i >= 0; i--) {
         int[] sector = Comms.readSectorInfo(rc, i);
         MapLocation loc = Comms.sectorMidpt(rc,i);
-        if (sector[3] > 5 && enemySectorDistance > rc.getLocation().distanceSquaredTo(loc)) {
+        if ((sector[3] > 0 || sector[1] == 1) && enemySectorDistance > rc.getLocation().distanceSquaredTo(loc)) {
           closestEnemies = loc;
           enemySectorDistance = rc.getLocation().distanceSquaredTo(loc);
-        } if (sector[1] == 1 && distance > rc.getLocation().distanceSquaredTo(loc)) {
-          actualArchonsTarget = loc;
-          distance = rc.getLocation().distanceSquaredTo(loc);
         }
       }
-
-      if (actualArchonsTarget != null) {
-        dir = Pathfinder.getMoveDir(rc, actualArchonsTarget);
+      if (closestEnemies != null) {
+        dir = Pathfinder.getMoveDir(rc, closestEnemies);
       } else {
         //Attacks at one of the random spots of a potential enemy base
         MapLocation enemyArchon = null;

@@ -38,7 +38,8 @@ public class Soldier extends RobotPlayer {
     return quad;
   }
 
-
+  //specify hostile = true if only want to check for hostile enemies. hostile = false means any enemy.
+  //can return null if the enemy specified doesn't exist (such as no attacking enemy)
   static MapLocation closestEnemy (RobotController rc, boolean hostile){
     MapLocation src = rc.getLocation();
     int radius = rc.getType().actionRadiusSquared;
@@ -54,17 +55,18 @@ public class Soldier extends RobotPlayer {
         RobotInfo enemy = enemies[i];
         if (closestEnemy == null || enemy.location.distanceSquaredTo(src) < closestEnemy.distanceSquaredTo(src)) {
           closestEnemy = enemy.location;
-        } else if ((enemy.getType() == RobotType.SOLDIER || enemy.getType() == RobotType.SAGE
+        }
+        if ((enemy.getType() == RobotType.SOLDIER || enemy.getType() == RobotType.SAGE
                 || enemy.getType() == RobotType.WATCHTOWER) && (closestAttackingEnemy == null
                 || enemy.location.distanceSquaredTo(src) < closestAttackingEnemy.distanceSquaredTo(src))) {
           closestAttackingEnemy = enemy.location;
         }
       }
       MapLocation toAttack = closestEnemy;
-      if (closestAttackingEnemy != null) {
+      if (hostile) {
         return closestAttackingEnemy;
       }
-      else if(closestEnemy != null){
+      else {
         return closestEnemy;
       }
     }

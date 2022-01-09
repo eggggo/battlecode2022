@@ -11,6 +11,7 @@ public class Miner extends RobotPlayer {
     static int prevIncome = 0;
     static boolean aboveHpThresh = true;
     static int turnsAlive = 0;
+    static MapLocation[] sectorMdpts = new MapLocation[49];
     /**
      * Run a single turn for a Miner.
      * This code is wrapped inside the infinite loop in run(), so it is called once per turn.
@@ -28,6 +29,12 @@ public class Miner extends RobotPlayer {
         MapLocation src = rc.getLocation();
         Direction dir = null;
         MapLocation resources = null;
+
+        if (turnsAlive == 0) {
+            for (int i = 48; i >= 0; i --) {
+                sectorMdpts[i] = Comms.sectorMidpt(rc, i);
+            }
+        }
 
         // Try to mine on squares around us.
         MapLocation me = rc.getLocation();
@@ -102,20 +109,20 @@ public class Miner extends RobotPlayer {
             int distance = 9999;
             for (int i = 48; i >= 0; i--) {
                 int[] sector = Comms.readSectorInfo(rc, i);
-                if (sector[2] > 30 && rc.getLocation().distanceSquaredTo(Comms.sectorMidpt(rc, i)) < distance) {
+                if (sector[2] > 30 && rc.getLocation().distanceSquaredTo(sectorMdpts[i]) < distance) {
                     sectorNumber = i;
-                    distance = rc.getLocation().distanceSquaredTo(Comms.sectorMidpt(rc, i));
+                    distance = rc.getLocation().distanceSquaredTo(sectorMdpts[i]);
                 }
             }
-            dir = Pathfinder.getMoveDir(rc, Comms.sectorMidpt(rc, sectorNumber));
+            dir = Pathfinder.getMoveDir(rc, sectorMdpts[sectorNumber]);
             double xVector = dir.dx;
             double yVector = dir.dy;
             for (int i = friendlies.length - 1; i >= 0; i --) {
                 MapLocation friendlyLoc = friendlies[i].getLocation();
                 double d = Math.sqrt(src.distanceSquaredTo(friendlyLoc));
                 Direction opposite = src.directionTo(friendlyLoc).opposite();
-                xVector += opposite.dx*(1.0/d);
-                yVector += opposite.dy*(1.0/d);
+                xVector += opposite.dx*(2.0/d);
+                yVector += opposite.dy*(2.0/d);
             }
             MapLocation vectorTgt = src.translate((int)xVector, (int)yVector);
             MapLocation inBounds = new MapLocation(Math.min(Math.max(0, vectorTgt.x), rc.getMapWidth() - 1), 

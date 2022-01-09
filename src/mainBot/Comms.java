@@ -39,11 +39,11 @@ public class Comms {
     static int[] readSectorInfo(RobotController rc, int sector) throws GameActionException {
         int[] res = new int[5];
         int entry = rc.readSharedArray(sector);
-        res[0] = (entry >> 15);
-        res[1] = (entry >> 14) & 0b1;
-        res[2] = (entry >> 6) & 0b11111111;
-        res[3] = (entry >> 1) & 0b11111;
-        res[4] = entry & 0b1;
+        res[0] = (entry >> 15); //home archon presence
+        res[1] = (entry >> 14) & 0b1; //enemy archon presence
+        res[2] = (entry >> 6) & 0b11111111; //resource count max 255
+        res[3] = (entry >> 1) & 0b11111; //enemy attacker count max 31
+        res[4] = entry & 0b1; //turnMod
         return res;
     }
 

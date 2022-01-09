@@ -289,7 +289,7 @@ public class Soldier extends RobotPlayer {
       dir = Pathfinder.getMoveDir(rc, home);
       notRepaired = true;
     //2: if we cannot win the fight we are going into kite and run
-    } else if (closestAttackingEnemyVision != null && Math.ceil(friendlyHealth/(double)enemyDamage) < 1.2*Math.ceil(enemyHealth/(double)friendlyDamage)) {
+    } else if (closestAttackingEnemyVision != null && Math.ceil(friendlyHealth/(double)enemyDamage) < Math.ceil(1.2*enemyHealth/(double)friendlyDamage)) {
       Direction opposite = src.directionTo(closestAttackingEnemyVision).opposite();
       MapLocation runawayTgt = src.add(opposite).add(opposite);
       runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1), 

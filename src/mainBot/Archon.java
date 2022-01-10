@@ -175,7 +175,7 @@ public class Archon extends RobotPlayer {
             soldierToMinerRatioAdj = -3*friendlyToEnemyRatio + 3;
         }
         int targetMinerCount = (int) (.02 * scoutedResources * (1/(1+.02*turnCount)+.15) * friendlyToEnemyRatio * friendlyToEnemyRatio * .5);
-        System.out.println(targetMinerCount);
+        //System.out.println(targetMinerCount);
         Team friendly = rc.getTeam();
         RobotInfo[] alliedUnits = rc.senseNearbyRobots(senseRadius, friendly);
 
@@ -195,7 +195,7 @@ public class Archon extends RobotPlayer {
         int roundStartLead = rc.getTeamLeadAmount(rc.getTeam());
         int minerDiff = minerCount - lastTurnMiners;
         spreadCooldown -= minerDiff;
-        System.out.println(combatSector);
+        //System.out.println(combatSector);
         if (spreadCooldown < 0) {
             spreadCooldown = 0;
         }

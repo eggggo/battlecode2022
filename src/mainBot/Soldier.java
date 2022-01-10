@@ -297,7 +297,7 @@ public class Soldier extends RobotPlayer {
       Math.min(Math.max(0, runawayTgt.y), rc.getMapHeight() - 1));
       dir = Pathfinder.getMoveDir(rc, runawayTgt);
     //3: if we are fighting go to nearest best rubble spot to max damage
-    } else if (turnsNotKilledStuff < 2) {
+    } else if (closestAttackingEnemyVision != null) {
       int currRubble = rc.senseRubble(src);
       int minRubble = currRubble;
       MapLocation minRubbleLoc = src;

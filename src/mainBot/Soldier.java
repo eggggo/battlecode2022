@@ -14,8 +14,6 @@ public class Soldier extends RobotPlayer {
   static MapLocation[] enemyArchons = null;
   static MapLocation[] copyEnemyArchons = null;
   static int attackLocation = 0;
-  //Role: 2 for defense, 1 for attack, 0 for scout
-  static int role;
   static boolean aboveHpThresh = true;
   static boolean notRepaired = false;
   static MapLocation[] sectorMdpts = new MapLocation[49];
@@ -218,10 +216,9 @@ public class Soldier extends RobotPlayer {
     MapLocation closestAttackingEnemy = null;
     MapLocation closestAttackingEnemyVision = null;
     int enemyHealth = 0;
-    int enemyDamage = 0;
+    double enemyDamage = 0;
     int friendlyHealth = 0;
-    int friendlyDamage = 0;
-    int archonCount = 4;
+    double friendlyDamage = 0;
 
     if (turnsAlive == 0) {
       initializeSoldier(rc, friendlies);
@@ -259,7 +256,7 @@ public class Soldier extends RobotPlayer {
               closestAttackingEnemyVision = enemy.location;
             }
             enemyHealth += enemy.getHealth();
-            enemyDamage += enemy.getType().damage;
+            enemyDamage += enemy.getType().damage/(1.0 + rc.senseRubble(enemy.location)/10.0);
         }
       }
       MapLocation toAttack = closestEnemy;
@@ -278,14 +275,14 @@ public class Soldier extends RobotPlayer {
         if ((robot.getType() == RobotType.SOLDIER || robot.getType() == RobotType.SAGE || robot.getType() == RobotType.WATCHTOWER)
             && robot.getLocation().distanceSquaredTo(src) < radius) {
           friendlyHealth += robot.getHealth();
-          friendlyDamage += robot.getType().damage;
+          friendlyDamage += robot.getType().damage/(1.0 + rc.senseRubble(robot.location)/10.0);
         }
       }
     }
 
     Direction dir = null;
 
-    //1: if less than 5 hp go back and repair
+    //1: if less than 1 hp go back and repair NOT USED CURRENTLY
     if ((notRepaired || (rc.getHealth() < RobotType.SOLDIER.getMaxHealth(rc.getLevel()) / 50)) && home != null && rc.getLocation().distanceSquaredTo(home) > 9 && rc.getArchonCount() > 2) { // If low health run home
       dir = Pathfinder.getMoveDir(rc, home);
       notRepaired = true;
@@ -314,11 +311,37 @@ public class Soldier extends RobotPlayer {
         }
       }
       dir = Pathfinder.getMoveDir(rc, minRubbleLoc);
+    //If no attacking enemies but enemy workers/etc, chase the workers
+    } else if (closestEnemy != null){
+      //far, follow
+      if (src.distanceSquaredTo(closestEnemy) > 5) {
+      dir = Pathfinder.getMoveDir(rc, closestEnemy);
+      //close enough to engage, go to low rubble to fight
+      } else {
+        int currRubble = rc.senseRubble(src);
+        int minRubble = currRubble;
+        MapLocation minRubbleLoc = src;
+        if (currRubble > 0) {
+          for (Direction d : Direction.allDirections()) {
+            MapLocation test = src.add(d);
+            if (rc.onTheMap(test) && !rc.isLocationOccupied(test) && rc.canSenseLocation(test)) {
+              int rubbleHere = rc.senseRubble(test);
+              if (rubbleHere < minRubble) {
+                minRubble = rubbleHere;
+                minRubbleLoc = test;
+              }
+            }
+          }
+        }
+        dir = Pathfinder.getMoveDir(rc, minRubbleLoc);
+      }
     //4: if there are enemies in a nearby sector go there
     //otherwise, go to nearest scouted enemy archon or guess if no scouted
     } else {
       int enemySectorDistance = 9999;
       MapLocation closestEnemies = null;
+      int archonDistance = 9999;
+      MapLocation closestHomeArchon = null;
       for (int i = 48; i >= 0; i--) {
         int[] sector = Comms.readSectorInfo(rc, i);
         MapLocation loc = sectorMdpts[i];
@@ -326,40 +349,31 @@ public class Soldier extends RobotPlayer {
           closestEnemies = loc;
           enemySectorDistance = rc.getLocation().distanceSquaredTo(loc);
         }
+        if (sector[0] == 1 && sectorMdpts[i].distanceSquaredTo(src) < archonDistance) {
+          archonDistance = sectorMdpts[i].distanceSquaredTo(src);
+          closestHomeArchon = sectorMdpts[i];
+        }
       }
       if (closestEnemies != null) {
         dir = Pathfinder.getMoveDir(rc, closestEnemies);
+      //otherwise no enemies reported anywhere, just spread
       } else {
-        //Attacks at one of the random spots of a potential enemy base
-        MapLocation enemyArchon = null;
-        int shortestDist = Integer.MAX_VALUE;
-        for (int i = enemyArchons.length-1; i >= 0; i--) {
-          if (enemyArchons[i] != null) {
-            MapLocation target = enemyArchons[i];
-            if (rc.getLocation().distanceSquaredTo(target) < shortestDist) {
-              enemyArchon = target;
+            double xVector = 0;
+            double yVector = 0;
+            for (int i = friendlies.length - 1; i >= 0; i --) {
+                MapLocation friendlyLoc = friendlies[i].getLocation();
+                double d = Math.sqrt(src.distanceSquaredTo(friendlyLoc));
+                Direction opposite = src.directionTo(friendlyLoc).opposite();
+                xVector += opposite.dx*(2.0/d);
+                yVector += opposite.dy*(2.0/d);
             }
-          }
-        }
-
-        MapLocation attackTarget = enemyArchon;
-
-        //Change target if theres nothing at the target
-        if (attackTarget != null && rc.canSenseLocation(attackTarget)) {
-          RobotInfo rb = rc.senseRobotAtLocation(attackTarget);
-          if (rb == null || rb.getType() != RobotType.ARCHON) {
-            for (int i = enemyArchons.length-1; i >= 0; i--) {
-              if (enemyArchons[i] == attackTarget) {
-                enemyArchons[i] = null;
-              }
-            }
-          }
-        }
-        if (attackTarget != null) {
-          dir = Pathfinder.getMoveDir(rc, attackTarget);
-        } else {
-          enemyArchons = copyEnemyArchons;
-        }
+            Direction oppositeClosestHomeArchon = src.directionTo(closestHomeArchon).opposite();
+            xVector += oppositeClosestHomeArchon.dx/1.5;
+            yVector += oppositeClosestHomeArchon.dy/1.5;
+            MapLocation vectorTgt = src.translate((int)xVector, (int)yVector);
+            MapLocation inBounds = new MapLocation(Math.min(Math.max(0, vectorTgt.x), rc.getMapWidth() - 1), 
+            Math.min(Math.max(0, vectorTgt.y), rc.getMapHeight() - 1));
+            dir = Pathfinder.getMoveDir(rc, inBounds);
       }
     }
     
@@ -382,7 +396,6 @@ public class Soldier extends RobotPlayer {
 
 
   static void initializeSoldier(RobotController rc, RobotInfo[] nearbyRobots) throws GameActionException {
-    role = 1;
     int archonCount = 4;
     for (int i = nearbyRobots.length - 1; i >= 0; i--) {
       if (nearbyRobots[i].getType() == RobotType.ARCHON) {
@@ -390,87 +403,85 @@ public class Soldier extends RobotPlayer {
         break;
       }
     }
-
-
-    //if all of the archons have written to the comms
-    boolean quad1 = false;
-    boolean quad2 = false;
-    boolean quad3 = false;
-    boolean quad4 = false;
-
-    //Create an array for the quads each archon is contained in and another 2D array for each of the archons' coords
-    int currentArchonIndex = 0;
-    int[] quads = new int[archonCount];
-    MapLocation[] coords = new MapLocation[archonCount];
-    for (int i = 48; i >= 0; i--) {
-      int[] sector = Comms.readSectorInfo(rc, i);
-      //System.out.println("sector " + i + ": " + Arrays.toString(sector));
-      MapLocation mdpt = Comms.sectorMidpt(rc, i);
-      sectorMdpts[i] = mdpt;
-      if (sector[0] == 1) {
-        quads[currentArchonIndex] = getQuadrant(rc, mdpt.x, mdpt.y);
-        coords[currentArchonIndex] = mdpt;
-        currentArchonIndex++;
+      //if all of the archons have written to the comms
+      boolean quad1 = false;
+      boolean quad2 = false;
+      boolean quad3 = false;
+      boolean quad4 = false;
+  
+      //Create an array for the quads each archon is contained in and another 2D array for each of the archons' coords
+      int currentArchonIndex = 0;
+      int[] quads = new int[archonCount];
+      MapLocation[] coords = new MapLocation[archonCount];
+      for (int i = 48; i >= 0; i--) {
+        int[] sector = Comms.readSectorInfo(rc, i);
+        //System.out.println("sector " + i + ": " + Arrays.toString(sector));
+        MapLocation mdpt = Comms.sectorMidpt(rc, i);
+        sectorMdpts[i] = mdpt;
+        if (sector[0] == 1) {
+          quads[currentArchonIndex] = getQuadrant(rc, mdpt.x, mdpt.y);
+          coords[currentArchonIndex] = mdpt;
+          currentArchonIndex++;
+        }
       }
-    }
-    archonCount = currentArchonIndex;
-    int[] tempQuads = new int[currentArchonIndex];
-    MapLocation[] tempCoords = new MapLocation[currentArchonIndex];
-    for (int i = currentArchonIndex - 1; i >= 0; i --) {
-        tempQuads[i] = quads[i];
-        tempCoords[i] = coords[i];
-    }
-    quads = tempQuads;
-    coords = tempCoords;
-
-    enemyArchons = new MapLocation[archonCount * 3];
-
-    //initialize whether there's a friendly archon in each quad
-    for (int a = archonCount - 1; a >= 0; a--) {
-      if (quads[a] == 1) {
-        quad1 = true;
-      } else if (quads[a] == 2) {
-        quad2 = true;
-      } else if (quads[a] == 3) {
-        quad3 = true;
-      } else if (quads[a] == 4) {
-        quad4 = true;
+      archonCount = currentArchonIndex;
+      int[] tempQuads = new int[currentArchonIndex];
+      MapLocation[] tempCoords = new MapLocation[currentArchonIndex];
+      for (int i = currentArchonIndex - 1; i >= 0; i --) {
+          tempQuads[i] = quads[i];
+          tempCoords[i] = coords[i];
       }
-    }
-
-    //Predict location of enemy archons based on potential symmetry.  For each archon, I check the 180 rotation,
-    // horizontal flip, and vertical flip.  These are only potential locations, as roataion can occur at other degrees of rotation.
-    if (quad1 && quad3 || quad2 && quad4) {
-      //System.out.println("Rotational Symmetry");
-      for (int i = archonCount - 1; i >= 0; i--) {
-        enemyArchons[3 * i] = new MapLocation(coords[i].x, rc.getMapHeight() - 1 - coords[i].y); //vert flip
-        enemyArchons[3 * i + 1] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, coords[i].y); // horz flip
-        enemyArchons[3 * i + 2] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, rc.getMapHeight() - 1 - coords[i].y); // 180 rotate
+      quads = tempQuads;
+      coords = tempCoords;
+  
+      enemyArchons = new MapLocation[archonCount * 3];
+  
+      //initialize whether there's a friendly archon in each quad
+      for (int a = archonCount - 1; a >= 0; a--) {
+        if (quads[a] == 1) {
+          quad1 = true;
+        } else if (quads[a] == 2) {
+          quad2 = true;
+        } else if (quads[a] == 3) {
+          quad3 = true;
+        } else if (quads[a] == 4) {
+          quad4 = true;
+        }
       }
-
-    } else if (quad1 && quad2 || quad3 && quad4) {
-      //System.out.println("Horizontal Symmetry or Rotational Symmetry");
-      //thought that it was unecessary to check horizontal when its likely horizontally symmetric, so i just copied another vertical fip instead of using horz
-      for (int i = archonCount - 1; i >= 0; i--) {
-        enemyArchons[3 * i] = new MapLocation(coords[i].x, rc.getMapHeight() - 1 - coords[i].y); //vert flip
-        enemyArchons[3 * i + 2] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, rc.getMapHeight() - 1 - coords[i].y); // 180 rotate
+  
+      //Predict location of enemy archons based on potential symmetry.  For each archon, I check the 180 rotation,
+      // horizontal flip, and vertical flip.  These are only potential locations, as roataion can occur at other degrees of rotation.
+      if (quad1 && quad3 || quad2 && quad4) {
+        //System.out.println("Rotational Symmetry");
+        for (int i = archonCount - 1; i >= 0; i--) {
+          enemyArchons[3 * i] = new MapLocation(coords[i].x, rc.getMapHeight() - 1 - coords[i].y); //vert flip
+          enemyArchons[3 * i + 1] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, coords[i].y); // horz flip
+          enemyArchons[3 * i + 2] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, rc.getMapHeight() - 1 - coords[i].y); // 180 rotate
+        }
+  
+      } else if (quad1 && quad2 || quad3 && quad4) {
+        //System.out.println("Horizontal Symmetry or Rotational Symmetry");
+        //thought that it was unecessary to check horizontal when its likely horizontally symmetric, so i just copied another vertical fip instead of using horz
+        for (int i = archonCount - 1; i >= 0; i--) {
+          enemyArchons[3 * i] = new MapLocation(coords[i].x, rc.getMapHeight() - 1 - coords[i].y); //vert flip
+          enemyArchons[3 * i + 2] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, rc.getMapHeight() - 1 - coords[i].y); // 180 rotate
+        }
+      } else if (quad1 && quad4 || quad2 && quad3) {
+        //System.out.println("Vertical Symmetry or Rotational Symmetry");
+        //thought that it was unecessary to check vertical when its likely vertically symmetric, so i just copied another horiz fip instead of using vert
+        for (int i = archonCount - 1; i >= 0; i--) {
+          enemyArchons[3 * i] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, coords[i].y); //horz flip
+          enemyArchons[3 * i + 2] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, rc.getMapHeight() - 1 - coords[i].y); // 180 rotate
+        }
+      } else {
+        //System.out.println("only in one quad so cannot tell");
+        for (int i = archonCount - 1; i >= 0; i--) {
+          enemyArchons[3 * i] = new MapLocation(coords[i].x, rc.getMapHeight() - 1 - coords[i].y); //vert flip
+          enemyArchons[3 * i + 1] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, coords[i].y); // horz flip
+          enemyArchons[3 * i + 2] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, rc.getMapHeight() - 1 - coords[i].y); // 180 rotate
+        }
       }
-    } else if (quad1 && quad4 || quad2 && quad3) {
-      //System.out.println("Vertical Symmetry or Rotational Symmetry");
-      //thought that it was unecessary to check vertical when its likely vertically symmetric, so i just copied another horiz fip instead of using vert
-      for (int i = archonCount - 1; i >= 0; i--) {
-        enemyArchons[3 * i] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, coords[i].y); //horz flip
-        enemyArchons[3 * i + 2] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, rc.getMapHeight() - 1 - coords[i].y); // 180 rotate
-      }
-    } else {
-      //System.out.println("only in one quad so cannot tell");
-      for (int i = archonCount - 1; i >= 0; i--) {
-        enemyArchons[3 * i] = new MapLocation(coords[i].x, rc.getMapHeight() - 1 - coords[i].y); //vert flip
-        enemyArchons[3 * i + 1] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, coords[i].y); // horz flip
-        enemyArchons[3 * i + 2] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, rc.getMapHeight() - 1 - coords[i].y); // 180 rotate
-      }
-    }
-    copyEnemyArchons = enemyArchons;
+      copyEnemyArchons = enemyArchons;
 
     if (rc.readSharedArray(55) >> 6 == 0) {
       for (int i = enemyArchons.length - 1; i >= 0; i --) {

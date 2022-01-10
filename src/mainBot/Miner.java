@@ -81,29 +81,18 @@ public class Miner extends RobotPlayer {
         }
 
         //main control structure
+        //run if enemy attacker in vision
         if (closestAttacker != null) {
             Direction opposite = src.directionTo(closestAttacker).opposite();
             MapLocation runawayTgt = src.add(opposite).add(opposite);
             runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1), 
             Math.min(Math.max(0, runawayTgt.y), rc.getMapHeight() - 1));
             dir = Pathfinder.getMoveDir(rc, runawayTgt);
+        //if good resources nearby go there
         } else if (resources != null) {
             MapLocation tgtResource = resources;
             dir = Pathfinder.getMoveDir(rc, tgtResource);
-            // MapLocation newLocation = new MapLocation(me.x + dir.dx, me.y + dir.dy);
-            // int newNeighbors = 0;
-            // for (int i = 1; i >= -1; i -= 1) {
-            //     for (int j = 1; j >= -1; j -= 1) {
-            //         MapLocation loc = new MapLocation(me.x + dir.dx + i, me.y + dir.dy + j);
-            //         if (rc.onTheMap(loc) && rc.senseRobotAtLocation(loc) != null) {
-            //             newNeighbors += 1;
-            //         }
-            //     }
-            // }
-            // if (newNeighbors >= 3) {
-            //     dir = directions[rng.nextInt(directions.length)];
-            // }
-            //ADD SPREAD STUFF HERE IF TOO MANY NEARBY GUYS
+        //else go to sector with reported resources + spread vector + away from closest archon vector
         } else {
             int sectorNumber = (int) (Math.random() * 48) + 1;
             int distance = 9999;

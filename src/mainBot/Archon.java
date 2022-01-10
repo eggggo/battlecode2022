@@ -11,6 +11,7 @@ public class Archon extends RobotPlayer {
     static int minersBuilt = 0;
     static int soldiersBuilt = 0;
     static int buildersBuilt = 0;
+    static int sagesBuilt = 0;
     static int turnsAlive = 0;
     static int totalIncomeGathered = 0;
     static int turnsNotActioning = 0;
@@ -29,6 +30,11 @@ public class Archon extends RobotPlayer {
     static void runArchon(RobotController rc) throws GameActionException {
 
         int maxBuilderCount = (int) (Math.sqrt(rc.getMapHeight() * rc.getMapWidth())/20) * 15;
+        int addMaxBuilder = rc.getTeamLeadAmount(rc.getTeam())/10000 * 10;
+        if (rc.getTeamLeadAmount(rc.getTeam()) < 400) {
+            maxBuilderCount = 0;
+        }
+        maxBuilderCount += addMaxBuilder;
         int builderCount = rc.readSharedArray(54);
         int currentIncome = rc.readSharedArray(49);
         totalIncomeGathered += currentIncome;
@@ -39,7 +45,8 @@ public class Archon extends RobotPlayer {
         int sageCount = rc.readSharedArray(53);
         int enemyCount = 0;
         int scoutedResources = 0;
-        int combatSector = rc.readSharedArray(55)-1;
+        int combatSector = (rc.readSharedArray(55) & 0b111111)-1;
+
         if (combatSector == -1) {
             combatSector = 50;
         } else {
@@ -117,7 +124,6 @@ public class Archon extends RobotPlayer {
         if (soldiersCanBuild > rc.getArchonCount()) {
             soldiersCanBuild = rc.getArchonCount();
         }
-
         boolean shouldBuildSoldier = false;
         if (combatSector < 50 && soldiersCanBuild < rc.getArchonCount()) {
             // friendlyArchonSector -> int[] that has the sector num of each friendly archon
@@ -169,6 +175,7 @@ public class Archon extends RobotPlayer {
             soldierToMinerRatioAdj = -3*friendlyToEnemyRatio + 3;
         }
         int targetMinerCount = (int) (.02 * scoutedResources * (1/(1+.02*turnCount)+.15) * friendlyToEnemyRatio * friendlyToEnemyRatio * .5);
+        System.out.println(targetMinerCount);
         Team friendly = rc.getTeam();
         RobotInfo[] alliedUnits = rc.senseNearbyRobots(senseRadius, friendly);
 
@@ -188,6 +195,7 @@ public class Archon extends RobotPlayer {
         int roundStartLead = rc.getTeamLeadAmount(rc.getTeam());
         int minerDiff = minerCount - lastTurnMiners;
         spreadCooldown -= minerDiff;
+        System.out.println(combatSector);
         if (spreadCooldown < 0) {
             spreadCooldown = 0;
         }
@@ -208,6 +216,7 @@ public class Archon extends RobotPlayer {
             minersBuiltInARow = 0;
             buildersBuiltInARow = 0;
             rc.writeSharedArray(51, rc.readSharedArray(51) + 1);
+            sagesBuilt++;
         }
         else if ((targetMinerCount < minerCount || (sageCount + soldierCount) * (1.5 - soldierToMinerRatioAdj) < minerCount) &&
                 rc.canBuildRobot(RobotType.SOLDIER, dir) && !(rc.getTeamLeadAmount(rc.getTeam())>400 && builderCount < maxBuilderCount && buildersBuiltInARow < 1)) {
@@ -230,8 +239,8 @@ public class Archon extends RobotPlayer {
             rc.writeSharedArray(50, rc.readSharedArray(50) + 1);
             //Soldiers are built when none of the above conditions are satisfied.
         }
-        else if (((soldiersBuilt>0 && currentIncome > 50 && targetMinerCount
-                < minerCount && friendlyToEnemyRatio > 2.5) ||
+        else if (((targetMinerCount
+                < minerCount && friendlyToEnemyRatio > 3) ||
                 rc.getTeamLeadAmount(rc.getTeam())>400) && rc.canBuildRobot(RobotType.BUILDER, dir) && builderCount < maxBuilderCount && buildersBuiltInARow < 1) {
             rc.buildRobot(RobotType.BUILDER, dir);
             buildersBuilt++;

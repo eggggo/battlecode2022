@@ -286,7 +286,7 @@ public class Soldier extends RobotPlayer {
     Direction dir = null;
 
     //1: if less than 5 hp go back and repair
-    if ((notRepaired || (rc.getHealth() < RobotType.SOLDIER.getMaxHealth(rc.getLevel()) / 10)) && home != null && rc.getLocation().distanceSquaredTo(home) > 9 && rc.getArchonCount() > 2) { // If low health run home
+    if ((notRepaired || (rc.getHealth() < RobotType.SOLDIER.getMaxHealth(rc.getLevel()) / 50)) && home != null && rc.getLocation().distanceSquaredTo(home) > 9 && rc.getArchonCount() > 2) { // If low health run home
       dir = Pathfinder.getMoveDir(rc, home);
       notRepaired = true;
     //2: if we cannot win the fight we are going into kite and run

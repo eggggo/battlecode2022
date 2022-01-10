@@ -202,7 +202,14 @@ public class Archon extends RobotPlayer {
         if (roundStartLead >= (rc.getArchonCount() - minerDiff) * 50) {
             spreadCooldown = 0;
         }
-        if (!firstEnemySeen && rc.canBuildRobot(RobotType.MINER, dir)) {
+
+        MapLocation[] nearbyLead = rc.senseNearbyLocationsWithLead(RobotType.ARCHON.visionRadiusSquared);
+        int totalNearbyLead = 0;
+        for (int i = nearbyLead.length-1; i >=0 ; i--) {
+            totalNearbyLead += rc.senseLead(nearbyLead[i]);
+        }
+
+        if ((!firstEnemySeen || (totalNearbyLead > 50 && totalNearbyLead < 100)) && rc.canBuildRobot(RobotType.MINER, dir)) {
             if (spreadCooldown == 0) {
                 rc.buildRobot(RobotType.MINER, dir);
                 minersBuilt++;

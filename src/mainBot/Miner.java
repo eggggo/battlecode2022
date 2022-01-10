@@ -120,8 +120,8 @@ public class Miner extends RobotPlayer {
                 yVector += opposite.dy*(2.0/d);
             }
             Direction oppositeClosestHomeArchon = src.directionTo(closestHomeArchon).opposite();
-            xVector += oppositeClosestHomeArchon.dx/1.5;
-            yVector += oppositeClosestHomeArchon.dy/1.5;
+            xVector += oppositeClosestHomeArchon.dx;
+            yVector += oppositeClosestHomeArchon.dy;
             MapLocation vectorTgt = src.translate((int)xVector, (int)yVector);
             MapLocation inBounds = new MapLocation(Math.min(Math.max(0, vectorTgt.x), rc.getMapWidth() - 1), 
             Math.min(Math.max(0, vectorTgt.y), rc.getMapHeight() - 1));

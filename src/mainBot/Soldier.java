@@ -200,6 +200,26 @@ public class Soldier extends RobotPlayer {
     }
   }
 
+  static Direction stallOnGoodRubble(RobotController rc) throws GameActionException {
+    MapLocation src = rc.getLocation();
+    int currRubble = rc.senseRubble(src);
+      int minRubble = currRubble;
+      MapLocation minRubbleLoc = src;
+      if (currRubble > 0) {
+        for (Direction d : Direction.allDirections()) {
+          MapLocation test = src.add(d);
+          if (rc.onTheMap(test) && !rc.isLocationOccupied(test) && rc.canSenseLocation(test)) {
+            int rubbleHere = rc.senseRubble(test);
+            if (rubbleHere < minRubble) {
+              minRubble = rubbleHere;
+              minRubbleLoc = test;
+            }
+          }
+        }
+      }
+      return Pathfinder.getMoveDir(rc, minRubbleLoc);
+  }
+
   /**
    * Run a single turn for a Soldier.
    * This code is wrapped inside the infinite loop in run(), so it is called once per turn.
@@ -292,25 +312,16 @@ public class Soldier extends RobotPlayer {
       MapLocation runawayTgt = src.add(opposite).add(opposite);
       runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1), 
       Math.min(Math.max(0, runawayTgt.y), rc.getMapHeight() - 1));
+      //maybe don't go if tgt has bad rubble?
       dir = Pathfinder.getMoveDir(rc, runawayTgt);
+      MapLocation kitingTgt = src.add(dir);
+      if (rc.senseRubble(kitingTgt) > 50) {
+        dir = stallOnGoodRubble(rc);
+      }
     //3: if we are fighting go to nearest best rubble spot to max damage
     } else if (closestAttackingEnemyVision != null) {
-      int currRubble = rc.senseRubble(src);
-      int minRubble = currRubble;
-      MapLocation minRubbleLoc = src;
-      if (currRubble > 0) {
-        for (Direction d : Direction.allDirections()) {
-          MapLocation test = src.add(d);
-          if (rc.onTheMap(test) && !rc.isLocationOccupied(test) && rc.canSenseLocation(test)) {
-            int rubbleHere = rc.senseRubble(test);
-            if (rubbleHere < minRubble) {
-              minRubble = rubbleHere;
-              minRubbleLoc = test;
-            }
-          }
-        }
-      }
-      dir = Pathfinder.getMoveDir(rc, minRubbleLoc);
+      dir = stallOnGoodRubble(rc);
+
     //If no attacking enemies but enemy workers/etc, chase the workers
     } else if (closestEnemy != null){
       //far, follow
@@ -318,22 +329,7 @@ public class Soldier extends RobotPlayer {
       dir = Pathfinder.getMoveDir(rc, closestEnemy);
       //close enough to engage, go to low rubble to fight
       } else {
-        int currRubble = rc.senseRubble(src);
-        int minRubble = currRubble;
-        MapLocation minRubbleLoc = src;
-        if (currRubble > 0) {
-          for (Direction d : Direction.allDirections()) {
-            MapLocation test = src.add(d);
-            if (rc.onTheMap(test) && !rc.isLocationOccupied(test) && rc.canSenseLocation(test)) {
-              int rubbleHere = rc.senseRubble(test);
-              if (rubbleHere < minRubble) {
-                minRubble = rubbleHere;
-                minRubbleLoc = test;
-              }
-            }
-          }
-        }
-        dir = Pathfinder.getMoveDir(rc, minRubbleLoc);
+        dir = stallOnGoodRubble(rc);
       }
     //4: if there are enemies in a nearby sector go there
     //otherwise, go to nearest scouted enemy archon or guess if no scouted
@@ -354,8 +350,16 @@ public class Soldier extends RobotPlayer {
           closestHomeArchon = sectorMdpts[i];
         }
       }
+      //don't go if bad rubble and close
       if (closestEnemies != null) {
         dir = Pathfinder.getMoveDir(rc, closestEnemies);
+        MapLocation togo = src.add(dir);
+        int rubble = rc.senseRubble(togo);
+        //if an enemy present sector is within 40 r^2 and the spot pathfinder returns is not great rubble, wait on good rubble squares
+        //to prevent getting pushed in bad position
+        if (closestEnemies.distanceSquaredTo(src) < 40 && rubble > 50) {
+          dir = stallOnGoodRubble(rc);
+        }
       //otherwise no enemies reported anywhere, just spread
       } else {
             double xVector = 0;

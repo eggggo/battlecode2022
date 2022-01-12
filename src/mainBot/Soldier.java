@@ -256,6 +256,7 @@ public class Soldier extends RobotPlayer {
 
     //focus fire nearest attacker with lowest hp, if no attacker just nearest unit with lowest hp
     int lowestHPTgt = 9999;
+    int lowestHPAttacker = 9999;
     if (enemies.length > 0) {
       for (int i = enemies.length - 1; i >= 0; i --) {
         RobotInfo enemy = enemies[i];
@@ -265,15 +266,16 @@ public class Soldier extends RobotPlayer {
             closestEnemy = enemy.location;
             lowestHPTgt = enemy.getHealth();
             if ((enemy.getType() == RobotType.SOLDIER || enemy.getType() == RobotType.SAGE 
-            || enemy.getType() == RobotType.WATCHTOWER)) {
+            || enemy.getType() == RobotType.WATCHTOWER) && lowestHPAttacker > enemy.getHealth()) {
+              lowestHPAttacker = enemy.getHealth();
               closestAttackingEnemy = closestEnemy;
             }
           } else if ((enemy.getType() == RobotType.SOLDIER || enemy.getType() == RobotType.SAGE 
           || enemy.getType() == RobotType.WATCHTOWER) && (closestAttackingEnemy == null 
           || enemy.location.distanceSquaredTo(src) < closestAttackingEnemy.distanceSquaredTo(src))
-          && enemy.getHealth() < lowestHPTgt) {
+          && enemy.getHealth() < lowestHPAttacker) {
             closestAttackingEnemy = enemy.location;
-            lowestHPTgt = enemy.getHealth();
+            lowestHPAttacker = enemy.getHealth();
           }
         }
         if ((enemy.getType() == RobotType.SOLDIER || enemy.getType() == RobotType.SAGE 

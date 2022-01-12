@@ -34,6 +34,7 @@ public class Miner extends RobotPlayer {
             for (int i = 48; i >= 0; i --) {
                 sectorMdpts[i] = Comms.sectorMidpt(rc, i);
             }
+            //scouting miners
         }
 
         // Try to mine on squares around us.

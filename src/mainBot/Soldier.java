@@ -210,7 +210,7 @@ public class Soldier extends RobotPlayer {
           MapLocation test = src.add(d);
           if (rc.onTheMap(test) && !rc.isLocationOccupied(test) && rc.canSenseLocation(test)) {
             int rubbleHere = rc.senseRubble(test);
-            if (rubbleHere < minRubble) {
+            if (rubbleHere <= minRubble) {
               minRubble = rubbleHere;
               minRubbleLoc = test;
             }
@@ -254,20 +254,26 @@ public class Soldier extends RobotPlayer {
     //3: If an archon is under attack (defense or offense) go help
     //4: Defense pathing/Scout pathing/Attack pathing
 
+    //focus fire nearest attacker with lowest hp, if no attacker just nearest unit with lowest hp
+    int lowestHPTgt = 9999;
     if (enemies.length > 0) {
       for (int i = enemies.length - 1; i >= 0; i --) {
         RobotInfo enemy = enemies[i];
         if (enemy.getLocation().distanceSquaredTo(src) <= radius) {
-          if (closestEnemy == null || enemy.location.distanceSquaredTo(src) < closestEnemy.distanceSquaredTo(src)) {
+          if ((closestEnemy == null || enemy.location.distanceSquaredTo(src) < closestEnemy.distanceSquaredTo(src)) 
+          && enemy.getHealth() < lowestHPTgt) {
             closestEnemy = enemy.location;
+            lowestHPTgt = enemy.getHealth();
             if ((enemy.getType() == RobotType.SOLDIER || enemy.getType() == RobotType.SAGE 
             || enemy.getType() == RobotType.WATCHTOWER)) {
               closestAttackingEnemy = closestEnemy;
             }
           } else if ((enemy.getType() == RobotType.SOLDIER || enemy.getType() == RobotType.SAGE 
           || enemy.getType() == RobotType.WATCHTOWER) && (closestAttackingEnemy == null 
-          || enemy.location.distanceSquaredTo(src) < closestAttackingEnemy.distanceSquaredTo(src))) {
+          || enemy.location.distanceSquaredTo(src) < closestAttackingEnemy.distanceSquaredTo(src))
+          && enemy.getHealth() < lowestHPTgt) {
             closestAttackingEnemy = enemy.location;
+            lowestHPTgt = enemy.getHealth();
           }
         }
         if ((enemy.getType() == RobotType.SOLDIER || enemy.getType() == RobotType.SAGE 
@@ -312,16 +318,30 @@ public class Soldier extends RobotPlayer {
       MapLocation runawayTgt = src.add(opposite).add(opposite);
       runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1), 
       Math.min(Math.max(0, runawayTgt.y), rc.getMapHeight() - 1));
-      //maybe don't go if tgt has bad rubble?
+      //maybe don't go if tgt has bad rubble? definitely need to revise this
       dir = Pathfinder.getMoveDir(rc, runawayTgt);
       MapLocation kitingTgt = src.add(dir);
-      if (rc.senseRubble(kitingTgt) > 50) {
+      if (rc.senseRubble(kitingTgt) > 30) {
         dir = stallOnGoodRubble(rc);
       }
     //3: if we are fighting go to nearest best rubble spot to max damage
+    //swap out with others if low hp
     } else if (closestAttackingEnemyVision != null) {
-      dir = stallOnGoodRubble(rc);
-
+      //shuffle low health behind high health
+      if (rc.getHealth() < 20 && closestAttackingEnemy != null) {
+        Direction opposite = src.directionTo(closestAttackingEnemyVision).opposite();
+        MapLocation runawayTgt = src.add(opposite).add(opposite);
+        runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1), 
+        Math.min(Math.max(0, runawayTgt.y), rc.getMapHeight() - 1));
+        //maybe don't go if tgt has bad rubble? definitely need to revise this
+        dir = Pathfinder.getMoveDir(rc, runawayTgt);
+        MapLocation kitingTgt = src.add(dir);
+        if (rc.senseRubble(kitingTgt) > 30) {
+          dir = stallOnGoodRubble(rc);
+        }
+      } else {
+        dir = stallOnGoodRubble(rc);
+      }
     //If no attacking enemies but enemy workers/etc, chase the workers
     } else if (closestEnemy != null){
       //far, follow
@@ -356,8 +376,8 @@ public class Soldier extends RobotPlayer {
         MapLocation togo = src.add(dir);
         int rubble = rc.senseRubble(togo);
         //if an enemy present sector is within 40 r^2 and the spot pathfinder returns is not great rubble, wait on good rubble squares
-        //to prevent getting pushed in bad position
-        if (closestEnemies.distanceSquaredTo(src) < 40 && rubble > 50) {
+        //to prevent getting pushed in bad position, need to revise this as well
+        if (closestEnemies.distanceSquaredTo(src) < 40 && rubble > 30) {
           dir = stallOnGoodRubble(rc);
         }
       //otherwise no enemies reported anywhere, just spread

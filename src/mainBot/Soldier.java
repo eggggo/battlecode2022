@@ -220,6 +220,11 @@ public class Soldier extends RobotPlayer {
       return Pathfinder.getMoveDir(rc, minRubbleLoc);
   }
 
+  static boolean isHostile(RobotInfo enemy) {
+    return (enemy.getType() == RobotType.SOLDIER || enemy.getType() == RobotType.SAGE 
+    || enemy.getType() == RobotType.WATCHTOWER);
+  }
+
   /**
    * Run a single turn for a Soldier.
    * This code is wrapped inside the infinite loop in run(), so it is called once per turn.
@@ -232,9 +237,8 @@ public class Soldier extends RobotPlayer {
     Team opponent = rc.getTeam().opponent();
     RobotInfo[] enemies = rc.senseNearbyRobots(senseRadius, opponent);
     RobotInfo[] friendlies = rc.senseNearbyRobots(senseRadius, friendly);
-    MapLocation closestEnemy = null;
-    MapLocation closestAttackingEnemy = null;
-    MapLocation closestAttackingEnemyVision = null;
+    RobotInfo attackTgt = null;
+    RobotInfo inVisionTgt = null;
     int enemyHealth = 0;
     double enemyDamage = 0;
     int friendlyHealth = 0;
@@ -256,42 +260,42 @@ public class Soldier extends RobotPlayer {
 
     //focus fire nearest attacker with lowest hp, if no attacker just nearest unit with lowest hp
     int lowestHPTgt = 9999;
-    int lowestHPAttacker = 9999;
     if (enemies.length > 0) {
       for (int i = enemies.length - 1; i >= 0; i --) {
         RobotInfo enemy = enemies[i];
         if (enemy.getLocation().distanceSquaredTo(src) <= radius) {
-          if ((closestEnemy == null || enemy.location.distanceSquaredTo(src) < closestEnemy.distanceSquaredTo(src)) 
-          && enemy.getHealth() < lowestHPTgt) {
-            closestEnemy = enemy.location;
+          if (attackTgt == null) {
             lowestHPTgt = enemy.getHealth();
-            if ((enemy.getType() == RobotType.SOLDIER || enemy.getType() == RobotType.SAGE 
-            || enemy.getType() == RobotType.WATCHTOWER) && lowestHPAttacker > enemy.getHealth()) {
-              lowestHPAttacker = enemy.getHealth();
-              closestAttackingEnemy = closestEnemy;
-            }
-          } else if ((enemy.getType() == RobotType.SOLDIER || enemy.getType() == RobotType.SAGE 
-          || enemy.getType() == RobotType.WATCHTOWER) && (closestAttackingEnemy == null 
-          || enemy.location.distanceSquaredTo(src) < closestAttackingEnemy.distanceSquaredTo(src))
-          && enemy.getHealth() < lowestHPAttacker) {
-            closestAttackingEnemy = enemy.location;
-            lowestHPAttacker = enemy.getHealth();
+            attackTgt = enemy;
+          } else if (isHostile(enemy) && !isHostile(attackTgt)) {
+            lowestHPTgt = enemy.getHealth();
+            attackTgt = enemy;
+          } else if (enemy.getHealth() < lowestHPTgt) {
+            lowestHPTgt = enemy.getHealth();
+            attackTgt = enemy;
+          }
+        } else {
+          if (inVisionTgt == null) {
+            lowestHPTgt = enemy.getHealth();
+            inVisionTgt = enemy;
+          } else if (isHostile(enemy) && !isHostile(inVisionTgt)) {
+            lowestHPTgt = enemy.getHealth();
+            inVisionTgt = enemy;
+          } else if (enemy.getHealth() < lowestHPTgt) {
+            lowestHPTgt = enemy.getHealth();
+            inVisionTgt = enemy;
           }
         }
-        if ((enemy.getType() == RobotType.SOLDIER || enemy.getType() == RobotType.SAGE 
-          || enemy.getType() == RobotType.WATCHTOWER)) {
-            if (closestAttackingEnemyVision == null || enemy.getLocation().distanceSquaredTo(src) < closestAttackingEnemyVision.distanceSquaredTo(src)) {
-              closestAttackingEnemyVision = enemy.location;
-            }
+        if (isHostile(enemy)) {
             enemyHealth += enemy.getHealth();
             enemyDamage += enemy.getType().damage/(1.0 + rc.senseRubble(enemy.location)/10.0);
         }
       }
-      MapLocation toAttack = closestEnemy;
-      if (closestAttackingEnemy != null) {
-        toAttack = closestAttackingEnemy;
+      if (attackTgt != null && inVisionTgt == null) {
+        inVisionTgt = attackTgt;
       }
-      if (toAttack != null && rc.canAttack(toAttack)) {
+      if (attackTgt != null && rc.canAttack(attackTgt.location)) {
+        MapLocation toAttack = attackTgt.location;
         rc.attack(toAttack);
         turnsNotKilledStuff = 0;
       }
@@ -315,8 +319,8 @@ public class Soldier extends RobotPlayer {
       dir = Pathfinder.getMoveDir(rc, home);
       notRepaired = true;
     //2: if we cannot win the fight we are going into kite and run
-    } else if (closestAttackingEnemyVision != null && Math.ceil(friendlyHealth/(double)enemyDamage) < Math.ceil(1.2*enemyHealth/(double)friendlyDamage)) {
-      Direction opposite = src.directionTo(closestAttackingEnemyVision).opposite();
+    } else if ((inVisionTgt != null) && isHostile(inVisionTgt) && Math.ceil(friendlyHealth/(double)enemyDamage) < Math.ceil(1.2*enemyHealth/(double)friendlyDamage)) {
+      Direction opposite = src.directionTo(inVisionTgt.location).opposite();
       MapLocation runawayTgt = src.add(opposite).add(opposite);
       runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1), 
       Math.min(Math.max(0, runawayTgt.y), rc.getMapHeight() - 1));
@@ -328,10 +332,10 @@ public class Soldier extends RobotPlayer {
       }
     //3: if we are fighting go to nearest best rubble spot to max damage
     //swap out with others if low hp
-    } else if (closestAttackingEnemyVision != null) {
+    } else if (attackTgt != null && isHostile(attackTgt)) {
       //shuffle low health behind high health
-      if (rc.getHealth() < 20 && closestAttackingEnemy != null) {
-        Direction opposite = src.directionTo(closestAttackingEnemyVision).opposite();
+      if (rc.getHealth() < 20 && attackTgt != null) {
+        Direction opposite = src.directionTo(attackTgt.location).opposite();
         MapLocation runawayTgt = src.add(opposite).add(opposite);
         runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1), 
         Math.min(Math.max(0, runawayTgt.y), rc.getMapHeight() - 1));
@@ -345,10 +349,10 @@ public class Soldier extends RobotPlayer {
         dir = stallOnGoodRubble(rc);
       }
     //If no attacking enemies but enemy workers/etc, chase the workers
-    } else if (closestEnemy != null){
+    } else if (inVisionTgt != null && !isHostile(inVisionTgt)){
       //far, follow
-      if (src.distanceSquaredTo(closestEnemy) > 5) {
-      dir = Pathfinder.getMoveDir(rc, closestEnemy);
+      if (src.distanceSquaredTo(inVisionTgt.location) > 5) {
+      dir = Pathfinder.getMoveDir(rc, inVisionTgt.location);
       //close enough to engage, go to low rubble to fight
       } else {
         dir = stallOnGoodRubble(rc);

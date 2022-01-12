@@ -348,11 +348,15 @@ public class Soldier extends RobotPlayer {
       } else {
         dir = stallOnGoodRubble(rc);
       }
-    //If no attacking enemies but enemy workers/etc, chase the workers
-    } else if (inVisionTgt != null && !isHostile(inVisionTgt)){
+    //If a target in vision, chase
+    } else if (inVisionTgt != null){
       //far, follow
       if (src.distanceSquaredTo(inVisionTgt.location) > 5) {
       dir = Pathfinder.getMoveDir(rc, inVisionTgt.location);
+      int chaseSpotRubble = rc.senseRubble(src.add(dir));
+      if (chaseSpotRubble > 30) {
+        dir = stallOnGoodRubble(rc);
+      }
       //close enough to engage, go to low rubble to fight
       } else {
         dir = stallOnGoodRubble(rc);
@@ -383,7 +387,7 @@ public class Soldier extends RobotPlayer {
         int rubble = rc.senseRubble(togo);
         //if an enemy present sector is within 40 r^2 and the spot pathfinder returns is not great rubble, wait on good rubble squares
         //to prevent getting pushed in bad position, need to revise this as well
-        if (closestEnemies.distanceSquaredTo(src) < 40 && rubble > 30) {
+        if (closestEnemies.distanceSquaredTo(src) < 100 && rubble > 30) {
           dir = stallOnGoodRubble(rc);
         }
       //otherwise no enemies reported anywhere, just spread

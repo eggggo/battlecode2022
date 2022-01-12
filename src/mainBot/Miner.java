@@ -34,7 +34,6 @@ public class Miner extends RobotPlayer {
             for (int i = 48; i >= 0; i --) {
                 sectorMdpts[i] = Comms.sectorMidpt(rc, i);
             }
-            //scouting miners
         }
 
         // Try to mine on squares around us.
@@ -95,7 +94,7 @@ public class Miner extends RobotPlayer {
             dir = Pathfinder.getMoveDir(rc, tgtResource);
         //else go to sector with reported resources + spread vector + away from closest archon vector
         } else {
-            int sectorNumber = (int) (Math.random() * 48) + 1;
+            int sectorNumber = -1;
             int distance = 9999;
             int archonDistance = 9999;
             MapLocation closestHomeArchon = null;
@@ -110,9 +109,13 @@ public class Miner extends RobotPlayer {
                     closestHomeArchon = sectorMdpts[i];
                 }
             }
-            dir = Pathfinder.getMoveDir(rc, sectorMdpts[sectorNumber]);
-            double xVector = dir.dx;
-            double yVector = dir.dy;
+            double xVector = 0;
+            double yVector = 0;
+            if (sectorNumber != -1) {
+                dir = Pathfinder.getMoveDir(rc, sectorMdpts[sectorNumber]);
+                xVector = 2.0*dir.dx;
+                yVector = 2.0*dir.dy;
+            }
             for (int i = friendlies.length - 1; i >= 0; i --) {
                 MapLocation friendlyLoc = friendlies[i].getLocation();
                 double d = Math.sqrt(src.distanceSquaredTo(friendlyLoc));
@@ -123,7 +126,7 @@ public class Miner extends RobotPlayer {
             Direction oppositeClosestHomeArchon = src.directionTo(closestHomeArchon).opposite();
             xVector += oppositeClosestHomeArchon.dx;
             yVector += oppositeClosestHomeArchon.dy;
-            MapLocation vectorTgt = src.translate((int)xVector, (int)yVector);
+            MapLocation vectorTgt = src.translate((int)Math.ceil(xVector), (int)Math.ceil(yVector));
             MapLocation inBounds = new MapLocation(Math.min(Math.max(0, vectorTgt.x), rc.getMapWidth() - 1), 
             Math.min(Math.max(0, vectorTgt.y), rc.getMapHeight() - 1));
             dir = Pathfinder.getMoveDir(rc, inBounds);

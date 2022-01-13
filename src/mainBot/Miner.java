@@ -90,7 +90,7 @@ public class Miner extends RobotPlayer {
             dir = Pathfinder.getMoveDir(rc, tgtResource);
         //else go to sector with reported resources + spread vector + away from closest archon vector
         } else {
-            int sectorNumber = (int) (Math.random() * 48) + 1;
+            int sectorNumber = (int) (Math.random() * 49);
             int distance = 9999;
             int archonDistance = 9999;
             MapLocation closestHomeArchon = null;

@@ -120,12 +120,13 @@ public class Miner extends RobotPlayer {
                 }
             }
             if (sectorNumber != -1 || friendlies.length > 0) {
-                if (sectorNumber == -1) {
-                    sectorNumber = (int)(Math.random()*49);
+                double xVector = 0;
+                double yVector = 0;
+                if (sectorNumber != -1) {
+                    dir = rc.getLocation().directionTo(sectorMdpts[sectorNumber]);
+                    xVector = 2*dir.dx;
+                    yVector = 2*dir.dy;
                 }
-                dir = rc.getLocation().directionTo(sectorMdpts[sectorNumber]);
-                double xVector = dir.dx;
-                double yVector = dir.dy;
                 for (int i = friendlies.length - 1; i >= 0; i --) {
                     MapLocation friendlyLoc = friendlies[i].getLocation();
                     double d = Math.sqrt(src.distanceSquaredTo(friendlyLoc));

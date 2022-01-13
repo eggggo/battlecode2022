@@ -103,6 +103,9 @@ public class Archon extends RobotPlayer {
         // Building
         Direction center = rc.getLocation().directionTo(new MapLocation(rc.getMapWidth()/2, rc.getMapHeight()/2));
         Direction dir = center;
+        if (center == Direction.CENTER) {
+            dir = Direction.SOUTH;
+        }
         Direction[] directions = new Direction[8];
         for (int i = 7; i>=0;i--) {
             if (i == 7) {
@@ -111,12 +114,13 @@ public class Archon extends RobotPlayer {
                 directions[7-i] = directions[7-i - 1].rotateLeft();
             }
         }
+        double rubble = 200;
         MapLocation src = rc.getLocation();
         for (Direction dire : directions) {
             MapLocation loc = src.add(dire);
-            if (rc.onTheMap(loc) && rc.senseRobotAtLocation(loc) == null) {
+            if (rc.onTheMap(loc) && rc.senseRobotAtLocation(loc) == null && rc.senseRubble(loc) < rubble) {
+                rubble = rc.senseRubble(loc);
                 dir = dire;
-                break;
             }
         }
 
@@ -124,6 +128,7 @@ public class Archon extends RobotPlayer {
         if (soldiersCanBuild > rc.getArchonCount()) {
             soldiersCanBuild = rc.getArchonCount();
         }
+
         boolean shouldBuildSoldier = false;
         if (combatSector < 50 && soldiersCanBuild < rc.getArchonCount()) {
             // friendlyArchonSector -> int[] that has the sector num of each friendly archon
@@ -150,10 +155,15 @@ public class Archon extends RobotPlayer {
                 }
                 friendlyArchonSectorsDists[j + 1] = key;
             }
-
-            if (soldiersCanBuild > 0) {
+            if (soldiersCanBuild > 0 && (soldierCount % 4 < 3 ||  Comms.sectorMidpt(rc, Comms.locationToSector(rc, rc.getLocation())).distanceSquaredTo(combatMdpt) == 0)) {
                 for (int i = soldiersCanBuild - 1; i >= 0; i--) {
                     if (friendlyArchonSectorsDists[(soldiersCanBuild - 1)-i] == Comms.sectorMidpt(rc, Comms.locationToSector(rc, rc.getLocation())).distanceSquaredTo(combatMdpt)) {
+                        shouldBuildSoldier = true;
+                    }
+                }
+            } else if (soldiersCanBuild > 0) {
+                for (int i = soldiersCanBuild - 1; i >= 0; i--) {
+                    if (friendlyArchonSectorsDists[rc.getArchonCount()-1 - i] == Comms.sectorMidpt(rc, Comms.locationToSector(rc, rc.getLocation())).distanceSquaredTo(combatMdpt)) {
                         shouldBuildSoldier = true;
                     }
                 }

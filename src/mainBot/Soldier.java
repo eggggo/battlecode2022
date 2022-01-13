@@ -2,9 +2,6 @@ package mainBot;
 
 import battlecode.common.*;
 
-
-import java.util.*;
-
 public class Soldier extends RobotPlayer {
 
   static int turnsAlive = 0;
@@ -17,6 +14,11 @@ public class Soldier extends RobotPlayer {
   static boolean aboveHpThresh = true;
   static boolean notRepaired = false;
   static MapLocation[] sectorMdpts = new MapLocation[49];
+  static RobotInfo priorTarget = null;
+  static int priorTargetResetTimer = 0;
+  static boolean stall = false;
+  static MapLocation tenTurnUpdate = null;
+  static int tenTurnHealthUpdate = 50;
 
   static int getQuadrant(RobotController rc, int x, int y) {
     int quad = 0;
@@ -36,7 +38,7 @@ public class Soldier extends RobotPlayer {
 
   //specify hostile = true if we prefer hostile enemies, but any enemy is fine. hostile = false means any enemy.
   //can return null no enemies we can see
-  static MapLocation closestEnemy (RobotController rc, boolean hostile){
+  static MapLocation closestEnemy (RobotController rc, boolean hostile) {
     MapLocation src = rc.getLocation();
     int radius = rc.getType().actionRadiusSquared;
     //int senseRadius = rc.getType().visionRadiusSquared;
@@ -243,9 +245,15 @@ public class Soldier extends RobotPlayer {
     double enemyDamage = 0;
     int friendlyHealth = 0;
     double friendlyDamage = 0;
-
+    int rubbleThreshold = rc.senseRubble(rc.getLocation()) + 20;
     if (turnsAlive == 0) {
       initializeSoldier(rc, friendlies);
+    }
+
+    if (turnsAlive % 10 == 0) {
+      stall = tenTurnUpdate != null && tenTurnUpdate.distanceSquaredTo(rc.getLocation()) < 16 && rc.getHealth() == tenTurnHealthUpdate;
+      tenTurnUpdate = rc.getLocation();
+      tenTurnHealthUpdate = rc.getHealth();
     }
 
     if (rc.getHealth() == RobotType.SOLDIER.getMaxHealth(rc.getLevel())) {
@@ -294,6 +302,7 @@ public class Soldier extends RobotPlayer {
       if (attackTgt != null && inVisionTgt == null) {
         inVisionTgt = attackTgt;
       }
+
       if (attackTgt != null && rc.canAttack(attackTgt.location)) {
         MapLocation toAttack = attackTgt.location;
         rc.attack(toAttack);
@@ -312,14 +321,31 @@ public class Soldier extends RobotPlayer {
       }
     }
 
+    if (enemies.length > 0 || priorTargetResetTimer > 5) {
+      priorTarget = inVisionTgt;
+      priorTargetResetTimer = 0;
+    } else {
+      priorTargetResetTimer++;
+    }
+    boolean chase = rc.getHealth() > 3*rc.getType().getMaxHealth(rc.getLevel())/4 && priorTarget != null && inVisionTgt == null;
     Direction dir = null;
-
+    Direction a = null;
+    if (chase) {
+      a = Pathfinder.getMoveDir(rc, priorTarget.getLocation());
+      if (rc.senseRubble(rc.getLocation().add(a)) > rubbleThreshold) {
+        chase = false;
+      }
+    }
     //1: if less than 1 hp go back and repair NOT USED CURRENTLY
-    if ((notRepaired || (rc.getHealth() < RobotType.SOLDIER.getMaxHealth(rc.getLevel()) / 50)) && home != null && rc.getLocation().distanceSquaredTo(home) > 9 && rc.getArchonCount() > 2) { // If low health run home
+    if ((notRepaired || (rc.getHealth() < RobotType.SOLDIER.getMaxHealth(rc.getLevel()) / 5)) && home != null && !stall && rc.getLocation().distanceSquaredTo(home) > 9 && rc.getArchonCount() > 2) { // If low health run home
       dir = Pathfinder.getMoveDir(rc, home);
       notRepaired = true;
+
+    } else if (chase) {
+      dir = a;
+    }
     //2: if we cannot win the fight we are going into kite and run
-    } else if ((inVisionTgt != null) && isHostile(inVisionTgt) && Math.ceil(friendlyHealth/(double)enemyDamage) < Math.ceil(1.2*enemyHealth/(double)friendlyDamage)) {
+    else if ((inVisionTgt != null) && isHostile(inVisionTgt) && Math.ceil(friendlyHealth/(double)enemyDamage) < Math.ceil(1.2*enemyHealth/(double)friendlyDamage)) {
       Direction opposite = src.directionTo(inVisionTgt.location).opposite();
       MapLocation runawayTgt = src.add(opposite).add(opposite);
       runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1), 
@@ -327,7 +353,7 @@ public class Soldier extends RobotPlayer {
       //maybe don't go if tgt has bad rubble? definitely need to revise this
       dir = Pathfinder.getMoveDir(rc, runawayTgt);
       MapLocation kitingTgt = src.add(dir);
-      if (rc.senseRubble(kitingTgt) > 30) {
+      if (rc.senseRubble(kitingTgt) > rubbleThreshold) {
         dir = stallOnGoodRubble(rc);
       }
     //3: if we are fighting go to nearest best rubble spot to max damage
@@ -342,7 +368,7 @@ public class Soldier extends RobotPlayer {
         //maybe don't go if tgt has bad rubble? definitely need to revise this
         dir = Pathfinder.getMoveDir(rc, runawayTgt);
         MapLocation kitingTgt = src.add(dir);
-        if (rc.senseRubble(kitingTgt) > 30) {
+        if (rc.senseRubble(kitingTgt) > rubbleThreshold) {
           dir = stallOnGoodRubble(rc);
         }
       } else {
@@ -354,7 +380,7 @@ public class Soldier extends RobotPlayer {
       if (src.distanceSquaredTo(inVisionTgt.location) > 5) {
       dir = Pathfinder.getMoveDir(rc, inVisionTgt.location);
       int chaseSpotRubble = rc.senseRubble(src.add(dir));
-      if (chaseSpotRubble > 30) {
+      if (chaseSpotRubble > rubbleThreshold) {
         dir = stallOnGoodRubble(rc);
       }
       //close enough to engage, go to low rubble to fight
@@ -387,7 +413,7 @@ public class Soldier extends RobotPlayer {
         int rubble = rc.senseRubble(togo);
         //if an enemy present sector is within 40 r^2 and the spot pathfinder returns is not great rubble, wait on good rubble squares
         //to prevent getting pushed in bad position, need to revise this as well
-        if (closestEnemies.distanceSquaredTo(src) < 100 && rubble > 30) {
+        if (closestEnemies.distanceSquaredTo(src) < 100 && rubble > rubbleThreshold && !stall) {
           dir = stallOnGoodRubble(rc);
         }
       //otherwise no enemies reported anywhere, just spread
@@ -488,9 +514,7 @@ public class Soldier extends RobotPlayer {
       if (quad1 && quad3 || quad2 && quad4) {
         //System.out.println("Rotational Symmetry");
         for (int i = archonCount - 1; i >= 0; i--) {
-          enemyArchons[3 * i] = new MapLocation(coords[i].x, rc.getMapHeight() - 1 - coords[i].y); //vert flip
-          enemyArchons[3 * i + 1] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, coords[i].y); // horz flip
-          enemyArchons[3 * i + 2] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, rc.getMapHeight() - 1 - coords[i].y); // 180 rotate
+          enemyArchons[3 * i] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, rc.getMapHeight() - 1 - coords[i].y); // 180 rotate
         }
   
       } else if (quad1 && quad2 || quad3 && quad4) {

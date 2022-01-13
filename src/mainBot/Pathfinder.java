@@ -56,7 +56,6 @@ public class Pathfinder {
             int tgtRubble = bot.senseRubble(immTgt);
             costs[immTgt.x - src.x + 2][immTgt.y - src.y + 2] = tgtRubble;
             processQ.add(immTgt);
-            bot.setIndicatorString(tgt.toString());
 
             Node<MapLocation> h = processQ.head;
 

@@ -1,5 +1,7 @@
 package mainBot;
 
+import org.apache.commons.io.input.BoundedInputStream;
+
 import battlecode.common.*;
 
 public class Miner extends RobotPlayer {
@@ -8,6 +10,10 @@ public class Miner extends RobotPlayer {
     static boolean aboveHpThresh = true;
     static int turnsAlive = 0;
     static MapLocation[] sectorMdpts = new MapLocation[49];
+    static Direction bounceDir = null;
+    static int maxTravelDistance = 100;
+    static Direction spawnDir = null;
+    static int sectorNumber = -1;
     /**
      * Run a single turn for a Miner.
      * This code is wrapped inside the infinite loop in run(), so it is called once per turn.
@@ -30,6 +36,15 @@ public class Miner extends RobotPlayer {
             for (int i = 48; i >= 0; i --) {
                 sectorMdpts[i] = Comms.sectorMidpt(rc, i);
             }
+            RobotInfo[] spawn = rc.senseNearbyRobots(2, friendly);
+            for (int i = spawn.length - 1; i >= 0; i --) {
+                RobotInfo robot = spawn[i];
+                if (robot.getType() == RobotType.ARCHON) {
+                    spawnDir = rc.getLocation().directionTo(robot.location).opposite();
+                    break;
+                }
+            }
+            bounceDir = spawnDir;
         }
 
         // Try to mine on squares around us.
@@ -84,46 +99,55 @@ public class Miner extends RobotPlayer {
             runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1), 
             Math.min(Math.max(0, runawayTgt.y), rc.getMapHeight() - 1));
             dir = Pathfinder.getMoveDir(rc, runawayTgt);
+            bounceDir = dir;
         //if good resources nearby go there
         } else if (resources != null) {
             MapLocation tgtResource = resources;
             dir = Pathfinder.getMoveDir(rc, tgtResource);
         //else go to sector with reported resources + spread vector + away from closest archon vector
         } else {
-            int sectorNumber = (int) (Math.random() * 49);
-            int distance = 9999;
-            int archonDistance = 9999;
-            MapLocation closestHomeArchon = null;
-            for (int i = 48; i >= 0; i--) {
-                int[] sector = Comms.readSectorInfo(rc, i);
-                if (sector[2] > 30 && rc.getLocation().distanceSquaredTo(sectorMdpts[i]) < distance) {
-                    sectorNumber = i;
-                    distance = rc.getLocation().distanceSquaredTo(sectorMdpts[i]);
-                }
-                if (sector[0] == 1 && sectorMdpts[i].distanceSquaredTo(src) < archonDistance) {
-                    archonDistance = sectorMdpts[i].distanceSquaredTo(src);
-                    closestHomeArchon = sectorMdpts[i];
+            if (turnCount % 2 == 0) {
+                sectorNumber = -1;
+                int distance = 9999;
+                for (int i = 48; i >= 0; i--) {
+                    int[] sector = Comms.readSectorInfo(rc, i);
+                    int distanceToSector = rc.getLocation().distanceSquaredTo(sectorMdpts[i]);
+                    if (sector[2] > 30 && distanceToSector < distance
+                        && maxTravelDistance >= distanceToSector) {
+                        sectorNumber = i;
+                        distance = distanceToSector;
+                    }
                 }
             }
-            dir = Pathfinder.getMoveDir(rc, sectorMdpts[sectorNumber]);
-            double xVector = dir.dx;
-            double yVector = dir.dy;
-            for (int i = friendlies.length - 1; i >= 0; i --) {
-                MapLocation friendlyLoc = friendlies[i].getLocation();
-                double d = Math.sqrt(src.distanceSquaredTo(friendlyLoc));
-                Direction opposite = src.directionTo(friendlyLoc).opposite();
-                xVector += opposite.dx*(2.0/d);
-                yVector += opposite.dy*(2.0/d);
+            if (sectorNumber != -1 || friendlies.length > 0) {
+                if (sectorNumber == -1) {
+                    sectorNumber = (int)(Math.random()*49);
+                }
+                dir = rc.getLocation().directionTo(sectorMdpts[sectorNumber]);
+                double xVector = dir.dx;
+                double yVector = dir.dy;
+                for (int i = friendlies.length - 1; i >= 0; i --) {
+                    MapLocation friendlyLoc = friendlies[i].getLocation();
+                    double d = Math.sqrt(src.distanceSquaredTo(friendlyLoc));
+                    Direction opposite = src.directionTo(friendlyLoc).opposite();
+                    xVector += opposite.dx*(4.0/d);
+                    yVector += opposite.dy*(4.0/d);
+                }
+                MapLocation vectorTgt = src.translate((int)Math.ceil(xVector), (int)Math.ceil(yVector));
+                MapLocation inBounds = new MapLocation(Math.min(Math.max(0, vectorTgt.x), rc.getMapWidth() - 1), 
+                Math.min(Math.max(0, vectorTgt.y), rc.getMapHeight() - 1));
+                dir = Pathfinder.getMoveDir(rc, inBounds);
+                bounceDir = dir;
+            } else {
+                if (!rc.onTheMap(src.add(bounceDir))) {
+                    bounceDir = bounceDir.opposite();
+                }
+                MapLocation tgt = src.add(bounceDir).add(bounceDir);
+                MapLocation inBounds = new MapLocation(Math.min(Math.max(0, tgt.x), rc.getMapWidth() - 1), 
+                Math.min(Math.max(0, tgt.y), rc.getMapHeight() - 1));
+                dir = Pathfinder.getMoveDir(rc, inBounds);
             }
-            Direction oppositeClosestHomeArchon = src.directionTo(closestHomeArchon).opposite();
-            xVector += oppositeClosestHomeArchon.dx;
-            yVector += oppositeClosestHomeArchon.dy;
-            MapLocation vectorTgt = src.translate((int)xVector, (int)yVector);
-            MapLocation inBounds = new MapLocation(Math.min(Math.max(0, vectorTgt.x), rc.getMapWidth() - 1), 
-            Math.min(Math.max(0, vectorTgt.y), rc.getMapHeight() - 1));
-            dir = Pathfinder.getMoveDir(rc, inBounds);
         }
-
         if (rc.canMove(dir)) {
             rc.move(dir);
         }

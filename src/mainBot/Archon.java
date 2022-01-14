@@ -267,7 +267,7 @@ public class Archon extends RobotPlayer {
         for (int i = nearbyLead.length-1; i >=0 ; i--) {
             totalNearbyLead += rc.senseLead(nearbyLead[i]);
         }
-        System.out.println(scoutedResources);
+        //System.out.println(scoutedResources);
         if (!enemyArchonNearby && (minerCount < 4 || (scoutedResources/2 > minerCount && soldierCount >= 2 && (sageCount + soldierCount) * (1.5 - soldierToMinerRatioAdj) > minerCount))) { //|| (soldiersBuiltInARow > 2 && minerCount < 15)
             if (rc.canBuildRobot(RobotType.MINER, dir)) {
                 rc.buildRobot(RobotType.MINER,dir);

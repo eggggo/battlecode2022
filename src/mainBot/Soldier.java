@@ -246,6 +246,7 @@ public class Soldier extends RobotPlayer {
     int friendlyHealth = 0;
     double friendlyDamage = 0;
     int rubbleThreshold = rc.senseRubble(rc.getLocation()) + 20;
+    int soldierCount = rc.readSharedArray(51);
     if (turnsAlive == 0) {
       initializeSoldier(rc, friendlies);
     }
@@ -310,6 +311,7 @@ public class Soldier extends RobotPlayer {
       }
     }
 
+    double repairThreshold = -.0444* soldierCount + .64444;
     if (friendlies.length > 0) {
       for (int i = friendlies.length - 1; i >= 0; i --) {
         RobotInfo robot = friendlies[i];
@@ -337,7 +339,8 @@ public class Soldier extends RobotPlayer {
       }
     }
     //1: if less than 1 hp go back and repair NOT USED CURRENTLY
-    if ((notRepaired || (rc.getHealth() < RobotType.SOLDIER.getMaxHealth(rc.getLevel()) / 5)) && home != null && !stall && rc.getLocation().distanceSquaredTo(home) > 9 && rc.getArchonCount() > 2) { // If low health run home
+    if ((notRepaired || (rc.getHealth() < RobotType.SOLDIER.getMaxHealth(rc.getLevel())/5)) && home != null
+            && !stall && rc.getLocation().distanceSquaredTo(home) > 9 && (rc.getArchonCount() > 2)) { // If low health run home
       dir = Pathfinder.getMoveDir(rc, home);
       notRepaired = true;
 

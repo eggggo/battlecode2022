@@ -46,6 +46,8 @@ public class Archon extends RobotPlayer {
         int enemyCount = 0;
         int scoutedResources = 0;
         int combatSector = (rc.readSharedArray(55) & 0b111111)-1;
+        boolean enemyArchonNearby = false;
+        int mapArea = rc.getMapHeight() * rc.getMapWidth();
 
         if (combatSector == -1) {
             combatSector = 50;
@@ -93,7 +95,8 @@ public class Archon extends RobotPlayer {
                 RobotInfo unit = opponentUnits[i];
                 if (unit.getType() == RobotType.SOLDIER) {
                     enemyCount++;
-                    break;
+                } else if (unit.getType() == RobotType.ARCHON) {
+                    enemyArchonNearby = true;
                 }
             }
         }
@@ -118,9 +121,14 @@ public class Archon extends RobotPlayer {
         MapLocation src = rc.getLocation();
         for (Direction dire : directions) {
             MapLocation loc = src.add(dire);
-            if (rc.onTheMap(loc) && rc.senseRobotAtLocation(loc) == null && rc.senseRubble(loc) < rubble) {
-                rubble = rc.senseRubble(loc);
-                dir = dire;
+            if (rc.onTheMap(loc) && rc.senseRobotAtLocation(loc) == null) {
+                if (rc.senseRubble(loc) < rubble && mapArea > 900) {
+                    rubble = rc.senseRubble(loc);
+                    dir = dire;
+                } else if (mapArea <= 900){
+                    dir = dire;
+                    break;
+                }
             }
         }
 
@@ -218,8 +226,7 @@ public class Archon extends RobotPlayer {
         for (int i = nearbyLead.length-1; i >=0 ; i--) {
             totalNearbyLead += rc.senseLead(nearbyLead[i]);
         }
-
-        if ((!firstEnemySeen || (totalNearbyLead > 50 && totalNearbyLead < 100)) && rc.canBuildRobot(RobotType.MINER, dir)) {
+        if (!enemyArchonNearby && (!firstEnemySeen || (totalNearbyLead > 50 && totalNearbyLead < 100)) && rc.canBuildRobot(RobotType.MINER, dir)) {
             if (spreadCooldown == 0) {
                 rc.buildRobot(RobotType.MINER, dir);
                 minersBuilt++;
@@ -235,8 +242,9 @@ public class Archon extends RobotPlayer {
             rc.writeSharedArray(51, rc.readSharedArray(51) + 1);
             sagesBuilt++;
         }
-        else if ((targetMinerCount < minerCount || (sageCount + soldierCount) * (1.5 - soldierToMinerRatioAdj) < minerCount) &&
-                rc.canBuildRobot(RobotType.SOLDIER, dir) && !(rc.getTeamLeadAmount(rc.getTeam())>400 && builderCount < maxBuilderCount && buildersBuiltInARow < 1)) {
+        else if (((((targetMinerCount < minerCount || (sageCount + soldierCount) * (1.5 - soldierToMinerRatioAdj) < minerCount)
+                && !(rc.getTeamLeadAmount(rc.getTeam())>400 && builderCount < maxBuilderCount && buildersBuiltInARow < 1) )
+                || enemyArchonNearby)) && rc.canBuildRobot(RobotType.SOLDIER, dir)) {
             if (shouldBuildSoldier) {
                 rc.buildRobot(RobotType.SOLDIER, dir);
                 soldiersBuilt++;
@@ -245,7 +253,7 @@ public class Archon extends RobotPlayer {
                 buildersBuiltInARow = 0;
                 rc.writeSharedArray(51, rc.readSharedArray(51) + 1);
             }
-        } else if (soldiersBuilt>0 && rc.canBuildRobot(RobotType.MINER, dir) && (targetMinerCount > minerCount) &&
+        } else if (!enemyArchonNearby && soldiersBuilt>0 && rc.canBuildRobot(RobotType.MINER, dir) && (targetMinerCount > minerCount) &&
                 !(rc.getTeamLeadAmount(rc.getTeam())>400 && builderCount < maxBuilderCount && buildersBuiltInARow < 1)) { //&& currentIncome > minerCount * 5
             rc.buildRobot(RobotType.MINER, dir);
             minersBuilt++;
@@ -256,7 +264,7 @@ public class Archon extends RobotPlayer {
             rc.writeSharedArray(50, rc.readSharedArray(50) + 1);
             //Soldiers are built when none of the above conditions are satisfied.
         }
-        else if (((targetMinerCount
+        else if (!enemyArchonNearby && ((targetMinerCount
                 < minerCount && friendlyToEnemyRatio > 3) ||
                 rc.getTeamLeadAmount(rc.getTeam())>400) && rc.canBuildRobot(RobotType.BUILDER, dir) && builderCount < maxBuilderCount && buildersBuiltInARow < 1) {
             rc.buildRobot(RobotType.BUILDER, dir);

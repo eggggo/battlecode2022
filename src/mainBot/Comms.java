@@ -7,7 +7,7 @@ import battlecode.common.*;
 public class Comms {
     //revamped comms agane, each index corresponds to a sector on the map where 0 is bottom left and 48 is top right
     //each sector info contains 1 bit home archon presence, 1 bit enemy archon presence, 
-    //8 bit resource count(capped at 255), 5 bit enemy count(capped at 63), 1 bit turnMod
+    //6 bit resource patch count(capped at 61), 5 bit enemy count(capped at 31), 1 bit turnMod, (2 bits free)
     //indices 49 through 63 for other info:
     //49: global income
     //50: healthy miner count(above 20% hp)
@@ -41,9 +41,9 @@ public class Comms {
         int entry = rc.readSharedArray(sector);
         res[0] = (entry >> 15); //home archon presence
         res[1] = (entry >> 14) & 0b1; //enemy archon presence
-        res[2] = (entry >> 6) & 0b11111111; //resource count max 255
-        res[3] = (entry >> 1) & 0b11111; //enemy attacker count max 31
-        res[4] = entry & 0b1; //turnMod
+        res[2] = (entry >> 8) & 0b111111; //resource count max 63
+        res[3] = (entry >> 3) & 0b11111; //enemy attacker count max 31
+        res[4] = (entry >> 2) & 0b1; //turnMod
         return res;
     }
 
@@ -120,24 +120,12 @@ public class Comms {
         }
         enemyCount = Math.min(31, enemyCount);
 
-        MapLocation[] nearbyLead = rc.senseNearbyLocationsWithLead(range);
+        MapLocation[] nearbyLead = rc.senseNearbyLocationsWithLead(range, 6);
         MapLocation[] nearbyGold = rc.senseNearbyLocationsWithGold(range);
         if (nearbyGold.length > 0) {
-            resourceCount = 255;
+            resourceCount = 63;
         } else {
-            int leadCount = 0;
-            for (int i = nearbyLead.length - 1; i >= 0; i --) {
-                int locX = nearbyLead[i].x;
-                int locY = nearbyLead[i].y;
-                if (leadCount >= 255 || nearbyLead.length > 20) {
-                    leadCount = 255;
-                    break;
-                }
-                if (locX >= lowerX && locX < lowerX + xSize && locY >= lowerY && locY < lowerY + ySize) {
-                    leadCount += rc.senseLead(nearbyLead[i]);
-                }
-            }
-            resourceCount = Math.min(leadCount, 255);
+            resourceCount = Math.min(63, nearbyLead.length);
         }
 
         if (entry[4] == turnMod) {
@@ -146,7 +134,8 @@ public class Comms {
             resourceCount = Math.max(resourceCount, entry[2]);
         }
 
-        int msg = (homeArchon << 15) | (enemyArchon << 14) | (resourceCount << 6) | (enemyCount << 1) | turnMod;
+        int msg = (homeArchon << 15) | (enemyArchon << 14) | (resourceCount << 8) | (enemyCount << 3) | (turnMod << 2);
+        rc.setIndicatorString("resource patches: " + resourceCount);
         rc.writeSharedArray(sector, msg);
     }
 

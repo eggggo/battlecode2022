@@ -112,7 +112,7 @@ public class Miner extends RobotPlayer {
                 for (int i = 48; i >= 0; i--) {
                     int[] sector = Comms.readSectorInfo(rc, i);
                     int distanceToSector = rc.getLocation().distanceSquaredTo(sectorMdpts[i]);
-                    if (sector[2] > 30 && distanceToSector < distance
+                    if (sector[2] > 3 && distanceToSector < distance
                         && maxTravelDistance >= distanceToSector) {
                         sectorNumber = i;
                         distance = distanceToSector;

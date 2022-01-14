@@ -233,7 +233,7 @@ public class Archon extends RobotPlayer {
         if (friendlyToEnemyRatio <= 3) {
             soldierToMinerRatioAdj = -3*friendlyToEnemyRatio + 3;
         }
-        int targetMinerCount = (int) (.02 * scoutedResources * (1/(1+.02*turnCount)+.15) * friendlyToEnemyRatio * friendlyToEnemyRatio * .5);
+        int targetMinerCount = (int) (20*(1/(1+.02*(100+turnCount))+.15) * friendlyToEnemyRatio * friendlyToEnemyRatio);
         //System.out.println(targetMinerCount);
         Team friendly = rc.getTeam();
         RobotInfo[] alliedUnits = rc.senseNearbyRobots(senseRadius, friendly);
@@ -267,7 +267,8 @@ public class Archon extends RobotPlayer {
         for (int i = nearbyLead.length-1; i >=0 ; i--) {
             totalNearbyLead += rc.senseLead(nearbyLead[i]);
         }
-        if (!enemyArchonNearby && minerCount < 4) { //|| (soldiersBuiltInARow > 2 && minerCount < 15)
+        System.out.println(scoutedResources);
+        if (!enemyArchonNearby && (minerCount < 4 || (scoutedResources/2 > minerCount && soldierCount >= 2 && (sageCount + soldierCount) * (1.5 - soldierToMinerRatioAdj) > minerCount))) { //|| (soldiersBuiltInARow > 2 && minerCount < 15)
             if (rc.canBuildRobot(RobotType.MINER, dir)) {
                 rc.buildRobot(RobotType.MINER,dir);
                 soldiersBuiltInARow = 0;

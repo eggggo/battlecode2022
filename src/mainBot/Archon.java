@@ -267,7 +267,7 @@ public class Archon extends RobotPlayer {
         for (int i = nearbyLead.length-1; i >=0 ; i--) {
             totalNearbyLead += rc.senseLead(nearbyLead[i]);
         }
-        if (!enemyArchonNearby && (minerCount < 4 || (soldiersBuiltInARow > 2 && minerCount < 15))) { //|| (soldiersBuiltInARow > 2 && minerCount < 15)
+        if (!enemyArchonNearby && minerCount < 4) { //|| (soldiersBuiltInARow > 2 && minerCount < 15)
             if (rc.canBuildRobot(RobotType.MINER, dir)) {
                 rc.buildRobot(RobotType.MINER,dir);
                 soldiersBuiltInARow = 0;
@@ -280,13 +280,13 @@ public class Archon extends RobotPlayer {
                 rc.writeSharedArray(51, rc.readSharedArray(51) + 1);
             }
         }
-        else if (!enemyArchonNearby && (soldierCount + 2 >= minerCount && minerCount < 15)) {
-            if (rc.canBuildRobot(RobotType.MINER, dir)) {
-                rc.buildRobot(RobotType.MINER,dir);
-                soldiersBuiltInARow = 0;
-                rc.writeSharedArray(50, rc.readSharedArray(50) + 1);
-            }
-        }
+//        else if (!enemyArchonNearby && (soldierCount + 2 >= minerCount && minerCount < 15)) {
+//            if (rc.canBuildRobot(RobotType.MINER, dir)) {
+//                rc.buildRobot(RobotType.MINER,dir);
+//                soldiersBuiltInARow = 0;
+//                rc.writeSharedArray(50, rc.readSharedArray(50) + 1);
+//            }
+//        }
         else if (!enemyArchonNearby && (!firstEnemySeen || (totalNearbyLead > 50 && totalNearbyLead < 100)) && rc.canBuildRobot(RobotType.MINER, dir)) {
             if (spreadCooldown == 0) {
                 rc.buildRobot(RobotType.MINER, dir);

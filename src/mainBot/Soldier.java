@@ -339,8 +339,8 @@ public class Soldier extends RobotPlayer {
       }
     }
     //1: if less than 1 hp go back and repair NOT USED CURRENTLY
-    if ((notRepaired || (rc.getHealth() < RobotType.SOLDIER.getMaxHealth(rc.getLevel())/5)) && home != null
-            && !stall && rc.getLocation().distanceSquaredTo(home) > 9 && (rc.getArchonCount() > 2)) { // If low health run home
+    if ((notRepaired || (rc.getHealth() < RobotType.SOLDIER.getMaxHealth(rc.getLevel())/3)) && home != null
+            && !stall && rc.getLocation().distanceSquaredTo(home) > 9 && (rc.getArchonCount() > 2 || rc.getTeamLeadAmount(rc.getTeam()) < 75 * rc.getArchonCount())) { // If low health run home
       dir = Pathfinder.getMoveDir(rc, home);
       notRepaired = true;
 
@@ -520,19 +520,27 @@ public class Soldier extends RobotPlayer {
           enemyArchons[3 * i] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, rc.getMapHeight() - 1 - coords[i].y); // 180 rotate
         }
   
-      } else if (quad1 && quad2 || quad3 && quad4) {
+      } else if (quad1 && quad2 || quad3 && quad4 || rc.getMapWidth()*2.5 < rc.getMapHeight()) {
         //System.out.println("Horizontal Symmetry or Rotational Symmetry");
         //thought that it was unecessary to check horizontal when its likely horizontally symmetric, so i just copied another vertical fip instead of using horz
         for (int i = archonCount - 1; i >= 0; i--) {
           enemyArchons[3 * i] = new MapLocation(coords[i].x, rc.getMapHeight() - 1 - coords[i].y); //vert flip
           enemyArchons[3 * i + 2] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, rc.getMapHeight() - 1 - coords[i].y); // 180 rotate
+          //if map width times 2.5 is less than the height, its pretty likely to be vertical flip coords
+          if (rc.getMapWidth()*2.5 < rc.getMapHeight()) {
+            enemyArchons[3 * i + 2] = null;
+          }
         }
-      } else if (quad1 && quad4 || quad2 && quad3) {
+      } else if (quad1 && quad4 || quad2 && quad3 || rc.getMapHeight()*2.5 < rc.getMapWidth()) {
         //System.out.println("Vertical Symmetry or Rotational Symmetry");
         //thought that it was unecessary to check vertical when its likely vertically symmetric, so i just copied another horiz fip instead of using vert
         for (int i = archonCount - 1; i >= 0; i--) {
           enemyArchons[3 * i] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, coords[i].y); //horz flip
           enemyArchons[3 * i + 2] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, rc.getMapHeight() - 1 - coords[i].y); // 180 rotate
+          //if map height times 2.5 is less than the width, its pretty likely to be horizontal flip coords
+          if (rc.getMapHeight()*2.5 < rc.getMapWidth()) {
+            enemyArchons[3 * i + 2] = null;
+          }
         }
       } else {
         //System.out.println("only in one quad so cannot tell");

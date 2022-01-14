@@ -91,7 +91,7 @@ public class Builder extends RobotPlayer {
                 rc.buildRobot(RobotType.LABORATORY, builddir);
                 laboratoriesBuilt++;
             }
-        } else if (rc.canBuildRobot(RobotType.WATCHTOWER, builddir) && currentIncome > 30 && rc.getTeamLeadAmount(rc.getTeam()) > 200) {
+        } else if (rc.canBuildRobot(RobotType.WATCHTOWER, builddir) && rc.getTeamLeadAmount(rc.getTeam()) > 200) {
             if (home != null && rc.getLocation().distanceSquaredTo(home) > 9) {
                 rc.buildRobot(RobotType.WATCHTOWER, builddir);
             } else if (home == null){

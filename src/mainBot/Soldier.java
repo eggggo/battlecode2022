@@ -269,6 +269,7 @@ public class Soldier extends RobotPlayer {
 
     //focus fire nearest attacker with lowest hp, if no attacker just nearest unit with lowest hp
     int lowestHPTgt = 9999;
+    int lowestInVisionHPTgt = 9999;
     if (enemies.length > 0) {
       for (int i = enemies.length - 1; i >= 0; i --) {
         RobotInfo enemy = enemies[i];
@@ -279,19 +280,21 @@ public class Soldier extends RobotPlayer {
           } else if (isHostile(enemy) && !isHostile(attackTgt)) {
             lowestHPTgt = enemy.getHealth();
             attackTgt = enemy;
-          } else if (enemy.getHealth() < lowestHPTgt) {
+          } else if (enemy.getHealth() < lowestHPTgt 
+          && ((isHostile(enemy) && isHostile(attackTgt)) || (!isHostile(enemy) && !isHostile(attackTgt)))) {
             lowestHPTgt = enemy.getHealth();
             attackTgt = enemy;
           }
         } else {
           if (inVisionTgt == null) {
-            lowestHPTgt = enemy.getHealth();
+            lowestInVisionHPTgt = enemy.getHealth();
             inVisionTgt = enemy;
           } else if (isHostile(enemy) && !isHostile(inVisionTgt)) {
-            lowestHPTgt = enemy.getHealth();
+            lowestInVisionHPTgt = enemy.getHealth();
             inVisionTgt = enemy;
-          } else if (enemy.getHealth() < lowestHPTgt) {
-            lowestHPTgt = enemy.getHealth();
+          } else if (enemy.getHealth() < lowestInVisionHPTgt 
+            && ((isHostile(enemy) && isHostile(inVisionTgt)) || (!isHostile(enemy) && !isHostile(inVisionTgt)))) {
+            lowestInVisionHPTgt = enemy.getHealth();
             inVisionTgt = enemy;
           }
         }
@@ -563,7 +566,7 @@ public class Soldier extends RobotPlayer {
       }
       copyEnemyArchons = enemyArchons;
 
-    if (rc.readSharedArray(55) >> 6 == 0) {
+    if (((rc.readSharedArray(55) >> 6) & 0b1) == 0) {
       for (int i = enemyArchons.length - 1; i >= 0; i --) {
         MapLocation archon = enemyArchons[i];
         if (archon != null) {

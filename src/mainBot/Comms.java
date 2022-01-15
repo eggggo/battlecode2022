@@ -15,7 +15,7 @@ public class Comms {
     //52: healthy watchtower count(above 70%)
     //53: healthy sage count(above 70%)
     //54: healthy builder count(above 20% hp)
-    //55: 1 bit first soldier, last 6 bits sector of first seen enemy
+    //55: 1 bit resource saving mode, 1 bit first soldier, last 6 bits sector of first seen enemy
     static int locationToSector(RobotController rc, MapLocation loc) {
         int width = rc.getMapWidth();
         int height = rc.getMapHeight();

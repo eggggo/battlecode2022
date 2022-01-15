@@ -315,15 +315,19 @@ public class Soldier extends RobotPlayer {
     }
 
     double repairThreshold = -.0444* soldierCount + .64444;
-    double nearestSoldierDx = 0;
-    double nearestSoldierDy = 0;
+    double moveDirDx = 0;
+    double moveDirDy = 0;
     if (friendlies.length > 0) {
       for (int i = friendlies.length - 1; i >= 0; i --) {
         RobotInfo robot = friendlies[i];
-        if ((robot.getType() == RobotType.SOLDIER || robot.getType() == RobotType.SAGE || robot.getType() == RobotType.WATCHTOWER)
-            && robot.getLocation().distanceSquaredTo(src) < radius) {
-          friendlyHealth += robot.getHealth();
-          friendlyDamage += robot.getType().damage/(1.0 + rc.senseRubble(robot.location)/10.0);
+        if ((robot.getType() == RobotType.SOLDIER || robot.getType() == RobotType.SAGE || robot.getType() == RobotType.WATCHTOWER)) {
+          if (robot.getLocation().distanceSquaredTo(src) < radius) {
+            friendlyHealth += robot.getHealth();
+            friendlyDamage += robot.getType().damage/(1.0 + rc.senseRubble(robot.location)/10.0);
+          } else {
+            moveDirDx += src.directionTo(robot.location).dx;
+            moveDirDy += src.directionTo(robot.location).dy;
+          }
         }
       }
     }
@@ -455,6 +459,13 @@ public class Soldier extends RobotPlayer {
             dir = Pathfinder.getMoveDir(rc, inBounds);
       }
     }
+
+    moveDirDx += 3*dir.dx;
+    moveDirDy += 3*dir.dy;
+    MapLocation vectorTgt = src.translate((int)Math.ceil(moveDirDx), (int)Math.ceil(moveDirDy));
+    MapLocation inBounds = new MapLocation(Math.min(Math.max(0, vectorTgt.x), rc.getMapWidth() - 1), 
+    Math.min(Math.max(0, vectorTgt.y), rc.getMapHeight() - 1));
+    dir = Pathfinder.getMoveDir(rc, inBounds);
     
     if (dir != null && rc.canMove(dir)) {
       rc.move(dir);

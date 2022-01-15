@@ -266,8 +266,8 @@ public class Archon extends RobotPlayer {
         if (archonSpotted && turnsAlive < 20) {
             targetMinerCount = 0;
         }
-        System.out.println("targetMinerCount " + targetMinerCount);
-        System.out.println("income: " + currentIncome);
+        //System.out.println("targetMinerCount " + targetMinerCount);
+        //System.out.println("income: " + currentIncome);
         //Repair Logic
         Team friendly = rc.getTeam();
         RobotInfo[] alliedUnits = rc.senseNearbyRobots(senseRadius, friendly);

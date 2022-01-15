@@ -9,6 +9,27 @@ public class Builder extends RobotPlayer {
     static int turnsAlive = 0;
     static boolean aboveHpThresh = true;
     static MapLocation home = null;
+    static MapLocation[] sectorMdpts = new MapLocation[49];
+
+    static Direction stallOnGoodRubble(RobotController rc) throws GameActionException {
+        MapLocation src = rc.getLocation();
+        int currRubble = rc.senseRubble(src);
+          int minRubble = currRubble;
+          MapLocation minRubbleLoc = src;
+          if (currRubble > 0) {
+            for (Direction d : Direction.allDirections()) {
+              MapLocation test = src.add(d);
+              if (rc.onTheMap(test) && !rc.isLocationOccupied(test) && rc.canSenseLocation(test)) {
+                int rubbleHere = rc.senseRubble(test);
+                if (rubbleHere <= minRubble) {
+                  minRubble = rubbleHere;
+                  minRubbleLoc = test;
+                }
+              }
+            }
+          }
+          return Pathfinder.getMoveDir(rc, minRubbleLoc);
+      }
 
     public static void runBuilder(RobotController rc) throws GameActionException {
         if (turnsAlive == 0) {
@@ -19,14 +40,29 @@ public class Builder extends RobotPlayer {
                     break;
                 }
             }
+            for (int i = 48; i >= 0; i --) {
+                sectorMdpts[i] = Comms.sectorMidpt(rc, i);
+            }
         }
+        MapLocation src = rc.getLocation();
         int currentIncome = rc.readSharedArray(49);
         int senseRadius = rc.getType().visionRadiusSquared;
         Team friendly = rc.getTeam();
         RobotInfo[] nearbyRobots = rc.senseNearbyRobots(senseRadius, friendly);
+        RobotInfo[] enemies = rc.senseNearbyRobots(senseRadius, friendly.opponent());
+        MapLocation closestAttacker = null;
         MapLocation nearbySoldier = null;
         MapLocation nearbyBuilding = null;
         int numNearbyWatchtowers = 0;
+
+        for (int i = enemies.length - 1; i >= 0; i --) {
+            RobotInfo enemy = enemies[i];
+            if ((enemy.getType() == RobotType.SOLDIER || enemy.getType() == RobotType.SAGE 
+            || enemy.getType() == RobotType.WATCHTOWER) && (closestAttacker == null
+            || enemy.location.distanceSquaredTo(src) < closestAttacker.distanceSquaredTo(src))) {
+                closestAttacker = enemy.location;
+            }
+        }
 
         //Sensing Important information like nearby soldiers:
         for (int i = nearbyRobots.length - 1; i >= 0; i--) {
@@ -36,7 +72,7 @@ public class Builder extends RobotPlayer {
             }
         }
 
-        int distanceFromBuilding = Integer.MAX_VALUE;
+        int distanceFromBuilding = 9999;
         //If theres a nearby watchtower or laboratory that needs to be repaired, set the nearbyBulding to it.
         for (int i = nearbyRobots.length - 1; i >= 0; i--) {
             if (nearbyRobots[i].getType() == RobotType.WATCHTOWER && nearbyRobots[i].getHealth() !=
@@ -62,15 +98,31 @@ public class Builder extends RobotPlayer {
         //If there is no nearby repariable building, follow a nearby non-crowded soldier, otherwise move randomly
         if (nearbyBuilding != null) {
             dir = Pathfinder.getMoveDir(rc, nearbyBuilding);
-        } else if (nearbySoldier != null && nearbyRobots.length < 9) {
+        } else if (closestAttacker != null) {
+            Direction opposite = src.directionTo(closestAttacker).opposite();
+            MapLocation runawayTgt = src.add(opposite).add(opposite);
+            runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1), 
+            Math.min(Math.max(0, runawayTgt.y), rc.getMapHeight() - 1));
+            dir = Pathfinder.getMoveDir(rc, runawayTgt);
+        //if good resources nearby go there
+        } else if (nearbySoldier != null) {
             dir = Pathfinder.getMoveDir(rc, nearbySoldier);
-        } else if (home != null) {
-            dir = rc.getLocation().directionTo(home).opposite();
         } else {
-            dir = directions[rng.nextInt(directions.length)];
+            MapLocation closestEnemies = null;
+            for (int i = 48; i >= 0; i--) {
+                int[] sector = Comms.readSectorInfo(rc, i);
+                MapLocation loc = sectorMdpts[i];
+                if ((sector[3] > 0 || sector[1] == 1) && (closestEnemies == null || closestEnemies.distanceSquaredTo(src) > src.distanceSquaredTo(loc))) {
+                closestEnemies = loc;
+                }
+            }
+            if (src.distanceSquaredTo(closestEnemies) > 40) {
+                dir = Pathfinder.getMoveDir(rc, closestEnemies);
+            } else {
+                dir = stallOnGoodRubble(rc);
+            }
         }
 
-        MapLocation src = rc.getLocation();
         Direction builddir = directions[rng.nextInt(directions.length)];
         for (Direction dire : Direction.allDirections()) {
             MapLocation loc = src.add(dire);
@@ -84,19 +136,11 @@ public class Builder extends RobotPlayer {
         if (nearbyBuilding != null && rc.canRepair(nearbyBuilding)) {
             rc.repair(nearbyBuilding);
         } else if (rc.getID() % 10 == 1 && laboratoriesBuilt == 0 && rc.canBuildRobot(RobotType.LABORATORY, builddir)) {
-            if (home != null && rc.getLocation().distanceSquaredTo(home) > 9) {
-                rc.buildRobot(RobotType.LABORATORY, builddir);
-                laboratoriesBuilt++;
-            } else if (home == null){
-                rc.buildRobot(RobotType.LABORATORY, builddir);
-                laboratoriesBuilt++;
-            }
+            rc.buildRobot(RobotType.LABORATORY, builddir);
+            laboratoriesBuilt++;
         } else if (rc.canBuildRobot(RobotType.WATCHTOWER, builddir) && rc.getTeamLeadAmount(rc.getTeam()) > 200) {
-            if (home != null && rc.getLocation().distanceSquaredTo(home) > 9) {
-                rc.buildRobot(RobotType.WATCHTOWER, builddir);
-            } else if (home == null){
-                rc.buildRobot(RobotType.WATCHTOWER, builddir);
-            }
+            rc.buildRobot(RobotType.WATCHTOWER, builddir);
+            rc.writeSharedArray(52, rc.readSharedArray(52) + 1);
         }
 
         if (rc.canMove(dir)) {

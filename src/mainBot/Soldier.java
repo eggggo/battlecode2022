@@ -472,7 +472,7 @@ public class Soldier extends RobotPlayer {
     }
 
     //post move attack if available
-    if (rc.getActionCooldownTurns() < GameConstants.COOLDOWN_LIMIT) {
+    if (rc.isActionReady()) {
       attackTgt = null;
       enemies = rc.senseNearbyRobots(senseRadius, opponent);
       lowestHPTgt = 9999;

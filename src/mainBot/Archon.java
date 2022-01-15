@@ -260,6 +260,39 @@ public class Archon extends RobotPlayer {
             shouldBuildSoldier = true;
         }
 
+        //initialize friendlyArchonSectorsDists which is the distance of each of the archons to the closest enemy
+        // sector.
+        int[] friendlyArchonSectorsDists = new int[friendlyArchonSectors.length];
+        MapLocation combatMdpt = Comms.sectorMidpt(rc, combatSector);
+        for (int i = friendlyArchonSectors.length - 1; i >= 0; i--) {
+            friendlyArchonSectorsDists[i] = Comms.sectorMidpt(rc, friendlyArchonSectors[i]).distanceSquaredTo(combatMdpt);
+        }
+
+        //sorting algorithm
+        int n = friendlyArchonSectorsDists.length;
+        for (int i = 1; i < n; ++i) {
+            int key = friendlyArchonSectorsDists[i];
+            int j = i - 1;
+
+            /*
+             * Move elements of arr[0..i-1], that are greater than key, to one
+             * position ahead of their current position
+             */
+            while (j >= 0 && friendlyArchonSectorsDists[j] > key) {
+                friendlyArchonSectorsDists[j + 1] = friendlyArchonSectorsDists[j];
+                j = j - 1;
+            }
+            friendlyArchonSectorsDists[j + 1] = key;
+        }
+
+        //Should build Watchtower or no
+
+        boolean shouldBuildWt = false;
+        if (friendlyArchonSectorsDists[wtCount % rc.getArchonCount()] == Comms.sectorMidpt(rc, Comms.locationToSector(rc, rc.getLocation())).distanceSquaredTo(combatMdpt)) {
+            shouldBuildWt = true;
+        }
+
+
         double friendlyToEnemyRatio = ((double) 1+soldierCount + wtCount + sageCount)/ (double) (1+enemyCount);
         //cap friendlyToEnemyRatio at 5 for building alg purposes.
         if (friendlyToEnemyRatio > 5) {
@@ -327,8 +360,19 @@ public class Archon extends RobotPlayer {
         //System.out.println(rc.readSharedArray(55) >> 7 == 0);
         //System.out.println(rc.readSharedArray(55) >> 7);
         //If there is no enemyArchonNearby and the first enemy hasn't been seen or there is nearby lead between 50 and 100, build a miner
-        if (soldierCount + minerCount == 4*rc.getArchonCount() && !enemyArchonNearby && builderCount<rc.getArchonCount() && mapArea > 900) {
-            if (buildersBuilt < 1 && rc.readSharedArray(55) >> 7 == 0 && rc.canBuildRobot(RobotType.BUILDER, dir)) {
+
+        if (rc.canBuildRobot(RobotType.SAGE, dir)) {
+            if (shouldBuildSoldier) {
+                rc.buildRobot(RobotType.SAGE, dir);
+                minersBuiltInARow = 0;
+                buildersBuiltInARow = 0;
+                rc.writeSharedArray(51, rc.readSharedArray(51) + 1);
+                sagesBuilt++;
+            }
+        }
+        else if (soldierCount + minerCount >= 4*rc.getArchonCount() && !enemyArchonNearby && builderCount<rc.getArchonCount() && mapArea > 900
+                && rc.getTeamLeadAmount(rc.getTeam()) < 275) {
+            if (buildersBuilt < 1 && rc.readSharedArray(55) >> 7 == 0 && shouldBuildWt && rc.canBuildRobot(RobotType.BUILDER, dir)) {
                 rc.buildRobot(RobotType.BUILDER, dir);
                 buildersBuilt++;
                 soldiersBuiltInARow = 0;
@@ -339,7 +383,7 @@ public class Archon extends RobotPlayer {
                 //System.out.println("yeet");
             }
         }
-        else if (rc.readSharedArray(55) >> 7 == 0 || rc.getTeamLeadAmount(rc.getTeam()) > 275) {
+        else if (rc.readSharedArray(55) >> 7 == 0 || rc.getTeamLeadAmount(rc.getTeam()) > 400) {
             if (mapArea <= 900 && rc.getArchonCount() == 1) {
                 if (soldierCount < minerCount) {
                     if (rc.canBuildRobot(RobotType.SOLDIER, dir)) {

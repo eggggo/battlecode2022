@@ -393,16 +393,18 @@ public class Soldier extends RobotPlayer {
     //4: if there are enemies in a nearby sector go there
     //otherwise, go to nearest scouted enemy archon or guess if no scouted
     } else {
-      int enemySectorDistance = 9999;
       MapLocation closestEnemies = null;
+      MapLocation closestEnemyArchon = null;
       int archonDistance = 9999;
       MapLocation closestHomeArchon = null;
       for (int i = 48; i >= 0; i--) {
         int[] sector = Comms.readSectorInfo(rc, i);
         MapLocation loc = sectorMdpts[i];
-        if ((sector[3] > 0 || sector[1] == 1) && enemySectorDistance > rc.getLocation().distanceSquaredTo(loc)) {
+        if (sector[3] > 0 && (closestEnemies == null || closestEnemies.distanceSquaredTo(src) > src.distanceSquaredTo(loc))) {
           closestEnemies = loc;
-          enemySectorDistance = rc.getLocation().distanceSquaredTo(loc);
+        }
+        if (sector[1] == 1 && (closestEnemyArchon == null || closestEnemyArchon.distanceSquaredTo(src) > src.distanceSquaredTo(loc))) {
+          closestEnemyArchon = loc;
         }
         if (sector[0] == 1 && sectorMdpts[i].distanceSquaredTo(src) < archonDistance) {
           archonDistance = sectorMdpts[i].distanceSquaredTo(src);
@@ -420,6 +422,15 @@ public class Soldier extends RobotPlayer {
           dir = stallOnGoodRubble(rc);
         }
       //otherwise no enemies reported anywhere, just spread
+      } else if (closestEnemyArchon != null) {
+        dir = Pathfinder.getMoveDir(rc, closestEnemyArchon);
+        MapLocation togo = src.add(dir);
+        int rubble = rc.senseRubble(togo);
+        //if an enemy archon present sector is within 40 r^2 and the spot pathfinder returns is not great rubble, wait on good rubble squares
+        //to prevent getting pushed in bad position, need to revise this as well
+        if (closestEnemyArchon.distanceSquaredTo(src) < 100 && rubble > rubbleThreshold && !stall) {
+          dir = stallOnGoodRubble(rc);
+        }
       } else {
             double xVector = 0;
             double yVector = 0;

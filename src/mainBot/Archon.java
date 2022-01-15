@@ -34,9 +34,6 @@ public class Archon extends RobotPlayer {
 
         int maxBuilderCount = (int) (Math.sqrt(rc.getMapHeight() * rc.getMapWidth())/20) * 15;
         int addMaxBuilder = rc.getTeamLeadAmount(rc.getTeam())/10000 * 10;
-        if (rc.getTeamLeadAmount(rc.getTeam()) < 400) {
-            maxBuilderCount = 0;
-        }
         maxBuilderCount += addMaxBuilder;
         int builderCount = rc.readSharedArray(54);
         int currentIncome = rc.readSharedArray(49);
@@ -52,7 +49,7 @@ public class Archon extends RobotPlayer {
         int mapArea = rc.getMapHeight() * rc.getMapWidth();
         boolean archonSpotted = false;
         int leadNearArchons = 0;
-
+        MapLocation[] nearbyLead = rc.senseNearbyLocationsWithLead(RobotType.ARCHON.visionRadiusSquared);
         //Initialize combat sector.  If we see an enemy, enemyCount++
         if (combatSector == -1) {
             combatSector = 50;
@@ -135,6 +132,16 @@ public class Archon extends RobotPlayer {
                 directions[7-i] = directions[7-i - 1].rotateLeft();
             }
         }
+        int nearestLead = Integer.MAX_VALUE;
+        MapLocation nearestPatch = null;
+        for (int i = nearbyLead.length-1; i>=0; i--) {
+            int dist = nearbyLead[i].distanceSquaredTo(rc.getLocation());
+            if (dist < nearestLead && rc.senseLead(nearbyLead[i]) > 10) {
+                nearestLead = dist;
+                nearestPatch = nearbyLead[i];
+            }
+        }
+
         //Accounting for rubble when creating a unit.  Don't care about rubble if mapArea > 900
         double rubble = 200;
         MapLocation src = rc.getLocation();
@@ -149,6 +156,10 @@ public class Archon extends RobotPlayer {
                     break;
                 }
             }
+        }
+
+        if (nearestPatch != null && rc.onTheMap(nearestPatch) && rc.senseRobotAtLocation(nearestPatch) == null) {
+            dir = rc.getLocation().directionTo(nearestPatch);
         }
 
         //The number of soldiers you can build is equivalent to the amount of lead you have/75
@@ -299,14 +310,13 @@ public class Archon extends RobotPlayer {
         }
 
         //Sensing total lead nearby to signal miner building.
-        MapLocation[] nearbyLead = rc.senseNearbyLocationsWithLead(RobotType.ARCHON.visionRadiusSquared);
         int totalNearbyLead = 0;
         for (int i = nearbyLead.length-1; i >=0 ; i--) {
             totalNearbyLead += rc.senseLead(nearbyLead[i]);
         }
 
         //UNIT BUILDING:
-        boolean shouldBuildBuilder = rc.getTeamLeadAmount(rc.getTeam())>400 && builderCount < maxBuilderCount && buildersBuiltInARow < 1;
+        boolean shouldBuildBuilder = rc.getTeamLeadAmount(rc.getTeam())>220 && builderCount < maxBuilderCount && buildersBuiltInARow < 1;
         boolean shouldBuildMiner = targetMinerCount > minerCount;
         boolean shouldBuildSoldierConds = (sageCount + soldierCount) * (1.5 - soldierToMinerRatioAdj) < minerCount && leadNearArchons < 75;
 
@@ -406,7 +416,7 @@ public class Archon extends RobotPlayer {
         }
         //If there is no enemyArchonNearby and we should build a builder or our minerCount is greater than our target and friendlyToEnemy is greater than 3 build a builder.
         else if (rc.canBuildRobot(RobotType.BUILDER, dir) &&
-                !enemyArchonNearby && ((targetMinerCount < minerCount && friendlyToEnemyRatio > 3) || shouldBuildBuilder)) {
+                !enemyArchonNearby && shouldBuildBuilder) {
             rc.buildRobot(RobotType.BUILDER, dir);
             buildersBuilt++;
             soldiersBuiltInARow = 0;

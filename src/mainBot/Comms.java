@@ -111,11 +111,13 @@ public class Comms {
             if (withinSector(rc, r.getLocation(), sector)) {
                 if (r.getType() == RobotType.ARCHON) {
                     enemyArchon = 1;
-                } else if ((r.getType() == RobotType.SOLDIER
-                        || r.getType() == RobotType.SAGE
-                        || r.getType() == RobotType.WATCHTOWER)) {
-                            enemyCount ++;
                 }
+                enemyCount ++;
+                // } else if ((r.getType() == RobotType.SOLDIER
+                //         || r.getType() == RobotType.SAGE
+                //         || r.getType() == RobotType.WATCHTOWER)) {
+                //             enemyCount ++;
+                // }
             }
         }
         enemyCount = Math.min(31, enemyCount);

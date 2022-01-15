@@ -24,6 +24,7 @@ public class Archon extends RobotPlayer {
     static int spreadCooldown = 0;
     static int lastTurnMiners = 0;
     static double soldierToMinerRatioAdj = 0;
+    static int unitsAfterEnemySeen = 0;
 
     /**
      * Run a single turn for an Archon.
@@ -49,6 +50,8 @@ public class Archon extends RobotPlayer {
         int combatSector = (rc.readSharedArray(55) & 0b111111)-1;
         boolean enemyArchonNearby = false;
         int mapArea = rc.getMapHeight() * rc.getMapWidth();
+        boolean archonSpotted = false;
+        int leadNearArchons = 0;
 
         //Initialize combat sector.  If we see an enemy, enemyCount++
         if (combatSector == -1) {
@@ -73,6 +76,7 @@ public class Archon extends RobotPlayer {
                         break;
                     }
                 }
+                leadNearArchons += sector[2];
             }
         }
 
@@ -86,6 +90,9 @@ public class Archon extends RobotPlayer {
                         combatSector = i;
                     }
                 }
+            }
+            if (sector[1] != 0) {
+                archonSpotted = true;
             }
             enemyCount += sector[3];
             scoutedResources += sector[2];
@@ -154,7 +161,9 @@ public class Archon extends RobotPlayer {
         // produces soldiers.  The exception is that every 4 soldiers, the farthest archon to combat creates a soldier
         // to potentially mix it up and create other fronts of attack.
         boolean shouldBuildSoldier = false;
-        if (combatSector < 50 && soldiersCanBuild < rc.getArchonCount()) {
+        if (enemyArchonNearby) {
+            shouldBuildSoldier = true;
+        } else if (combatSector < 50 && soldiersCanBuild < rc.getArchonCount()) {
 
             //initialize friendlyArchonSectorsDists which is the distance of each of the archons to the closest enemy
             // sector.
@@ -250,9 +259,15 @@ public class Archon extends RobotPlayer {
             soldierToMinerRatioAdj = -3*friendlyToEnemyRatio + 3;
         }
         //formula to calculate the current target miner count.
-        int targetMinerCount = (int) (20*(1/(1+.02*(100+turnCount))+.15) * friendlyToEnemyRatio * friendlyToEnemyRatio + scoutedResources/2);
-        //System.out.println(targetMinerCount);
-
+        int targetMinerCount = (int) (20*(1/(1+.02*(100+turnCount))+.15) * friendlyToEnemyRatio + scoutedResources - currentIncome);
+        if (archonSpotted) {
+            targetMinerCount -= 5;
+        }
+        if (archonSpotted && turnsAlive < 20) {
+            targetMinerCount = 0;
+        }
+        System.out.println("targetMinerCount " + targetMinerCount);
+        System.out.println("income: " + currentIncome);
         //Repair Logic
         Team friendly = rc.getTeam();
         RobotInfo[] alliedUnits = rc.senseNearbyRobots(senseRadius, friendly);
@@ -293,24 +308,60 @@ public class Archon extends RobotPlayer {
         //UNIT BUILDING:
         boolean shouldBuildBuilder = rc.getTeamLeadAmount(rc.getTeam())>400 && builderCount < maxBuilderCount && buildersBuiltInARow < 1;
         boolean shouldBuildMiner = targetMinerCount > minerCount;
-        boolean shouldBuildSoldierConds = (sageCount + soldierCount) * (1.5 - soldierToMinerRatioAdj) < minerCount;
+        boolean shouldBuildSoldierConds = (sageCount + soldierCount) * (1.5 - soldierToMinerRatioAdj) < minerCount && leadNearArchons < 75;
 
-        //If there are no enemyArchonsNearby and our minerCount is less than three, build miners.
-        if (!enemyArchonNearby && minerCount < 3) { //|| (soldiersBuiltInARow > 2 && minerCount < 15)
-            if (rc.canBuildRobot(RobotType.MINER, dir)) {
-                rc.buildRobot(RobotType.MINER,dir);
-                soldiersBuiltInARow = 0;
+        int initialMiners = 3;
+        if (mapArea <= 900) {
+            initialMiners = 2;
+        }
+
+        //If there is no enemyArchonNearby and the first enemy hasn't been seen or there is nearby lead between 50 and 100, build a miner
+        if (mapArea <=900 && rc.getArchonCount() == 1) {
+            if (soldierCount < minerCount) {
+                if (rc.canBuildRobot(RobotType.SOLDIER,dir)) {
+                    rc.buildRobot(RobotType.SOLDIER, dir);
+                    soldiersBuilt++;
+                    rc.writeSharedArray(51, rc.readSharedArray(51) + 1);
+                    unitsAfterEnemySeen++;
+                }
+            } else if (rc.canBuildRobot(RobotType.MINER, dir)) {
+                rc.buildRobot(RobotType.MINER, dir);
+                minersBuilt++;
+                rc.writeSharedArray(50, rc.readSharedArray(50) + 1);
+                unitsAfterEnemySeen++;
+            }
+        }
+        else if (!enemyArchonNearby && firstEnemySeen && soldierCount < minerCount) {
+            if (unitsAfterEnemySeen % 3 == 2) {
+                if (shouldBuildSoldier && rc.canBuildRobot(RobotType.MINER, dir)) {
+                    rc.buildRobot(RobotType.MINER, dir);
+                    minersBuilt++;
+                    rc.writeSharedArray(50, rc.readSharedArray(50) + 1);
+                    unitsAfterEnemySeen++;
+                }
+            } else {
+                if (shouldBuildSoldier && rc.canBuildRobot(RobotType.SOLDIER, dir)) {
+                    rc.buildRobot(RobotType.SOLDIER, dir);
+                    soldiersBuilt++;
+                    rc.writeSharedArray(51, rc.readSharedArray(51) + 1);
+                    unitsAfterEnemySeen++;
+                }
+            }
+        }
+        else if (!enemyArchonNearby && minersBuilt < initialMiners) {
+            if (rc.canBuildRobot(RobotType.MINER,dir)) {
+                rc.buildRobot(RobotType.MINER, dir);
+                minersBuilt++;
                 rc.writeSharedArray(50, rc.readSharedArray(50) + 1);
             }
         }
-        //If we have four miners and we have no soldiers, build a soldier
-        else if (minerCount == 4 && rc.readSharedArray(51) < 1) {
-            if (shouldBuildSoldier && rc.canBuildRobot(RobotType.SOLDIER, dir)) {
+        else if (!enemyArchonNearby && soldierCount < rc.getArchonCount()) {
+            if (rc.canBuildRobot(RobotType.SOLDIER,dir) && soldiersBuilt < 1) {
                 rc.buildRobot(RobotType.SOLDIER, dir);
+                soldiersBuilt++;
                 rc.writeSharedArray(51, rc.readSharedArray(51) + 1);
             }
         }
-        //If there is no enemyArchonNearby and the first enemy hasn't been seen or there is nearby lead between 50 and 100, build a miner
         else if (!enemyArchonNearby && (!firstEnemySeen || (totalNearbyLead > 50 && totalNearbyLead < 100)) && rc.canBuildRobot(RobotType.MINER, dir)) {
             if (spreadCooldown == 0) {
                 rc.buildRobot(RobotType.MINER, dir);

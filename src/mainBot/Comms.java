@@ -122,7 +122,7 @@ public class Comms {
         }
         enemyCount = Math.min(31, enemyCount);
 
-        MapLocation[] nearbyLead = rc.senseNearbyLocationsWithLead(range, 6);
+        MapLocation[] nearbyLead = rc.senseNearbyLocationsWithLead(range, 10);
         MapLocation[] nearbyGold = rc.senseNearbyLocationsWithGold(range);
         if (nearbyGold.length > 0) {
             resourceCount = 63;

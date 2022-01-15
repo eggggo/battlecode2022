@@ -292,6 +292,8 @@ public class Archon extends RobotPlayer {
 
         //UNIT BUILDING:
         boolean shouldBuildBuilder = rc.getTeamLeadAmount(rc.getTeam())>400 && builderCount < maxBuilderCount && buildersBuiltInARow < 1;
+        boolean shouldBuildMiner = targetMinerCount > minerCount;
+        boolean shouldBuildSoldierConds = (sageCount + soldierCount) * (1.5 - soldierToMinerRatioAdj) < minerCount;
 
         //If there are no enemyArchonsNearby and our minerCount is less than three, build miners.
         if (!enemyArchonNearby && minerCount < 3) { //|| (soldiersBuiltInARow > 2 && minerCount < 15)
@@ -320,8 +322,7 @@ public class Archon extends RobotPlayer {
         }
         //If our minerCount is less than the target or our miner count is greater than our attacker count times a ratio and we shouldn't build a builder or theres an enemyArchonNearby, build a soldier.
         else if (rc.canBuildRobot(RobotType.SAGE, dir) &&
-                (((targetMinerCount < minerCount || (sageCount + soldierCount) * (1.5 - soldierToMinerRatioAdj) < minerCount)
-                        && !(shouldBuildBuilder)) || enemyArchonNearby)) {
+                (((!shouldBuildMiner || shouldBuildSoldierConds) && !(shouldBuildBuilder)) || enemyArchonNearby)) {
             rc.buildRobot(RobotType.SAGE, dir);
             minersBuiltInARow = 0;
             buildersBuiltInARow = 0;
@@ -330,8 +331,7 @@ public class Archon extends RobotPlayer {
         }
         //If our minerCount is less than the target or our miner count is greater than our attacker count times a ratio and we shouldn't build a builder or theres an enemyArchonNearby, build a soldier.
         else if (rc.canBuildRobot(RobotType.SOLDIER, dir) &&
-                (((targetMinerCount < minerCount || (sageCount + soldierCount) * (1.5 - soldierToMinerRatioAdj) < minerCount)
-                && !(shouldBuildBuilder)) || enemyArchonNearby)) {
+                (((!shouldBuildMiner || shouldBuildSoldierConds) && !(shouldBuildBuilder)) || enemyArchonNearby)) {
             if (shouldBuildSoldier) {
                 rc.buildRobot(RobotType.SOLDIER, dir);
                 soldiersBuilt++;
@@ -343,7 +343,7 @@ public class Archon extends RobotPlayer {
         }
         //If we can build a miner and our minerCount is less than the target and we shouldn't build a builder and theres no enemyArchonNearby
         else if (rc.canBuildRobot(RobotType.MINER, dir) &&
-                !enemyArchonNearby && (targetMinerCount > minerCount) && !(shouldBuildBuilder)) { //&& currentIncome > minerCount * 5
+                !enemyArchonNearby && shouldBuildMiner && !(shouldBuildBuilder)) {
             rc.buildRobot(RobotType.MINER, dir);
             minersBuilt++;
             soldiersBuiltInARow = 0;

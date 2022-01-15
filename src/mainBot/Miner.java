@@ -10,12 +10,13 @@ public class Miner extends RobotPlayer {
     static boolean aboveHpThresh = true;
     static int turnsAlive = 0;
     static MapLocation[] sectorMdpts = new MapLocation[49];
-    //static Direction bounceDir = null;
+    static Direction bounceDir = null;
     static int maxTravelDistance = 100;
     static Direction spawnDir = null;
     static int sectorNumber = -1;
     static MapLocation home = null;
     static MapLocation closestEnemyArchon = null;
+    static int scoutPattern = 0;
     /**
      * Run a single turn for a Miner.
      * This code is wrapped inside the infinite loop in run(), so it is called once per turn.
@@ -75,7 +76,8 @@ public class Miner extends RobotPlayer {
                     break;
                 }
             }
-            //bounceDir = spawnDir;
+            scoutPattern = rc.readSharedArray(50) % 2;
+            bounceDir = spawnDir;
         }
 
         int distanceFromSpawn = 0;
@@ -163,7 +165,7 @@ public class Miner extends RobotPlayer {
             runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1), 
             Math.min(Math.max(0, runawayTgt.y), rc.getMapHeight() - 1));
             dir = Pathfinder.getMoveDir(rc, runawayTgt);
-            //bounceDir = dir;
+            bounceDir = dir;
         //if good resources nearby go there
         } else if (resources != null) {
             dir = Pathfinder.getMoveDir(rc, resources);
@@ -211,13 +213,23 @@ public class Miner extends RobotPlayer {
                 MapLocation inBounds = new MapLocation(Math.min(Math.max(0, vectorTgt.x), rc.getMapWidth() - 1), 
                 Math.min(Math.max(0, vectorTgt.y), rc.getMapHeight() - 1));
                 dir = Pathfinder.getMoveDir(rc, inBounds);
-                //bounceDir = dir;
+                bounceDir = dir;
             } else {
-                if (closestEnemyArchon == null) {
-                    MapLocation opposite = new MapLocation(rc.getMapWidth() - 1 - src.x, rc.getMapHeight() - 1 - src.y);
-                    dir = Pathfinder.getMoveDir(rc, opposite);
+                if (scoutPattern == 0) {
+                    if (closestEnemyArchon == null) {
+                        MapLocation opposite = new MapLocation(rc.getMapWidth() - 1 - src.x, rc.getMapHeight() - 1 - src.y);
+                        dir = Pathfinder.getMoveDir(rc, opposite);
+                    } else {
+                        dir = Pathfinder.getMoveDir(rc, closestEnemyArchon);
+                    }
                 } else {
-                    dir = Pathfinder.getMoveDir(rc, closestEnemyArchon);
+                    if (!rc.onTheMap(src.add(bounceDir))) {
+                        bounceDir = bounceDir.opposite();
+                    }
+                    MapLocation tgt = src.add(bounceDir).add(bounceDir);
+                    MapLocation inBounds = new MapLocation(Math.min(Math.max(0, tgt.x), rc.getMapWidth() - 1), 
+                    Math.min(Math.max(0, tgt.y), rc.getMapHeight() - 1));
+                    dir = Pathfinder.getMoveDir(rc, inBounds);
                 }
             }
         }

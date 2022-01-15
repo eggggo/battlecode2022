@@ -100,7 +100,7 @@ public class Comms {
         RobotInfo[] enemies = rc.senseNearbyRobots(range, rc.getTeam().opponent());
 
         if (enemies.length > 0 && firstSeenEnemy) {
-            rc.writeSharedArray(55, sector+1);
+            rc.writeSharedArray(55, (rc.readSharedArray(55) & 0b1111111111000000) | (sector+1));
         }
 
         for (int i = enemies.length - 1; i >= 0; i --) {

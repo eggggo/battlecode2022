@@ -458,6 +458,12 @@ public class Soldier extends RobotPlayer {
       rc.move(dir);
     }
 
+    if (attackTgt != null && rc.canAttack(attackTgt.location)) {
+      MapLocation toAttack = attackTgt.location;
+      rc.attack(toAttack);
+      turnsNotKilledStuff = 0;
+    }
+
     turnsNotKilledStuff++;
     turnsAlive++;
     Comms.updateSector(rc, turnCount);

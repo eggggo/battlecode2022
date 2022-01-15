@@ -251,7 +251,7 @@ public class Archon extends RobotPlayer {
         }
         //formula to calculate the current target miner count.
         int targetMinerCount = (int) (20*(1/(1+.02*(100+turnCount))+.15) * friendlyToEnemyRatio * friendlyToEnemyRatio + scoutedResources/2);
-        System.out.println(targetMinerCount);
+        //System.out.println(targetMinerCount);
 
         //Repair Logic
         Team friendly = rc.getTeam();

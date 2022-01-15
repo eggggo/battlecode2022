@@ -18,6 +18,32 @@ public class Miner extends RobotPlayer {
      * Run a single turn for a Miner.
      * This code is wrapped inside the infinite loop in run(), so it is called once per turn.
      */
+
+    static Direction stallOnGoodRubble(RobotController rc) throws GameActionException {
+        MapLocation src = rc.getLocation();
+        int currRubble = rc.senseRubble(src);
+          int minRubble = currRubble;
+          MapLocation minRubbleLoc = src;
+          if (currRubble > 0) {
+            for (Direction d : Direction.allDirections()) {
+              MapLocation test = src.add(d);
+              if (rc.onTheMap(test) && !rc.isLocationOccupied(test) && rc.canSenseLocation(test)) {
+                int rubbleHere = rc.senseRubble(test);
+                if (rubbleHere <= minRubble) {
+                  minRubble = rubbleHere;
+                  minRubbleLoc = test;
+                }
+              }
+            }
+          }
+          return Pathfinder.getMoveDir(rc, minRubbleLoc);
+      }
+
+    static boolean isHostile(RobotInfo enemy) {
+        return (enemy.getType() == RobotType.SOLDIER || enemy.getType() == RobotType.SAGE 
+        || enemy.getType() == RobotType.WATCHTOWER);
+      }
+
     //action flow:
     //1. mine
     //2. if close enemy run away
@@ -69,8 +95,11 @@ public class Miner extends RobotPlayer {
         RobotInfo[] enemies = rc.senseNearbyRobots(senseRadius, friendly.opponent());
         RobotInfo[] friendlies = rc.senseNearbyRobots(senseRadius, friendly);
         MapLocation closestAttacker = null;
-        MapLocation[] nearbyLead = rc.senseNearbyLocationsWithLead(senseRadius);
+        MapLocation[] nearbyLead = rc.senseNearbyLocationsWithLead(senseRadius, 5);
         MapLocation[] nearbyGold = rc.senseNearbyLocationsWithGold(senseRadius);
+        int nearbyFriendlySoldierCount = 0;
+        MapLocation nearestFriendlySoldier = null;
+        int nearbyFriendlyMinerCount = 0;
         double highLead = 0;
         for (int i = enemies.length - 1; i >= 0; i --) {
             RobotInfo enemy = enemies[i];
@@ -82,9 +111,21 @@ public class Miner extends RobotPlayer {
         }
         for (int i = nearbyLead.length - 1; i >= 0; i --) {
             double leadCount = (double)rc.senseLead(nearbyLead[i])/(1 + rc.senseRubble(nearbyLead[i])/10.0);
-            if (leadCount > 5 && leadCount > highLead) {
+            if (leadCount > highLead) {
                 highLead = leadCount;
                 resources = nearbyLead[i];
+            }
+        }
+        for (int i = friendlies.length - 1; i >= 0; i --) {
+            RobotInfo friend = friendlies[i];
+            if (isHostile(friend)) {
+                nearbyFriendlySoldierCount ++;
+                if (nearestFriendlySoldier == null || friend.location.distanceSquaredTo(src) < nearestFriendlySoldier.distanceSquaredTo(src)) {
+                    nearestFriendlySoldier = friend.location;
+                }
+            } else if (friend.getType() == RobotType.MINER && (nearestFriendlySoldier == null 
+            || friend.location.distanceSquaredTo(nearestFriendlySoldier) < src.distanceSquaredTo(nearestFriendlySoldier))) {
+                nearbyFriendlyMinerCount ++;
             }
         }
         if (nearbyGold.length > 0) {
@@ -102,20 +143,25 @@ public class Miner extends RobotPlayer {
             bounceDir = dir;
         //if good resources nearby go there
         } else if (resources != null) {
-            MapLocation tgtResource = resources;
-            dir = Pathfinder.getMoveDir(rc, tgtResource);
+            dir = Pathfinder.getMoveDir(rc, resources);
         //else go to sector with reported resources + spread vector + away from closest archon vector
+        } else if (nearbyFriendlySoldierCount > nearbyFriendlyMinerCount) {
+            if (src.distanceSquaredTo(nearestFriendlySoldier) <= 8) {
+                dir = stallOnGoodRubble(rc);
+            } else {
+                dir = Pathfinder.getMoveDir(rc, nearestFriendlySoldier);
+            }
         } else {
             if (turnCount % 2 == 0) {
                 sectorNumber = -1;
-                int distance = 9999;
+                int bestResource = 0;
                 for (int i = 48; i >= 0; i--) {
                     int[] sector = Comms.readSectorInfo(rc, i);
                     int distanceToSector = rc.getLocation().distanceSquaredTo(sectorMdpts[i]);
-                    if (sector[2] > 0 && distanceToSector < distance
+                    if (sector[2] > bestResource
                         && maxTravelDistance >= distanceToSector) {
                         sectorNumber = i;
-                        distance = distanceToSector;
+                        bestResource = sector[2];
                     }
                 }
             }

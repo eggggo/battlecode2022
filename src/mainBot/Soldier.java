@@ -338,7 +338,7 @@ public class Soldier extends RobotPlayer {
         chase = false;
       }
     }
-    //1: if less than 1 hp go back and repair NOT USED CURRENTLY
+    //1: if less than 50/3 hp go back and repair
     if ((notRepaired || (rc.getHealth() < RobotType.SOLDIER.getMaxHealth(rc.getLevel())/3)) && home != null
             && !stall && rc.getLocation().distanceSquaredTo(home) > 9 && (rc.getArchonCount() > 2 || rc.getTeamLeadAmount(rc.getTeam()) < 75 * rc.getArchonCount())) { // If low health run home
       dir = Pathfinder.getMoveDir(rc, home);

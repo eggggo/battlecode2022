@@ -94,7 +94,7 @@ public class Builder extends RobotPlayer {
                 numNearbyWatchtowers++;
             }
         }
-        System.out.println(nearbyBuilding);
+        //System.out.println(nearbyBuilding);
         Direction dir;
 
         //If there is no nearby repariable building, follow a nearby non-crowded soldier, otherwise move randomly
@@ -106,7 +106,6 @@ public class Builder extends RobotPlayer {
             runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1), 
             Math.min(Math.max(0, runawayTgt.y), rc.getMapHeight() - 1));
             dir = Pathfinder.getMoveDir(rc, runawayTgt);
-        //if good resources nearby go there
         } else if (nearbySoldier != null) {
             dir = Pathfinder.getMoveDir(rc, nearbySoldier);
         } else {
@@ -118,7 +117,7 @@ public class Builder extends RobotPlayer {
                 closestEnemies = loc;
                 }
             }
-            if (closestEnemies != null && src.distanceSquaredTo(closestEnemies) > 40) {
+            if (closestEnemies != null && src.distanceSquaredTo(closestEnemies) > 100) {
                 dir = Pathfinder.getMoveDir(rc, closestEnemies);
             } else {
                 dir = stallOnGoodRubble(rc);
@@ -133,12 +132,12 @@ public class Builder extends RobotPlayer {
                 break;
             }
         }
-        System.out.println(nearbyBuilding != null && rc.canMutate(nearbyBuilding) && rc.getTeamLeadAmount(rc.getTeam()) >= 200);
+        //System.out.println(nearbyBuilding != null && rc.canMutate(nearbyBuilding) && rc.getTeamLeadAmount(rc.getTeam()) >= 200);
         //If there is a nearby building that can be repaired, repair it, otherwise go to the nearest repariable buidling and repair it.
         if (nearbyBuilding != null && rc.canMutate(nearbyBuilding) && rc.getTeamLeadAmount(rc.getTeam()) >= 200) {
             rc.mutate(nearbyBuilding);
             rc.writeSharedArray(55, (rc.readSharedArray(55) & 0b1111111));
-            System.out.println("hello");
+            //System.out.println("hello");
         }
         else if (nearbyBuilding != null && rc.canRepair(nearbyBuilding)) {
             rc.repair(nearbyBuilding);

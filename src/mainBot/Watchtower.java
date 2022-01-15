@@ -70,6 +70,12 @@ public class Watchtower extends RobotPlayer {
     RobotInfo attackTgt = null;
     RobotInfo inVisionTgt = null;
 
+    if (turnsAlive == 0) {
+        for (int i = 48; i >= 0; i --) {
+            sectorMdpts[i] = Comms.sectorMidpt(rc, i);
+        }
+    }
+
     //focus fire nearest attacker with lowest hp, if no attacker just nearest unit with lowest hp
     int lowestHPTgt = 9999;
     if (enemies.length > 0) {
@@ -110,29 +116,32 @@ public class Watchtower extends RobotPlayer {
       }
     }
 
-    if (enemies.length > 0 && rc.getMode() == RobotMode.PORTABLE && rc.canTransform()) {
+    Direction stallDir = stallOnGoodRubble(rc);
+
+    if (attackTgt != null && enemies.length > 1 && rc.getMode() == RobotMode.PORTABLE && rc.canTransform()
+        && stallDir == Direction.CENTER) {
         rc.transform();
     } else if (turnsNotKilledStuff > 30 && rc.getMode() == RobotMode.TURRET && rc.canTransform()) {
         rc.transform();
     }
 
-    MapLocation closestEnemies = null;
-    for (int i = 48; i >= 0; i--) {
-      int[] sector = Comms.readSectorInfo(rc, i);
-      MapLocation loc = sectorMdpts[i];
-      if ((sector[3] > 0 || sector[1] > 0) && (closestEnemies == null || closestEnemies.distanceSquaredTo(src) > src.distanceSquaredTo(loc))) {
-        closestEnemies = loc;
-      }
-    }
-    
-    Direction dir = null;
-    if (closestEnemies != null) {
-        dir = Pathfinder.getMoveDir(rc, closestEnemies);
-    }
-    System.out.println(dir);
-    
-    if (dir != null && rc.canMove(dir)) {
-      rc.move(dir);
+    if (rc.isMovementReady()) {
+        MapLocation closestEnemies = null;
+        for (int i = 48; i >= 0; i--) {
+            int[] sector = Comms.readSectorInfo(rc, i);
+            MapLocation loc = sectorMdpts[i];
+            if ((sector[1] > 0) && (closestEnemies == null || closestEnemies.distanceSquaredTo(src) > src.distanceSquaredTo(loc))) {
+                closestEnemies = loc;
+            }
+        }
+        Direction dir = null;
+        if (closestEnemies != null) {
+            dir = Pathfinder.getMoveDir(rc, closestEnemies);
+        }
+        
+        if (dir != null && rc.canMove(dir)) {
+            rc.move(dir);
+        }
     }
 
     turnsNotKilledStuff++;

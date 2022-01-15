@@ -76,7 +76,7 @@ public class Miner extends RobotPlayer {
                     break;
                 }
             }
-            scoutPattern = rc.readSharedArray(50) % 2;
+            scoutPattern = rc.readSharedArray(50) % 3;
             bounceDir = spawnDir;
         }
 
@@ -106,7 +106,7 @@ public class Miner extends RobotPlayer {
                     rc.mineGold(mineLocation);
                     income += 5;
                 }
-                boolean shouldContinue = nearbyEnemy && distanceFromSpawn > .75 * Math.sqrt(mapArea) && !nearbyFriend;
+                boolean shouldContinue = nearbyEnemy && distanceFromSpawn > .75 * Math.sqrt(mapArea);
                 int stopMiningThres = 1;
                 if (shouldContinue) {
                     stopMiningThres = 0;

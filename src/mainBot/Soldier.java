@@ -348,7 +348,7 @@ public class Soldier extends RobotPlayer {
       dir = a;
     }
     //2: if we cannot win the fight we are going into kite and run
-    else if ((inVisionTgt != null) && isHostile(inVisionTgt) && Math.ceil(friendlyHealth/(double)enemyDamage) < Math.ceil(1.2*enemyHealth/(double)friendlyDamage)) {
+    else if ((inVisionTgt != null) && isHostile(inVisionTgt) && Math.ceil(friendlyHealth/(double)enemyDamage) < Math.ceil(enemyHealth/(double)friendlyDamage)) {
       Direction opposite = src.directionTo(inVisionTgt.location).opposite();
       MapLocation runawayTgt = src.add(opposite).add(opposite);
       runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1), 

@@ -139,7 +139,7 @@ public class Watchtower extends RobotPlayer {
             dir = Pathfinder.getMoveDir(rc, closestEnemies);
         }
         
-        if (dir != null && rc.canMove(dir)) {
+        if (dir != null && rc.canMove(dir) && rc.getLevel() > 1) {
             rc.move(dir);
         }
     }

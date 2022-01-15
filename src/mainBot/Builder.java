@@ -56,6 +56,7 @@ public class Builder extends RobotPlayer {
         MapLocation nearbySoldier = null;
         MapLocation nearbyBuilding = null;
         int numNearbyWatchtowers = 0;
+        int mapArea = rc.getMapHeight() * rc.getMapWidth();
 
         for (int i = enemies.length - 1; i >= 0; i --) {
             RobotInfo enemy = enemies[i];
@@ -97,7 +98,7 @@ public class Builder extends RobotPlayer {
 
         //If there is no nearby repariable building, follow a nearby non-crowded soldier, otherwise move randomly
         if (nearbyBuilding != null) {
-            if (src.distanceSquaredTo(nearbyBuilding) > 5) {
+            if (src.distanceSquaredTo(nearbyBuilding) > 0) {
                 dir = Pathfinder.getMoveDir(rc, nearbyBuilding);
             } else {
                 dir = stallOnGoodRubble(rc);
@@ -114,14 +115,37 @@ public class Builder extends RobotPlayer {
             dir = stallOnGoodRubble(rc);
         }
 
-        Direction builddir = directions[rng.nextInt(directions.length)];
-        for (Direction dire : Direction.allDirections()) {
-            MapLocation loc = src.add(dire);
-            if (rc.onTheMap(loc) && rc.senseRobotAtLocation(loc) == null) {
-                builddir = dire;
-                break;
+        Direction center = rc.getLocation().directionTo(new MapLocation(rc.getMapWidth()/2, rc.getMapHeight()/2));
+        Direction builddir = center;
+        // If the direction to the center of the map is Direction.Center(means you're in the center), set your default
+        //direction to south, otherwise keep it center.
+        if (center == Direction.CENTER) {
+            builddir = Direction.SOUTH;
+        }
+        //Populate directions with all possible directions starting from direction to center rotating left
+        Direction[] directions = new Direction[8];
+        for (int i = 7; i>=0;i--) {
+            if (i == 7) {
+                directions[7-i] = center;
+            } else {
+                directions[7-i] = directions[7-i - 1].rotateLeft();
             }
         }
+
+        double rubble = 200;
+        for (Direction dire : directions) {
+            MapLocation loc = src.add(dire);
+            if (rc.onTheMap(loc) && rc.senseRobotAtLocation(loc) == null) {
+                if (rc.senseRubble(loc) < rubble && mapArea > 900) {
+                    rubble = rc.senseRubble(loc);
+                    builddir = dire;
+                } else if (mapArea <= 900){
+                    builddir = dire;
+                    break;
+                }
+            }
+        }
+
         //System.out.println(nearbyBuilding != null && rc.canMutate(nearbyBuilding) && rc.getTeamLeadAmount(rc.getTeam()) >= 200);
         //If there is a nearby building that can be repaired, repair it, otherwise go to the nearest repariable buidling and repair it.
         if (nearbyBuilding != null && rc.canMutate(nearbyBuilding) && rc.getTeamLeadAmount(rc.getTeam()) >= 200) {
@@ -134,9 +158,10 @@ public class Builder extends RobotPlayer {
         } else if (rc.getID() % 10 == 1 && laboratoriesBuilt == 0 && rc.canBuildRobot(RobotType.LABORATORY, builddir)) {
             rc.buildRobot(RobotType.LABORATORY, builddir);
             laboratoriesBuilt++;
-        } else if (rc.canBuildRobot(RobotType.WATCHTOWER, builddir)) {
+        } else if (rc.canBuildRobot(RobotType.WATCHTOWER, builddir) && watchtowersBuilt == 0) {
             rc.buildRobot(RobotType.WATCHTOWER, builddir);
             rc.writeSharedArray(52, rc.readSharedArray(52) + 1);
+            watchtowersBuilt++;
         }
 
         if (rc.canMove(dir)) {

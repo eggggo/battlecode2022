@@ -118,7 +118,7 @@ public class Watchtower extends RobotPlayer {
 
     Direction stallDir = stallOnGoodRubble(rc);
 
-    if (attackTgt != null && enemies.length > 1 && rc.getMode() == RobotMode.PORTABLE && rc.canTransform()
+    if (attackTgt != null && rc.getMode() == RobotMode.PORTABLE && rc.canTransform()
         && stallDir == Direction.CENTER) {
         rc.transform();
     } else if (turnsNotKilledStuff > 30 && rc.getMode() == RobotMode.TURRET && rc.canTransform()) {

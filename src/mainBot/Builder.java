@@ -77,12 +77,10 @@ public class Builder extends RobotPlayer {
         int distanceFromBuilding = 9999;
         //If theres a nearby watchtower or laboratory that needs to be repaired, set the nearbyBulding to it.
         for (int i = nearbyRobots.length - 1; i >= 0; i--) {
-            if (nearbyRobots[i].getType() == RobotType.WATCHTOWER && (nearbyRobots[i].getLevel() < 2 || nearbyRobots[i].getHealth() !=
-                    RobotType.WATCHTOWER.getMaxHealth(nearbyRobots[i].getLevel())) && rc.getLocation().distanceSquaredTo(nearbyRobots[i].getLocation()) < distanceFromBuilding) {
+            if (nearbyRobots[i].getType() == RobotType.WATCHTOWER && rc.getLocation().distanceSquaredTo(nearbyRobots[i].getLocation()) < distanceFromBuilding) {
                 nearbyBuilding = nearbyRobots[i].getLocation();
                 distanceFromBuilding = rc.getLocation().distanceSquaredTo(nearbyRobots[i].getLocation());
-            } else if (nearbyRobots[i].getType() == RobotType.LABORATORY && nearbyRobots[i].getHealth() !=
-                    RobotType.LABORATORY.getMaxHealth(nearbyRobots[i].getLevel()) && rc.getLocation().distanceSquaredTo(nearbyRobots[i].getLocation()) < distanceFromBuilding) {
+            } else if (nearbyRobots[i].getType() == RobotType.LABORATORY && rc.getLocation().distanceSquaredTo(nearbyRobots[i].getLocation()) < distanceFromBuilding) {
                 nearbyBuilding = nearbyRobots[i].getLocation();
                 distanceFromBuilding = rc.getLocation().distanceSquaredTo(nearbyRobots[i].getLocation());
             }
@@ -99,7 +97,11 @@ public class Builder extends RobotPlayer {
 
         //If there is no nearby repariable building, follow a nearby non-crowded soldier, otherwise move randomly
         if (nearbyBuilding != null) {
-            dir = Pathfinder.getMoveDir(rc, nearbyBuilding);
+            if (src.distanceSquaredTo(nearbyBuilding) > 5) {
+                dir = Pathfinder.getMoveDir(rc, nearbyBuilding);
+            } else {
+                dir = stallOnGoodRubble(rc);
+            }
         } else if (closestAttacker != null) {
             Direction opposite = src.directionTo(closestAttacker).opposite();
             MapLocation runawayTgt = src.add(opposite).add(opposite);
@@ -109,19 +111,7 @@ public class Builder extends RobotPlayer {
         } else if (nearbySoldier != null) {
             dir = Pathfinder.getMoveDir(rc, nearbySoldier);
         } else {
-            MapLocation closestEnemies = null;
-            for (int i = 48; i >= 0; i--) {
-                int[] sector = Comms.readSectorInfo(rc, i);
-                MapLocation loc = sectorMdpts[i];
-                if ((sector[3] > 0 || sector[1] == 1) && (closestEnemies == null || closestEnemies.distanceSquaredTo(src) > src.distanceSquaredTo(loc))) {
-                closestEnemies = loc;
-                }
-            }
-            if (closestEnemies != null && src.distanceSquaredTo(closestEnemies) > 100) {
-                dir = Pathfinder.getMoveDir(rc, closestEnemies);
-            } else {
-                dir = stallOnGoodRubble(rc);
-            }
+            dir = stallOnGoodRubble(rc);
         }
 
         Direction builddir = directions[rng.nextInt(directions.length)];

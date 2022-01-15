@@ -14,6 +14,7 @@ public class Miner extends RobotPlayer {
     static int maxTravelDistance = 100;
     static Direction spawnDir = null;
     static int sectorNumber = -1;
+    static MapLocation home = null;
     /**
      * Run a single turn for a Miner.
      * This code is wrapped inside the infinite loop in run(), so it is called once per turn.
@@ -54,9 +55,11 @@ public class Miner extends RobotPlayer {
         int income = 0;
         int senseRadius = rc.getType().visionRadiusSquared;
         Team friendly = rc.getTeam();
+        Team opponent = rc.getTeam().opponent();
         MapLocation src = rc.getLocation();
         Direction dir = null;
         MapLocation resources = null;
+        int mapArea = rc.getMapHeight() * rc.getMapWidth();
 
         if (turnsAlive == 0) {
             for (int i = 48; i >= 0; i --) {
@@ -67,10 +70,26 @@ public class Miner extends RobotPlayer {
                 RobotInfo robot = spawn[i];
                 if (robot.getType() == RobotType.ARCHON) {
                     spawnDir = rc.getLocation().directionTo(robot.location).opposite();
+                    home = robot.getLocation();
                     break;
                 }
             }
             bounceDir = spawnDir;
+        }
+
+        int distanceFromSpawn = 0;
+        boolean nearbyEnemy = false;
+        boolean nearbyFriend = true;
+        if (home != null) {
+            distanceFromSpawn = rc.getLocation().distanceSquaredTo(home);
+        }
+        RobotInfo[] enemies = rc.senseNearbyRobots(senseRadius, opponent);
+        if (enemies.length > 0) {
+            nearbyEnemy = true;
+        }
+        RobotInfo[] friendlies = rc.senseNearbyRobots(senseRadius, friendly);
+        if (friendlies.length == 0) {
+            nearbyFriend = false;
         }
 
         // Try to mine on squares around us.
@@ -84,7 +103,12 @@ public class Miner extends RobotPlayer {
                     rc.mineGold(mineLocation);
                     income += 5;
                 }
-                while (rc.canMineLead(mineLocation) && rc.senseLead(mineLocation) > 1) {
+                boolean shouldContinue = nearbyEnemy && distanceFromSpawn > .75 * Math.sqrt(mapArea) && !nearbyFriend;
+                int stopMiningThres = 1;
+                if (shouldContinue) {
+                    stopMiningThres = 0;
+                }
+                while (rc.canMineLead(mineLocation) && rc.senseLead(mineLocation) > stopMiningThres) {
                     rc.mineLead(mineLocation);
                     income += 1;
                 }
@@ -92,8 +116,6 @@ public class Miner extends RobotPlayer {
         }
 
         //run away from enemy attackers if we see them
-        RobotInfo[] enemies = rc.senseNearbyRobots(senseRadius, friendly.opponent());
-        RobotInfo[] friendlies = rc.senseNearbyRobots(senseRadius, friendly);
         MapLocation closestAttacker = null;
         MapLocation[] nearbyLead = rc.senseNearbyLocationsWithLead(senseRadius, 5);
         MapLocation[] nearbyGold = rc.senseNearbyLocationsWithGold(senseRadius);

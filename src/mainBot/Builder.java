@@ -1,5 +1,7 @@
 package mainBot;
 
+import java.util.Arrays;
+
 import battlecode.common.*;
 
 public class Builder extends RobotPlayer {
@@ -75,8 +77,8 @@ public class Builder extends RobotPlayer {
         int distanceFromBuilding = 9999;
         //If theres a nearby watchtower or laboratory that needs to be repaired, set the nearbyBulding to it.
         for (int i = nearbyRobots.length - 1; i >= 0; i--) {
-            if (nearbyRobots[i].getType() == RobotType.WATCHTOWER && nearbyRobots[i].getHealth() !=
-                    RobotType.WATCHTOWER.getMaxHealth(nearbyRobots[i].getLevel()) && rc.getLocation().distanceSquaredTo(nearbyRobots[i].getLocation()) < distanceFromBuilding) {
+            if (nearbyRobots[i].getType() == RobotType.WATCHTOWER && (nearbyRobots[i].getLevel() < 2 || nearbyRobots[i].getHealth() !=
+                    RobotType.WATCHTOWER.getMaxHealth(nearbyRobots[i].getLevel())) && rc.getLocation().distanceSquaredTo(nearbyRobots[i].getLocation()) < distanceFromBuilding) {
                 nearbyBuilding = nearbyRobots[i].getLocation();
                 distanceFromBuilding = rc.getLocation().distanceSquaredTo(nearbyRobots[i].getLocation());
             } else if (nearbyRobots[i].getType() == RobotType.LABORATORY && nearbyRobots[i].getHealth() !=
@@ -92,7 +94,7 @@ public class Builder extends RobotPlayer {
                 numNearbyWatchtowers++;
             }
         }
-
+        System.out.println(nearbyBuilding);
         Direction dir;
 
         //If there is no nearby repariable building, follow a nearby non-crowded soldier, otherwise move randomly
@@ -116,7 +118,7 @@ public class Builder extends RobotPlayer {
                 closestEnemies = loc;
                 }
             }
-            if (src.distanceSquaredTo(closestEnemies) > 40) {
+            if (closestEnemies != null && src.distanceSquaredTo(closestEnemies) > 40) {
                 dir = Pathfinder.getMoveDir(rc, closestEnemies);
             } else {
                 dir = stallOnGoodRubble(rc);
@@ -131,14 +133,19 @@ public class Builder extends RobotPlayer {
                 break;
             }
         }
-
+        System.out.println(nearbyBuilding != null && rc.canMutate(nearbyBuilding) && rc.getTeamLeadAmount(rc.getTeam()) >= 200);
         //If there is a nearby building that can be repaired, repair it, otherwise go to the nearest repariable buidling and repair it.
-        if (nearbyBuilding != null && rc.canRepair(nearbyBuilding)) {
+        if (nearbyBuilding != null && rc.canMutate(nearbyBuilding) && rc.getTeamLeadAmount(rc.getTeam()) >= 200) {
+            rc.mutate(nearbyBuilding);
+            rc.writeSharedArray(55, (rc.readSharedArray(55) & 0b1111111));
+            System.out.println("hello");
+        }
+        else if (nearbyBuilding != null && rc.canRepair(nearbyBuilding)) {
             rc.repair(nearbyBuilding);
         } else if (rc.getID() % 10 == 1 && laboratoriesBuilt == 0 && rc.canBuildRobot(RobotType.LABORATORY, builddir)) {
             rc.buildRobot(RobotType.LABORATORY, builddir);
             laboratoriesBuilt++;
-        } else if (rc.canBuildRobot(RobotType.WATCHTOWER, builddir) && rc.getTeamLeadAmount(rc.getTeam()) > 200) {
+        } else if (rc.canBuildRobot(RobotType.WATCHTOWER, builddir)) {
             rc.buildRobot(RobotType.WATCHTOWER, builddir);
             rc.writeSharedArray(52, rc.readSharedArray(52) + 1);
         }

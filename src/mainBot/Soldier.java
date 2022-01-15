@@ -315,6 +315,8 @@ public class Soldier extends RobotPlayer {
     }
 
     double repairThreshold = -.0444* soldierCount + .64444;
+    double nearestSoldierDx = 0;
+    double nearestSoldierDy = 0;
     if (friendlies.length > 0) {
       for (int i = friendlies.length - 1; i >= 0; i --) {
         RobotInfo robot = friendlies[i];
@@ -458,10 +460,34 @@ public class Soldier extends RobotPlayer {
       rc.move(dir);
     }
 
-    if (attackTgt != null && rc.canAttack(attackTgt.location)) {
-      MapLocation toAttack = attackTgt.location;
-      rc.attack(toAttack);
-      turnsNotKilledStuff = 0;
+    //post move attack if available
+    if (rc.getActionCooldownTurns() < GameConstants.COOLDOWN_LIMIT) {
+      attackTgt = null;
+      enemies = rc.senseNearbyRobots(senseRadius, opponent);
+      lowestHPTgt = 9999;
+      if (enemies.length > 0) {
+        for (int i = enemies.length - 1; i >= 0; i --) {
+          RobotInfo enemy = enemies[i];
+          if (enemy.getLocation().distanceSquaredTo(src) <= radius) {
+            if (attackTgt == null) {
+              lowestHPTgt = enemy.getHealth();
+              attackTgt = enemy;
+            } else if (isHostile(enemy) && !isHostile(attackTgt)) {
+              lowestHPTgt = enemy.getHealth();
+              attackTgt = enemy;
+            } else if (enemy.getHealth() < lowestHPTgt 
+            && ((isHostile(enemy) && isHostile(attackTgt)) || (!isHostile(enemy) && !isHostile(attackTgt)))) {
+              lowestHPTgt = enemy.getHealth();
+              attackTgt = enemy;
+            }
+          }
+        }
+        if (attackTgt != null && rc.canAttack(attackTgt.location)) {
+          MapLocation toAttack = attackTgt.location;
+          rc.attack(toAttack);
+          turnsNotKilledStuff = 0;
+        }
+      }
     }
 
     turnsNotKilledStuff++;

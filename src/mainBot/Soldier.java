@@ -459,13 +459,6 @@ public class Soldier extends RobotPlayer {
             dir = Pathfinder.getMoveDir(rc, inBounds);
       }
     }
-
-    // moveDirDx += 3*dir.dx;
-    // moveDirDy += 3*dir.dy;
-    // MapLocation vectorTgt = src.translate((int)Math.ceil(moveDirDx), (int)Math.ceil(moveDirDy));
-    // MapLocation inBounds = new MapLocation(Math.min(Math.max(0, vectorTgt.x), rc.getMapWidth() - 1), 
-    // Math.min(Math.max(0, vectorTgt.y), rc.getMapHeight() - 1));
-    // dir = Pathfinder.getMoveDir(rc, inBounds);
     
     if (dir != null && rc.canMove(dir)) {
       rc.move(dir);

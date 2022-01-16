@@ -52,20 +52,7 @@ public class Pathfinder {
                     costs[i][j] = -1;
                 }
             }
-            Direction optimalDir = Direction.CENTER;
-            double optimalCost = 9999;
-            for (Direction dir : Direction.allDirections()) {
-                MapLocation loc = src.add(dir);
-                if (!bot.onTheMap(loc) || bot.isLocationOccupied(loc)) {
-                    continue;
-                }
-                double currCost = Math.sqrt(loc.distanceSquaredTo(tgt))*20 + (bot.senseRubble(loc));
-                if (currCost < optimalCost) {
-                    optimalDir = dir;
-                    optimalCost = currCost;
-                }
-            }
-            MapLocation moveTo = src.add(optimalDir);
+            MapLocation moveTo = null;
             LinkedList<MapLocation> processQ = new LinkedList<>();
             int tgtRubble = bot.senseRubble(immTgt);
             costs[immTgt.x - src.x + 2][immTgt.y - src.y + 2] = tgtRubble;
@@ -129,6 +116,22 @@ public class Pathfinder {
                     }
                 }
                 h = h.next;
+            }
+            if (moveTo == null) {
+                Direction optimalDir = Direction.CENTER;
+                double optimalCost = 9999;
+                for (Direction dir : Direction.allDirections()) {
+                    MapLocation loc = src.add(dir);
+                    if (!bot.onTheMap(loc) || bot.isLocationOccupied(loc)) {
+                        continue;
+                    }
+                    double currCost = Math.sqrt(loc.distanceSquaredTo(tgt))*20 + (bot.senseRubble(loc));
+                    if (currCost < optimalCost) {
+                        optimalDir = dir;
+                        optimalCost = currCost;
+                    }
+                }
+                moveTo = src.add(optimalDir);
             }
             return src.directionTo(moveTo);
         }

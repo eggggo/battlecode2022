@@ -364,6 +364,11 @@ public class Archon extends RobotPlayer {
         //System.out.println(rc.readSharedArray(55) >> 7);
         //If there is no enemyArchonNearby and the first enemy hasn't been seen or there is nearby lead between 50 and 100, build a miner
         //If our minerCount is less than the target or our miner count is greater than our attacker count times a ratio and we shouldn't build a builder or theres an enemyArchonNearby, build a soldier.
+        if (enemyArchonNearby && rc.canBuildRobot(RobotType.MINER,dir) && rc.getArchonCount() > 1) {
+            rc.buildRobot(RobotType.MINER,dir);
+            rc.writeSharedArray(50, rc.readSharedArray(50) + 1);
+            rc.disintegrate();
+        }
         if (rc.canBuildRobot(RobotType.SAGE, dir)) {
             rc.setIndicatorString("1");
             if (shouldBuildSoldier) {

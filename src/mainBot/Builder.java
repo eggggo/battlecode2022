@@ -101,7 +101,7 @@ public class Builder extends RobotPlayer {
         Direction dir;
 
         boolean labOverWt = false;
-        if (mapArea > 2500 && rc.getTeamGoldAmount(rc.getTeam()) ==0) {
+        if (mapArea >= 2500 && rc.getTeamGoldAmount(rc.getTeam()) ==0) {
             labOverWt = true;
         }
 

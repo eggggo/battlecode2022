@@ -222,6 +222,12 @@ public class Miner extends RobotPlayer {
                         scoutTgt = new MapLocation(rc.getMapWidth() - 1 - src.x, rc.getMapHeight() - 1 - src.y);
                     }
                     dir = Pathfinder.getMoveDir(rc, scoutTgt);
+                } else if (scoutPattern == 1) {
+                    if (closestEnemyArchon != null) {
+                        dir = Pathfinder.getMoveDir(rc, closestEnemyArchon);
+                    } else {
+                        dir = Pathfinder.getMoveDir(rc, scoutTgt);
+                    }
                 } else {
                     if (!rc.onTheMap(src.add(bounceDir))) {
                         bounceDir = bounceDir.opposite();

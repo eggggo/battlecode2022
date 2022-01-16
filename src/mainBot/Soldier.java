@@ -459,7 +459,7 @@ public class Soldier extends RobotPlayer {
             dir = Pathfinder.getMoveDir(rc, inBounds);
       }
     }
-    
+
     if (dir != null && rc.canMove(dir)) {
       rc.move(dir);
     }
@@ -498,7 +498,7 @@ public class Soldier extends RobotPlayer {
     turnsAlive++;
     Comms.updateSector(rc, turnCount);
 
-    boolean currentHpThresh = (double)rc.getHealth()/rc.getType().getMaxHealth(1) > 0.7;
+    boolean currentHpThresh = (double)rc.getHealth()/rc.getType().getMaxHealth(1) > 0.2;
     if (!currentHpThresh && aboveHpThresh) {
         rc.writeSharedArray(51, rc.readSharedArray(51) - 1);
     } else if (currentHpThresh && !aboveHpThresh) {

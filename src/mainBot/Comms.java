@@ -11,9 +11,9 @@ public class Comms {
     //indices 49 through 63 for other info:
     //49: global income
     //50: healthy miner count(above 20% hp)
-    //51: healthy soldier count(above 70%)
-    //52: healthy watchtower count(above 70%)
-    //53: healthy sage count(above 70%)
+    //51: healthy soldier count(above 20%)
+    //52: healthy watchtower count(above 20%)
+    //53: healthy sage count(above 20%)
     //54: healthy builder count(above 20% hp)
     //55: 1 bit resource saving mode, 1 bit first soldier, last 6 bits sector of first seen enemy
     static int locationToSector(RobotController rc, MapLocation loc) {

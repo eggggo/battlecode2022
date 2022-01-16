@@ -13,6 +13,7 @@ public class Watchtower extends RobotPlayer {
   static int attackLocation = 0;
   static boolean aboveHpThresh = true;
   static MapLocation[] sectorMdpts = new MapLocation[49];
+  static int turnsHaveBeenTwo = 0;
 
   static int getQuadrant(RobotController rc, int x, int y) {
     int quad = 0;
@@ -70,6 +71,10 @@ public class Watchtower extends RobotPlayer {
     RobotInfo attackTgt = null;
     RobotInfo inVisionTgt = null;
 
+    if (rc.getLevel() == 2 && rc.getArchonCount() ==4) {
+        turnsHaveBeenTwo++;
+    }
+
     if (turnsAlive == 0) {
         for (int i = 48; i >= 0; i --) {
             sectorMdpts[i] = Comms.sectorMidpt(rc, i);
@@ -116,12 +121,14 @@ public class Watchtower extends RobotPlayer {
       }
     }
 
+    int turnsNotKilledStuffMove = 30;
+
     Direction stallDir = stallOnGoodRubble(rc);
 
     if (attackTgt != null && rc.getMode() == RobotMode.PORTABLE && rc.canTransform()
         && stallDir == Direction.CENTER) {
         rc.transform();
-    } else if (turnsNotKilledStuff > 30 && rc.getMode() == RobotMode.TURRET && rc.canTransform() && rc.getLevel() > 1) {
+    } else if (turnsNotKilledStuff > turnsNotKilledStuffMove && rc.getMode() == RobotMode.TURRET && rc.canTransform() && rc.getLevel() > 1) {
         rc.transform();
     }
 
@@ -143,7 +150,14 @@ public class Watchtower extends RobotPlayer {
             }
         }
         if (dir != null && rc.canMove(dir) && rc.getLevel() > 1) {
-            rc.move(dir);
+            if (rc.getArchonCount()==4) {
+                if (turnsHaveBeenTwo > 0) { //tweaking this value to see if not moving for a certain amount of turns when having 4 archons to incentivize defense helps .
+                    rc.move(dir);
+                }
+            } else {
+                rc.move(dir);
+            }
+
         }
     }
 

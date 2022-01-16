@@ -96,6 +96,11 @@ public class Builder extends RobotPlayer {
         //System.out.println(nearbyBuilding);
         Direction dir;
 
+        boolean labOverWt = false;
+        if (rc.getArchonCount() == 4 && rc.getTeamGoldAmount(rc.getTeam()) ==0) {
+            labOverWt = true;
+        }
+
         //If there is no nearby repariable building, follow a nearby non-crowded soldier, otherwise move randomly
         if (nearbyBuilding != null && src.distanceSquaredTo(nearbyBuilding) > 5) {
             dir = Pathfinder.getMoveDir(rc, nearbyBuilding);
@@ -168,9 +173,12 @@ public class Builder extends RobotPlayer {
         }
         else if (nearbyBuilding != null && rc.canRepair(nearbyBuilding)) {
             rc.repair(nearbyBuilding);
-        } else if (rc.getID() % 10 == 1 && laboratoriesBuilt == 0 && rc.canBuildRobot(RobotType.LABORATORY, builddir)) {
-            rc.buildRobot(RobotType.LABORATORY, builddir);
-            laboratoriesBuilt++;
+        } else if (labOverWt && laboratoriesBuilt == 0) {
+            if (rc.canBuildRobot(RobotType.LABORATORY, builddir)) {
+                rc.buildRobot(RobotType.LABORATORY, builddir);
+                laboratoriesBuilt++;
+                rc.writeSharedArray(55, (rc.readSharedArray(55) & 0b1111111));
+            }
         } else if (rc.canBuildRobot(RobotType.WATCHTOWER, builddir) && (watchtowersBuilt == 0 || numNearbyWatchtowers == 9)) {
             rc.buildRobot(RobotType.WATCHTOWER, builddir);
             watchtowersBuilt++;

@@ -161,7 +161,7 @@ public class Watchtower extends RobotPlayer {
                   }
               }
             }
-            if (bestTgtSector != null && !(nearestBuilder != null && nearestBuilder.location.distanceSquaredTo(src) > 20)) {
+            if (bestTgtSector != null && !(nearestBuilder != null && nearestBuilder.location.distanceSquaredTo(src) > 10)) {
                 dir = Pathfinder.getMoveDir(rc, bestTgtSector);
             }
         }

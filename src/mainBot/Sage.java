@@ -13,6 +13,7 @@ public class Sage extends RobotPlayer{
     //Role: 2 for defense, 1 for attack, 0 for scout
     static int role;
     static int castNum = 0;
+    static MapLocation[] sectorMdpts = new MapLocation[49];
 
     static int getQuadrant(RobotController rc, int x, int y) {
         int quad = 0;
@@ -30,68 +31,104 @@ public class Sage extends RobotPlayer{
         return quad;
     }
 
+    static Direction stallOnGoodRubble(RobotController rc) throws GameActionException {
+        MapLocation src = rc.getLocation();
+        int currRubble = rc.senseRubble(src);
+          int minRubble = currRubble;
+          MapLocation minRubbleLoc = src;
+          if (currRubble > 0) {
+            for (Direction d : Direction.allDirections()) {
+              MapLocation test = src.add(d);
+              if (rc.onTheMap(test) && !rc.isLocationOccupied(test) && rc.canSenseLocation(test)) {
+                int rubbleHere = rc.senseRubble(test);
+                if (rubbleHere <= minRubble) {
+                  minRubble = rubbleHere;
+                  minRubbleLoc = test;
+                }
+              }
+            }
+          }
+          return src.directionTo(minRubbleLoc);
+      }
+
+    static boolean isHostile(RobotInfo enemy) {
+        return (enemy.getType() == RobotType.SOLDIER || enemy.getType() == RobotType.SAGE 
+        || enemy.getType() == RobotType.WATCHTOWER);
+      }
+
     public static void runSage(RobotController rc) throws GameActionException {
         MapLocation src = rc.getLocation();
         int senseRadius = rc.getType().visionRadiusSquared;
+        int radius = rc.getType().actionRadiusSquared;
         Team friendly = rc.getTeam();
         Team opponent = rc.getTeam().opponent();
         RobotInfo[] enemies = rc.senseNearbyRobots(senseRadius, opponent);
+        RobotInfo attackTgt = null;
+        RobotInfo inVisionTgt = null;
+        int units = 0;
+        int buildings = 0;
+        int archons = 0;
+        int rubbleThreshold = rc.senseRubble(rc.getLocation()) + 20;
 
         if (turnsAlive == 0) {
             RobotInfo[] nearbyRobots = rc.senseNearbyRobots(senseRadius, friendly);
-            initializeSage(rc, nearbyRobots);
+            for (int i = 48; i >= 0; i --) {
+                sectorMdpts[i] = Comms.sectorMidpt(rc, i);
+            }
         }
 
-        MapLocation closestEnemy = null;
-        MapLocation closestAttackingEnemy = null;
-        MapLocation closestAttackingEnemySeen = null;
+        int lowestHPTgt = 9999;
+        int lowestInVisionHPTgt = 9999;
         if (enemies.length > 0) {
-            int buildings = 0;
-            int units = 0;
-            int archons = 0;
             for (int i = enemies.length - 1; i >= 0; i --) {
                 RobotInfo enemy = enemies[i];
-                if (rc.getLocation().distanceSquaredTo(enemy.getLocation()) <= RobotType.SAGE.actionRadiusSquared) {
-                    if (closestEnemy == null || enemy.location.distanceSquaredTo(src) < closestEnemy.distanceSquaredTo(src)) {
-                        closestEnemy = enemy.location;
-                    } else if ((enemy.getType() == RobotType.SOLDIER || enemy.getType() == RobotType.SAGE
-                            || enemy.getType() == RobotType.WATCHTOWER) && (closestAttackingEnemy == null
-                            || enemy.location.distanceSquaredTo(src) < closestAttackingEnemy.distanceSquaredTo(src))) {
-                        closestAttackingEnemy = enemy.location;
-                        closestAttackingEnemySeen = enemy.location;
+                if (enemy.getLocation().distanceSquaredTo(src) <= radius) {
+                    if (attackTgt == null) {
+                        lowestHPTgt = enemy.getHealth();
+                        attackTgt = enemy;
+                    } else if (isHostile(enemy) && !isHostile(attackTgt)) {
+                        lowestHPTgt = enemy.getHealth();
+                        attackTgt = enemy;
+                    } else if (enemy.getHealth() < lowestHPTgt 
+                    && ((isHostile(enemy) && isHostile(attackTgt)) || (!isHostile(enemy) && !isHostile(attackTgt)))) {
+                        lowestHPTgt = enemy.getHealth();
+                        attackTgt = enemy;
                     }
-                    if (enemy.getType() == RobotType.WATCHTOWER) {
-                        buildings++;
-                    } else if (enemy.getType() == RobotType.ARCHON) {
-                        archons++;
-                    } else if (enemy.getType() == RobotType.SAGE || enemy.getType() == RobotType.SOLDIER) {
-                        units++;
+                    if (enemy.getType() == RobotType.ARCHON) {
+                        archons ++;
+                    } else if (enemy.getType() == RobotType.WATCHTOWER || enemy.getType() == RobotType.LABORATORY) {
+                        buildings ++;
+                    } else {
+                        units ++;
                     }
                 } else {
-                    if ((enemy.getType() == RobotType.SOLDIER || enemy.getType() == RobotType.SAGE
-                            || enemy.getType() == RobotType.WATCHTOWER) && (closestAttackingEnemy == null
-                            || enemy.location.distanceSquaredTo(src) < closestAttackingEnemy.distanceSquaredTo(src))) {
-                        closestAttackingEnemySeen = enemy.location;
+                    if (inVisionTgt == null) {
+                        lowestInVisionHPTgt = enemy.getHealth();
+                        inVisionTgt = enemy;
+                    } else if (isHostile(enemy) && !isHostile(inVisionTgt)) {
+                        lowestInVisionHPTgt = enemy.getHealth();
+                        inVisionTgt = enemy;
+                    } else if (enemy.getHealth() < lowestInVisionHPTgt 
+                        && ((isHostile(enemy) && isHostile(inVisionTgt)) || (!isHostile(enemy) && !isHostile(inVisionTgt)))) {
+                        lowestInVisionHPTgt = enemy.getHealth();
+                        inVisionTgt = enemy;
                     }
                 }
             }
-
-            MapLocation toAttack = closestEnemy;
-            if (closestAttackingEnemy != null) {
-                toAttack = closestAttackingEnemy;
+            if (attackTgt != null && inVisionTgt == null) {
+                inVisionTgt = attackTgt;
             }
 
-            if (units >= 9 && rc.canEnvision(AnomalyType.CHARGE)) {
+            if (units >= 9  && rc.canEnvision(AnomalyType.CHARGE)) {
                 rc.envision(AnomalyType.CHARGE);
                 turnsNotKilledStuff = 0;
-                System.out.println("Charged");
                 castNum++;
             } else if ((archons >= 1 || buildings >= 4) && rc.canEnvision(AnomalyType.FURY)) {
                 rc.envision(AnomalyType.FURY);
                 turnsNotKilledStuff = 0;
-                System.out.println("Envisioned");
                 castNum++;
-            } else if (toAttack != null && rc.canAttack(toAttack)) {
+            } else if (attackTgt != null && rc.canAttack(attackTgt.location)) {
+                MapLocation toAttack = attackTgt.location;
                 rc.attack(toAttack);
                 turnsNotKilledStuff = 0;
             }
@@ -101,66 +138,62 @@ public class Sage extends RobotPlayer{
         }
 
         Direction dir = null;
-        if (rc.getHealth() < RobotType.SOLDIER.getMaxHealth(rc.getLevel()) / 10 && home != null) { // If low health run home
+        if (rc.getHealth() < RobotType.SAGE.getMaxHealth(rc.getLevel()) / 10 && home != null) { // If low health run home
             dir = Pathfinder.getMoveDir(rc, home);
-        } else if (closestAttackingEnemySeen != null && !rc.isActionReady()) {
-            Direction opposite = src.directionTo(closestAttackingEnemySeen).opposite();
+        //if cant attack and see enemies run
+        } else if (inVisionTgt != null && isHostile(inVisionTgt) && !rc.isActionReady()) {
+            Direction opposite = src.directionTo(inVisionTgt.location).opposite();
             MapLocation runawayTgt = src.add(opposite).add(opposite);
             runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1),
                     Math.min(Math.max(0, runawayTgt.y), rc.getMapHeight() - 1));
             dir = Pathfinder.getMoveDir(rc, runawayTgt);
-        } else if (turnsNotKilledStuff < 2) {
-            int currRubble = rc.senseRubble(src);
-            int minRubble = currRubble;
-            MapLocation minRubbleLoc = src;
-            if (currRubble > 0) {
-                for (Direction d : Direction.allDirections()) {
-                    MapLocation test = src.add(d);
-                    if (rc.onTheMap(test) && !rc.isLocationOccupied(test) && rc.canSenseLocation(test)) {
-                        int rubbleHere = rc.senseRubble(test);
-                        if (rubbleHere < minRubble) {
-                            minRubble = rubbleHere;
-                            minRubbleLoc = test;
-                        }
-                    }
+        } else if (inVisionTgt != null){
+            //far, follow if we have cd up
+            if (src.distanceSquaredTo(inVisionTgt.location) > 14) {
+                dir = src.directionTo(inVisionTgt.location);
+                int chaseSpotRubble = rc.senseRubble(src.add(dir));
+                if (chaseSpotRubble > rubbleThreshold && isHostile(inVisionTgt)) {
+                    dir = stallOnGoodRubble(rc);
                 }
-            }
-            dir = Pathfinder.getMoveDir(rc, minRubbleLoc);
-        } else {
-            int distance = Integer.MAX_VALUE;
-            MapLocation actualArchonsTarget = null;
-            int enemySectorDistance = 9999;
-            MapLocation closestEnemies = null;
-            for (int i = 48; i >= 0; i--) {
-                int[] sector = Comms.readSectorInfo(rc, i);
-                MapLocation loc = Comms.sectorMidpt(rc, i);
-                if (sector[3] > 5 && enemySectorDistance > rc.getLocation().distanceSquaredTo(loc)) {
-                    closestEnemies = loc;
-                    enemySectorDistance = rc.getLocation().distanceSquaredTo(loc);
-                }
-                if (sector[1] == 1 && distance > rc.getLocation().distanceSquaredTo(loc)) {
-                    actualArchonsTarget = loc;
-                    distance = rc.getLocation().distanceSquaredTo(loc);
-                }
-            }
-            if (actualArchonsTarget != null) {
-                dir = Pathfinder.getMoveDir(rc, actualArchonsTarget);
             } else {
-                //Attacks at one of the random spots of a potential enemy base
-
-                MapLocation attackTarget = enemyArchons[(rc.getID() + attackOffset) % (enemyArchons.length)];
-
-                //Change target if theres nothing at the target
-                if (rc.canSenseLocation(attackTarget)) {
-                    RobotInfo rb = rc.senseRobotAtLocation(attackTarget);
-                    if (rb == null || rb.getType() != RobotType.ARCHON) {
-                        attackOffset += 1;
-
-                    }
-                }
-                dir = Pathfinder.getMoveDir(rc, attackTarget);
+              dir = stallOnGoodRubble(rc);
             }
-        }
+        } else {
+            MapLocation closestEnemies = null;
+            MapLocation closestEnemyArchon = null;
+            int archonDistance = 9999;
+            MapLocation closestHomeArchon = null;
+            for (int i = 48; i >= 0; i--) {
+              int[] sector = Comms.readSectorInfo(rc, i);
+              MapLocation loc = sectorMdpts[i];
+              if (sector[3] > 0 && (closestEnemies == null || closestEnemies.distanceSquaredTo(src) > src.distanceSquaredTo(loc))) {
+                closestEnemies = loc;
+              }
+              if (sector[1] == 1 && (closestEnemyArchon == null || closestEnemyArchon.distanceSquaredTo(src) > src.distanceSquaredTo(loc))) {
+                closestEnemyArchon = loc;
+              }
+              if (sector[0] == 1 && sectorMdpts[i].distanceSquaredTo(src) < archonDistance) {
+                archonDistance = sectorMdpts[i].distanceSquaredTo(src);
+                closestHomeArchon = sectorMdpts[i];
+                home = closestEnemyArchon;
+              }
+            }
+            if (closestEnemies != null) {
+              dir = src.directionTo(closestEnemies);
+              MapLocation togo = src.add(dir);
+              int rubble = rc.senseRubble(togo);
+              if (closestEnemies.distanceSquaredTo(src) < 100 && rubble > rubbleThreshold) {
+                dir = stallOnGoodRubble(rc);
+              }
+            } else if (closestEnemyArchon != null) {
+              dir = src.directionTo(closestEnemyArchon);
+              MapLocation togo = src.add(dir);
+              int rubble = rc.senseRubble(togo);
+              if (closestEnemyArchon.distanceSquaredTo(src) < 100 && rubble > rubbleThreshold) {
+                dir = stallOnGoodRubble(rc);
+              }
+            }
+          }
 
         if (dir != null && rc.canMove(dir)) {
             rc.move(dir);
@@ -179,97 +212,5 @@ public class Sage extends RobotPlayer{
         Comms.updateSector(rc, turnCount);
         aboveHpThresh = currentHpThresh;
         turnsAlive ++;
-    }
-
-    static void initializeSage(RobotController rc, RobotInfo[] nearbyRobots) throws GameActionException{
-        role = 1;
-        int archonCount = 4;
-        for (int i = nearbyRobots.length - 1; i >= 0; i--) {
-            if (nearbyRobots[i].getType() == RobotType.ARCHON) {
-                home = nearbyRobots[i].getLocation();
-                break;
-            }
-        }
-
-
-        //if all of the archons have written to the comms
-        boolean quad1 = false;
-        boolean quad2 = false;
-        boolean quad3 = false;
-        boolean quad4 = false;
-
-        //Create an array for the quads each archon is contained in and another 2D array for each of the archons' coords
-        int currentArchonIndex = 0;
-        int[] quads = new int[archonCount];
-        MapLocation[] coords = new MapLocation[archonCount];
-        for (int i = 48; i >= 0; i--) {
-            int[] sector = Comms.readSectorInfo(rc, i);
-            //System.out.println("sector " + i + ": " + Arrays.toString(sector));
-            if (sector[0] == 1) {
-                MapLocation mdpt = Comms.sectorMidpt(rc, i);
-                quads[currentArchonIndex] = getQuadrant(rc, mdpt.x, mdpt.y);
-                coords[currentArchonIndex] = mdpt;
-                currentArchonIndex++;
-            }
-        }
-        archonCount = currentArchonIndex;
-        int[] tempQuads = new int[currentArchonIndex];
-        MapLocation[] tempCoords = new MapLocation[currentArchonIndex];
-        for (int i = currentArchonIndex - 1; i >= 0; i --) {
-            tempQuads[i] = quads[i];
-            tempCoords[i] = coords[i];
-        }
-        quads = tempQuads;
-        coords = tempCoords;
-
-        enemyArchons = new MapLocation[archonCount * 3];
-
-        //initialize whether there's a friendly archon in each quad
-        for (int a = archonCount - 1; a >= 0; a--) {
-            if (quads[a] == 1) {
-                quad1 = true;
-            } else if (quads[a] == 2) {
-                quad2 = true;
-            } else if (quads[a] == 3) {
-                quad3 = true;
-            } else if (quads[a] == 4) {
-                quad4 = true;
-            }
-        }
-
-        //Predict location of enemy archons based on potential symmetry.  For each archon, I check the 180 rotation,
-        // horizontal flip, and vertical flip.  These are only potential locations, as roataion can occur at other degrees of rotation.
-        if (quad1 && quad3 || quad2 && quad4) {
-            //System.out.println("Rotational Symmetry");
-            for (int i = archonCount - 1; i >= 0; i--) {
-                enemyArchons[3 * i] = new MapLocation(coords[i].x, rc.getMapHeight() - 1 - coords[i].y); //vert flip
-                enemyArchons[3 * i + 1] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, coords[i].y); // horz flip
-                enemyArchons[3 * i + 2] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, rc.getMapHeight() - 1 - coords[i].y); // 180 rotate
-            }
-
-        } else if (quad1 && quad2 || quad3 && quad4) {
-            //System.out.println("Horizontal Symmetry or Rotational Symmetry");
-            //thought that it was unecessary to check horizontal when its likely horizontally symmetric, so i just copied another vertical fip instead of using horz
-            for (int i = archonCount - 1; i >= 0; i--) {
-                enemyArchons[3 * i] = new MapLocation(coords[i].x, rc.getMapHeight() - 1 - coords[i].y); //vert flip
-                enemyArchons[3 * i + 1] = new MapLocation(coords[i].x, rc.getMapHeight() - 1 - coords[i].y); // vert flip
-                enemyArchons[3 * i + 2] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, rc.getMapHeight() - 1 - coords[i].y); // 180 rotate
-            }
-        } else if (quad1 && quad4 || quad2 && quad3) {
-            //System.out.println("Vertical Symmetry or Rotational Symmetry");
-            //thought that it was unecessary to check vertical when its likely vertically symmetric, so i just copied another horiz fip instead of using vert
-            for (int i = archonCount - 1; i >= 0; i--) {
-                enemyArchons[3 * i] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, coords[i].y); //horz flip
-                enemyArchons[3 * i + 1] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, coords[i].y); // horz flip
-                enemyArchons[3 * i + 2] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, rc.getMapHeight() - 1 - coords[i].y); // 180 rotate
-            }
-        } else {
-            //System.out.println("only in one quad so cannot tell");
-            for (int i = archonCount - 1; i >= 0; i--) {
-                enemyArchons[3 * i] = new MapLocation(coords[i].x, rc.getMapHeight() - 1 - coords[i].y); //vert flip
-                enemyArchons[3 * i + 1] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, coords[i].y); // horz flip
-                enemyArchons[3 * i + 2] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, rc.getMapHeight() - 1 - coords[i].y); // 180 rotate
-            }
-        }
     }
 }

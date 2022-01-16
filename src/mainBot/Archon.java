@@ -374,7 +374,7 @@ public class Archon extends RobotPlayer {
                 sagesBuilt++;
             }
         }
-        else if (wtCount * 2 > builderCount && rc.canBuildRobot(RobotType.BUILDER, dir) && wtCount >= rc.getArchonCount() && buildersBuilt < wtCount) {
+        else if (minerCount > 7 && wtCount * 2 > builderCount && rc.canBuildRobot(RobotType.BUILDER, dir) && wtCount >= rc.getArchonCount() && buildersBuilt < wtCount) {
             rc.setIndicatorString("2");
                 rc.buildRobot(RobotType.BUILDER, dir);
                 buildersBuilt++;

@@ -103,7 +103,24 @@ public class Builder extends RobotPlayer {
             } else {
                 dir = stallOnGoodRubble(rc);
             }
-        } else if (closestAttacker != null) {
+        } else if (rc.getTeamLeadAmount(rc.getTeam())>100) {
+            Direction center = rc.getLocation().directionTo(new MapLocation(rc.getMapWidth()/2, rc.getMapHeight()/2));
+            dir = center;
+            // If the direction to the center of the map is Direction.Center(means you're in the center), set your default
+            //direction to south, otherwise keep it center.
+            if (center == Direction.CENTER) {
+                dir = Direction.SOUTH;
+            }
+            int leastRubble = Integer.MAX_VALUE;
+                for (int i = directions.length - 1; i >= 0; i--) {
+                    MapLocation loc = src.add(directions[i]);
+                    if (rc.onTheMap(loc) && rc.senseRobotAtLocation(loc) == null && rc.senseRubble(loc) < leastRubble) {
+                        dir = directions[i];
+                        leastRubble = rc.senseRubble(loc);
+                    }
+                }
+        }
+        else if (closestAttacker != null) {
             Direction opposite = src.directionTo(closestAttacker).opposite();
             MapLocation runawayTgt = src.add(opposite).add(opposite);
             runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1), 
@@ -158,13 +175,13 @@ public class Builder extends RobotPlayer {
         } else if (rc.getID() % 10 == 1 && laboratoriesBuilt == 0 && rc.canBuildRobot(RobotType.LABORATORY, builddir)) {
             rc.buildRobot(RobotType.LABORATORY, builddir);
             laboratoriesBuilt++;
-        } else if (rc.canBuildRobot(RobotType.WATCHTOWER, builddir) && watchtowersBuilt == 0) {
+        } else if (rc.canBuildRobot(RobotType.WATCHTOWER, builddir) && (watchtowersBuilt == 0|| numNearbyWatchtowers == 0)) {
             rc.buildRobot(RobotType.WATCHTOWER, builddir);
             rc.writeSharedArray(52, rc.readSharedArray(52) + 1);
             watchtowersBuilt++;
         }
 
-        if (rc.canMove(dir)) {
+        if (dir != null && rc.canMove(dir)) {
             rc.move(dir);
         }
 

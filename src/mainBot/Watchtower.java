@@ -14,6 +14,7 @@ public class Watchtower extends RobotPlayer {
   static boolean aboveHpThresh = true;
   static MapLocation[] sectorMdpts = new MapLocation[49];
   static int turnsHaveBeenTwo = 0;
+  static MapLocation bestTgtSector = null;
 
   static int getQuadrant(RobotController rc, int x, int y) {
     int quad = 0;
@@ -70,6 +71,7 @@ public class Watchtower extends RobotPlayer {
     RobotInfo[] friendlies = rc.senseNearbyRobots(senseRadius, friendly);
     RobotInfo attackTgt = null;
     RobotInfo inVisionTgt = null;
+    int rubbleThreshold = rc.senseRubble(rc.getLocation()) + 20;
 
     if (rc.getLevel() == 2 && rc.getArchonCount() ==4) {
         turnsHaveBeenTwo++;
@@ -125,8 +127,9 @@ public class Watchtower extends RobotPlayer {
 
     Direction stallDir = stallOnGoodRubble(rc);
 
-    if (attackTgt != null && rc.getMode() == RobotMode.PORTABLE && rc.canTransform()
-        && stallDir == Direction.CENTER) {
+    if (attackTgt != null && (isHostile(attackTgt) || attackTgt.type == RobotType.ARCHON || enemies.length >= 4) 
+        && rc.getMode() == RobotMode.PORTABLE && rc.canTransform()
+        && stallDir == Direction.CENTER && rc.senseRubble(src) <= rubbleThreshold) {
         rc.transform();
     } else if (turnsNotKilledStuff > turnsNotKilledStuffMove && rc.getMode() == RobotMode.TURRET && rc.canTransform() && rc.getLevel() > 1) {
         rc.transform();
@@ -134,21 +137,31 @@ public class Watchtower extends RobotPlayer {
 
     if (rc.isMovementReady()) {
         Direction dir = null;
+        RobotInfo nearestBuilder = null;
+        for (int i = friendlies.length - 1; i >= 0; i --) {
+          RobotInfo friend = friendlies[i];
+          if (friend.getType() == RobotType.BUILDER && (nearestBuilder == null 
+          || friend.location.distanceSquaredTo(src) < nearestBuilder.location.distanceSquaredTo(src))) {
+            nearestBuilder = friend;
+          }
+        }
         if (attackTgt != null) {
             dir = stallDir;
         } else {
-          MapLocation bestTgtSector = null;
-          double bestTgtSectorScore = 0;
-            for (int i = 48; i >= 0; i--) {
-                int[] sector = Comms.readSectorInfo(rc, i);
-                MapLocation loc = sectorMdpts[i];
-                double sectorScore = sector[3]/Math.sqrt(src.distanceSquaredTo(loc));
-                if ((sector[1] > 0 || sector[3] >= 10) && (bestTgtSector == null || sectorScore > bestTgtSectorScore)) {
-                    bestTgtSector = loc;
-                    bestTgtSectorScore = sectorScore;
-                }
+          if (turnCount % 2 == 0) {
+            bestTgtSector = null;
+            double bestTgtSectorScore = 0;
+              for (int i = 48; i >= 0; i--) {
+                  int[] sector = Comms.readSectorInfo(rc, i);
+                  MapLocation loc = sectorMdpts[i];
+                  double sectorScore = (sector[3] + 50*sector[1])/Math.sqrt(src.distanceSquaredTo(loc));
+                  if ((sector[1] > 0 || sector[3] > 0) && (bestTgtSector == null || sectorScore > bestTgtSectorScore)) {
+                      bestTgtSector = loc;
+                      bestTgtSectorScore = sectorScore;
+                  }
+              }
             }
-            if (bestTgtSector != null) {
+            if (bestTgtSector != null && !(nearestBuilder != null && nearestBuilder.location.distanceSquaredTo(src) > 20)) {
                 dir = Pathfinder.getMoveDir(rc, bestTgtSector);
             }
         }

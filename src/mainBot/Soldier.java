@@ -20,6 +20,9 @@ public class Soldier extends RobotPlayer {
   static MapLocation tenTurnUpdate = null;
   static int tenTurnHealthUpdate = 50;
   static MapLocation opposite = null;
+  static MapLocation bestTgtSector = null;
+  static MapLocation closestEnemyArchon = null;
+  static MapLocation closestHomeArchon = null;
 
   static int getQuadrant(RobotController rc, int x, int y) {
     int quad = 0;
@@ -403,25 +406,27 @@ public class Soldier extends RobotPlayer {
     //4: if there are enemies in a nearby sector go there
     //otherwise, go to nearest scouted enemy archon or guess if no scouted
     } else {
-      MapLocation bestTgtSector = null;
-      double bestTgtSectorScore = 0;
-      MapLocation closestEnemyArchon = null;
-      int archonDistance = 9999;
-      MapLocation closestHomeArchon = null;
-      for (int i = 48; i >= 0; i--) {
-        int[] sector = Comms.readSectorInfo(rc, i);
-        MapLocation loc = sectorMdpts[i];
-        double sectorScore = sector[3]/Math.sqrt(src.distanceSquaredTo(loc));
-        if (sector[3] > 0 && (bestTgtSector == null || sectorScore > bestTgtSectorScore)) {
-          bestTgtSector = loc;
-          bestTgtSectorScore = sectorScore;
-        }
-        if (sector[1] == 1 && (closestEnemyArchon == null || closestEnemyArchon.distanceSquaredTo(src) > src.distanceSquaredTo(loc))) {
-          closestEnemyArchon = loc;
-        }
-        if (sector[0] == 1 && sectorMdpts[i].distanceSquaredTo(src) < archonDistance) {
-          archonDistance = sectorMdpts[i].distanceSquaredTo(src);
-          closestHomeArchon = sectorMdpts[i];
+      if (turnCount % 2 == 0) {
+        bestTgtSector = null;
+        double bestTgtSectorScore = 0;
+        closestEnemyArchon = null;
+        int archonDistance = 9999;
+        closestHomeArchon = null;
+        for (int i = 48; i >= 0; i--) {
+          int[] sector = Comms.readSectorInfo(rc, i);
+          MapLocation loc = sectorMdpts[i];
+          double sectorScore = sector[3]/Math.sqrt(src.distanceSquaredTo(loc));
+          if (sector[3] > 0 && (bestTgtSector == null || sectorScore > bestTgtSectorScore)) {
+            bestTgtSector = loc;
+            bestTgtSectorScore = sectorScore;
+          }
+          if (sector[1] == 1 && (closestEnemyArchon == null || closestEnemyArchon.distanceSquaredTo(src) > src.distanceSquaredTo(loc))) {
+            closestEnemyArchon = loc;
+          }
+          if (sector[0] == 1 && sectorMdpts[i].distanceSquaredTo(src) < archonDistance) {
+            archonDistance = sectorMdpts[i].distanceSquaredTo(src);
+            closestHomeArchon = sectorMdpts[i];
+          }
         }
       }
       if (bestTgtSector != null) {
@@ -452,9 +457,11 @@ public class Soldier extends RobotPlayer {
                 xVector += opposite.dx*(2.0/d);
                 yVector += opposite.dy*(2.0/d);
             }
-            Direction oppositeClosestHomeArchon = src.directionTo(closestHomeArchon).opposite();
-            xVector += oppositeClosestHomeArchon.dx/1.5;
-            yVector += oppositeClosestHomeArchon.dy/1.5;
+            if (closestHomeArchon != null) {
+              Direction oppositeClosestHomeArchon = src.directionTo(closestHomeArchon).opposite();
+              xVector += oppositeClosestHomeArchon.dx/1.5;
+              yVector += oppositeClosestHomeArchon.dy/1.5;
+            }
             MapLocation vectorTgt = src.translate((int)xVector, (int)yVector);
             MapLocation inBounds = new MapLocation(Math.min(Math.max(0, vectorTgt.x), rc.getMapWidth() - 1), 
             Math.min(Math.max(0, vectorTgt.y), rc.getMapHeight() - 1));

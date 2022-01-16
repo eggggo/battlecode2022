@@ -19,6 +19,7 @@ public class Soldier extends RobotPlayer {
   static boolean stall = false;
   static MapLocation tenTurnUpdate = null;
   static int tenTurnHealthUpdate = 50;
+  static MapLocation opposite = null;
 
   static int getQuadrant(RobotController rc, int x, int y) {
     int quad = 0;
@@ -402,15 +403,18 @@ public class Soldier extends RobotPlayer {
     //4: if there are enemies in a nearby sector go there
     //otherwise, go to nearest scouted enemy archon or guess if no scouted
     } else {
-      MapLocation closestEnemies = null;
+      MapLocation bestTgtSector = null;
+      double bestTgtSectorScore = 0;
       MapLocation closestEnemyArchon = null;
       int archonDistance = 9999;
       MapLocation closestHomeArchon = null;
       for (int i = 48; i >= 0; i--) {
         int[] sector = Comms.readSectorInfo(rc, i);
         MapLocation loc = sectorMdpts[i];
-        if (sector[3] > 0 && (closestEnemies == null || closestEnemies.distanceSquaredTo(src) > src.distanceSquaredTo(loc))) {
-          closestEnemies = loc;
+        double sectorScore = sector[3]/Math.sqrt(src.distanceSquaredTo(loc));
+        if (sector[3] > 0 && (bestTgtSector == null || sectorScore > bestTgtSectorScore)) {
+          bestTgtSector = loc;
+          bestTgtSectorScore = sectorScore;
         }
         if (sector[1] == 1 && (closestEnemyArchon == null || closestEnemyArchon.distanceSquaredTo(src) > src.distanceSquaredTo(loc))) {
           closestEnemyArchon = loc;
@@ -420,17 +424,15 @@ public class Soldier extends RobotPlayer {
           closestHomeArchon = sectorMdpts[i];
         }
       }
-      //don't go if bad rubble and close
-      if (closestEnemies != null) {
-        dir = Pathfinder.getMoveDir(rc, closestEnemies);
+      if (bestTgtSector != null) {
+        dir = Pathfinder.getMoveDir(rc, bestTgtSector);
         MapLocation togo = src.add(dir);
         int rubble = rc.senseRubble(togo);
         //if an enemy present sector is within 40 r^2 and the spot pathfinder returns is not great rubble, wait on good rubble squares
         //to prevent getting pushed in bad position, need to revise this as well
-        if (closestEnemies.distanceSquaredTo(src) < 100 && rubble > rubbleThreshold && !stall) {
+        if (bestTgtSector.distanceSquaredTo(src) < 100 && rubble > rubbleThreshold && !stall) {
           dir = stallOnGoodRubble(rc);
         }
-      //otherwise no enemies reported anywhere, just spread
       } else if (closestEnemyArchon != null) {
         dir = Pathfinder.getMoveDir(rc, closestEnemyArchon);
         MapLocation togo = src.add(dir);

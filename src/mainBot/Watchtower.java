@@ -137,16 +137,19 @@ public class Watchtower extends RobotPlayer {
         if (attackTgt != null) {
             dir = stallDir;
         } else {
-            MapLocation closestEnemies = null;
+          MapLocation bestTgtSector = null;
+          double bestTgtSectorScore = 0;
             for (int i = 48; i >= 0; i--) {
                 int[] sector = Comms.readSectorInfo(rc, i);
                 MapLocation loc = sectorMdpts[i];
-                if ((sector[1] > 0 || sector[3] > 3) && (closestEnemies == null || closestEnemies.distanceSquaredTo(src) > src.distanceSquaredTo(loc))) {
-                    closestEnemies = loc;
+                double sectorScore = sector[3]/Math.sqrt(src.distanceSquaredTo(loc));
+                if ((sector[1] > 0 || sector[3] >= 10) && (bestTgtSector == null || sectorScore > bestTgtSectorScore)) {
+                    bestTgtSector = loc;
+                    bestTgtSectorScore = sectorScore;
                 }
             }
-            if (closestEnemies != null) {
-                dir = Pathfinder.getMoveDir(rc, closestEnemies);
+            if (bestTgtSector != null) {
+                dir = Pathfinder.getMoveDir(rc, bestTgtSector);
             }
         }
         if (dir != null && rc.canMove(dir) && rc.getLevel() > 1) {

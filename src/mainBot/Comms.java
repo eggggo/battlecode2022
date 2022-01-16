@@ -113,11 +113,11 @@ public class Comms {
                     enemyArchon = 1;
                 }
                 enemyCount ++;
-                // } else if ((r.getType() == RobotType.SOLDIER
-                //         || r.getType() == RobotType.SAGE
-                //         || r.getType() == RobotType.WATCHTOWER)) {
-                //             enemyCount ++;
-                // }
+                if ((r.getType() == RobotType.SOLDIER
+                        || r.getType() == RobotType.SAGE
+                        || r.getType() == RobotType.WATCHTOWER)) {
+                            enemyCount += 4;
+                }
             }
         }
         enemyCount = Math.min(31, enemyCount);

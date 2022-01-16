@@ -115,7 +115,7 @@ public class Builder extends RobotPlayer {
             Math.min(Math.max(0, runawayTgt.y), rc.getMapHeight() - 1));
             dir = Pathfinder.getMoveDir(rc, runawayTgt);
         }
-        else if (labOverWt && nearestFriend != null) {
+        else if (labOverWt && nearestFriend != null && laboratoriesBuilt == 0) {
             dir = Pathfinder.getAwayDir(rc, nearestFriend);
         }
         else if (rc.getTeamLeadAmount(rc.getTeam())>100 && watchtowersBuilt == 0) {

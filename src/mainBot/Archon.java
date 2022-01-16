@@ -360,7 +360,7 @@ public class Archon extends RobotPlayer {
         if (mapArea <= 900) {
             initialMiners = 2;
         }
-        System.out.println(wtCount);
+        //System.out.println(wtCount);
         //System.out.println(rc.readSharedArray(55) >> 7 == 0);
         //System.out.println(rc.readSharedArray(55) >> 7);
         //If there is no enemyArchonNearby and the first enemy hasn't been seen or there is nearby lead between 50 and 100, build a miner

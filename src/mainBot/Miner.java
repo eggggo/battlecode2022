@@ -39,7 +39,7 @@ public class Miner extends RobotPlayer {
               }
             }
           }
-          return Pathfinder.getMoveDir(rc, minRubbleLoc);
+          return src.directionTo(minRubbleLoc);
       }
 
     static boolean isHostile(RobotInfo enemy) {

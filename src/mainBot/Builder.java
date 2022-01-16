@@ -68,10 +68,14 @@ public class Builder extends RobotPlayer {
         }
 
         //Sensing Important information like nearby soldiers:
+        int dist = Integer.MAX_VALUE;
+        MapLocation nearestFriend = null;
         for (int i = nearbyRobots.length - 1; i >= 0; i--) {
-            if (nearbyRobots[i].getType() == RobotType.SOLDIER) {
-                nearbySoldier = nearbyRobots[i].getLocation();
-                break;
+            MapLocation tempLoc = nearbyRobots[i].getLocation();
+            int tempDist = src.distanceSquaredTo(nearbyRobots[i].getLocation());
+            if (tempDist < dist) {
+                dist = tempDist;
+                nearestFriend = tempLoc;
             }
         }
 
@@ -97,12 +101,12 @@ public class Builder extends RobotPlayer {
         Direction dir;
 
         boolean labOverWt = false;
-        if (rc.getArchonCount() == 4 && rc.getTeamGoldAmount(rc.getTeam()) ==0) {
+        if (mapArea > 2500 && rc.getTeamGoldAmount(rc.getTeam()) ==0) {
             labOverWt = true;
         }
 
         //If there is no nearby repariable building, follow a nearby non-crowded soldier, otherwise move randomly
-        if (nearbyBuilding != null && src.distanceSquaredTo(nearbyBuilding) > 5) {
+        if (nearbyBuilding != null && src.distanceSquaredTo(nearbyBuilding) > 4) {
             dir = Pathfinder.getMoveDir(rc, nearbyBuilding);
         } else if (closestAttacker != null) {
             Direction opposite = src.directionTo(closestAttacker).opposite();
@@ -110,7 +114,11 @@ public class Builder extends RobotPlayer {
             runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1), 
             Math.min(Math.max(0, runawayTgt.y), rc.getMapHeight() - 1));
             dir = Pathfinder.getMoveDir(rc, runawayTgt);
-        } else if (rc.getTeamLeadAmount(rc.getTeam())>100 && watchtowersBuilt == 0) {
+        }
+        else if (labOverWt && nearestFriend != null) {
+            dir = Pathfinder.getAwayDir(rc, nearestFriend);
+        }
+        else if (rc.getTeamLeadAmount(rc.getTeam())>100 && watchtowersBuilt == 0) {
             Direction center = rc.getLocation().directionTo(new MapLocation(rc.getMapWidth()/2, rc.getMapHeight()/2));
             dir = center;
             // If the direction to the center of the map is Direction.Center(means you're in the center), set your default
@@ -126,8 +134,6 @@ public class Builder extends RobotPlayer {
                         leastRubble = rc.senseRubble(loc);
                     }
                 }
-        } else if (nearbySoldier != null) {
-            dir = Pathfinder.getMoveDir(rc, nearbySoldier);
         } else {
             dir = stallOnGoodRubble(rc);
         }

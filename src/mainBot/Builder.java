@@ -171,7 +171,7 @@ public class Builder extends RobotPlayer {
         } else if (rc.getID() % 10 == 1 && laboratoriesBuilt == 0 && rc.canBuildRobot(RobotType.LABORATORY, builddir)) {
             rc.buildRobot(RobotType.LABORATORY, builddir);
             laboratoriesBuilt++;
-        } else if (rc.canBuildRobot(RobotType.WATCHTOWER, builddir) && (watchtowersBuilt == 0|| numNearbyWatchtowers == 0)) {
+        } else if (rc.canBuildRobot(RobotType.WATCHTOWER, builddir) && (watchtowersBuilt == 0 || numNearbyWatchtowers == 9)) {
             rc.buildRobot(RobotType.WATCHTOWER, builddir);
             watchtowersBuilt++;
         }

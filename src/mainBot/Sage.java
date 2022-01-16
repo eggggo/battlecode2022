@@ -150,7 +150,7 @@ public class Sage extends RobotPlayer{
         } else if (inVisionTgt != null){
             //far, follow if we have cd up
             if (src.distanceSquaredTo(inVisionTgt.location) > 14) {
-                dir = src.directionTo(inVisionTgt.location);
+                dir = Pathfinder.getMoveDir(rc, inVisionTgt.location);
                 int chaseSpotRubble = rc.senseRubble(src.add(dir));
                 if (chaseSpotRubble > rubbleThreshold && isHostile(inVisionTgt)) {
                     dir = stallOnGoodRubble(rc);
@@ -179,14 +179,14 @@ public class Sage extends RobotPlayer{
               }
             }
             if (closestEnemies != null) {
-              dir = src.directionTo(closestEnemies);
+              dir = Pathfinder.getMoveDir(rc, closestEnemies);
               MapLocation togo = src.add(dir);
               int rubble = rc.senseRubble(togo);
               if (closestEnemies.distanceSquaredTo(src) < 100 && rubble > rubbleThreshold) {
                 dir = stallOnGoodRubble(rc);
               }
             } else if (closestEnemyArchon != null) {
-              dir = src.directionTo(closestEnemyArchon);
+              dir = Pathfinder.getMoveDir(rc, closestEnemyArchon);
               MapLocation togo = src.add(dir);
               int rubble = rc.senseRubble(togo);
               if (closestEnemyArchon.distanceSquaredTo(src) < 100 && rubble > rubbleThreshold) {

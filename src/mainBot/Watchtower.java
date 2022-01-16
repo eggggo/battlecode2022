@@ -126,19 +126,22 @@ public class Watchtower extends RobotPlayer {
     }
 
     if (rc.isMovementReady()) {
-        MapLocation closestEnemies = null;
-        for (int i = 48; i >= 0; i--) {
-            int[] sector = Comms.readSectorInfo(rc, i);
-            MapLocation loc = sectorMdpts[i];
-            if ((sector[1] > 0) && (closestEnemies == null || closestEnemies.distanceSquaredTo(src) > src.distanceSquaredTo(loc))) {
-                closestEnemies = loc;
+        Direction dir = null;
+        if (attackTgt != null) {
+            dir = stallDir;
+        } else {
+            MapLocation closestEnemies = null;
+            for (int i = 48; i >= 0; i--) {
+                int[] sector = Comms.readSectorInfo(rc, i);
+                MapLocation loc = sectorMdpts[i];
+                if ((sector[1] > 0) && (closestEnemies == null || closestEnemies.distanceSquaredTo(src) > src.distanceSquaredTo(loc))) {
+                    closestEnemies = loc;
+                }
+            }
+            if (closestEnemies != null) {
+                dir = Pathfinder.getMoveDir(rc, closestEnemies);
             }
         }
-        Direction dir = null;
-        if (closestEnemies != null) {
-            dir = Pathfinder.getMoveDir(rc, closestEnemies);
-        }
-        
         if (dir != null && rc.canMove(dir) && rc.getLevel() > 1) {
             rc.move(dir);
         }

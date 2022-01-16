@@ -260,6 +260,39 @@ public class Archon extends RobotPlayer {
             shouldBuildSoldier = true;
         }
 
+        //initialize friendlyArchonSectorsDists which is the distance of each of the archons to the closest enemy
+        // sector.
+        int[] friendlyArchonSectorsDists = new int[friendlyArchonSectors.length];
+        MapLocation combatMdpt = Comms.sectorMidpt(rc, combatSector);
+        for (int i = friendlyArchonSectors.length - 1; i >= 0; i--) {
+            friendlyArchonSectorsDists[i] = Comms.sectorMidpt(rc, friendlyArchonSectors[i]).distanceSquaredTo(combatMdpt);
+        }
+
+        //sorting algorithm
+        int n = friendlyArchonSectorsDists.length;
+        for (int i = 1; i < n; ++i) {
+            int key = friendlyArchonSectorsDists[i];
+            int j = i - 1;
+
+            /*
+             * Move elements of arr[0..i-1], that are greater than key, to one
+             * position ahead of their current position
+             */
+            while (j >= 0 && friendlyArchonSectorsDists[j] > key) {
+                friendlyArchonSectorsDists[j + 1] = friendlyArchonSectorsDists[j];
+                j = j - 1;
+            }
+            friendlyArchonSectorsDists[j + 1] = key;
+        }
+
+        //Should build Watchtower or no
+
+        boolean shouldBuildWt = false;
+        if (friendlyArchonSectorsDists[wtCount % rc.getArchonCount()] == Comms.sectorMidpt(rc, Comms.locationToSector(rc, rc.getLocation())).distanceSquaredTo(combatMdpt)) {
+            shouldBuildWt = true;
+        }
+
+
         double friendlyToEnemyRatio = ((double) 1+soldierCount + wtCount + sageCount)/ (double) (1+enemyCount);
         //cap friendlyToEnemyRatio at 5 for building alg purposes.
         if (friendlyToEnemyRatio > 5) {

@@ -162,6 +162,7 @@ public class Builder extends RobotPlayer {
         //If there is a nearby building that can be repaired, repair it, otherwise go to the nearest repariable buidling and repair it.
         if (nearbyBuilding != null && rc.canMutate(nearbyBuilding) && rc.getTeamLeadAmount(rc.getTeam()) >= 200) {
             rc.mutate(nearbyBuilding);
+            rc.writeSharedArray(52, rc.readSharedArray(52) + 1);
             rc.writeSharedArray(55, (rc.readSharedArray(55) & 0b1111111));
             //System.out.println("hello");
         }
@@ -172,7 +173,6 @@ public class Builder extends RobotPlayer {
             laboratoriesBuilt++;
         } else if (rc.canBuildRobot(RobotType.WATCHTOWER, builddir) && (watchtowersBuilt == 0|| numNearbyWatchtowers == 0)) {
             rc.buildRobot(RobotType.WATCHTOWER, builddir);
-            rc.writeSharedArray(52, rc.readSharedArray(52) + 1);
             watchtowersBuilt++;
         }
 

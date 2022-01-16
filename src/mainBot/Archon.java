@@ -25,6 +25,7 @@ public class Archon extends RobotPlayer {
     static int lastTurnMiners = 0;
     static double soldierToMinerRatioAdj = 0;
     static int unitsAfterEnemySeen = 0;
+    static int mapThres = 900;
 
     /**
      * Run a single turn for an Archon.
@@ -50,6 +51,11 @@ public class Archon extends RobotPlayer {
         boolean archonSpotted = false;
         int leadNearArchons = 0;
         MapLocation[] nearbyLead = rc.senseNearbyLocationsWithLead(RobotType.ARCHON.visionRadiusSquared);
+        if (rc.getArchonCount() == 1) {
+            mapThres = 0;
+        } else {
+            mapThres = 900;
+        }
         //Initialize combat sector.  If we see an enemy, enemyCount++
         if (combatSector == -1) {
             combatSector = 50;
@@ -146,16 +152,16 @@ public class Archon extends RobotPlayer {
             }
         }
 
-        //Accounting for rubble when creating a unit.  Don't care about rubble if mapArea > 900
+        //Accounting for rubble when creating a unit.  Don't care about rubble if mapArea > mapThres
         double rubble = 200;
         MapLocation src = rc.getLocation();
         for (Direction dire : directions) {
             MapLocation loc = src.add(dire);
             if (rc.onTheMap(loc) && rc.senseRobotAtLocation(loc) == null) {
-                if (rc.senseRubble(loc) < rubble && mapArea > 900) {
+                if (rc.senseRubble(loc) < rubble && mapArea > mapThres) {
                     rubble = rc.senseRubble(loc);
                     dir = dire;
-                } else if (mapArea <= 900){
+                } else if (mapArea <= mapThres){
                     dir = dire;
                     break;
                 }
@@ -361,7 +367,7 @@ public class Archon extends RobotPlayer {
         boolean shouldBuildSoldierConds = (sageCount + soldierCount) * (1.5 - soldierToMinerRatioAdj) < minerCount && leadNearArchons < 75;
 
         int initialMiners = 3;
-        if (mapArea < 900) {
+        if (mapArea < mapThres) {
             initialMiners = 2;
         }
 
@@ -399,7 +405,7 @@ public class Archon extends RobotPlayer {
                 buildersBuiltInARow++;
                 rc.writeSharedArray(54, rc.readSharedArray(54) + 1);
         }
-        else if (soldierCount + minerCount >= (initialMiners+1) *rc.getArchonCount() && !enemyArchonNearby && builderCount<rc.getArchonCount() && mapArea > 900
+        else if (soldierCount + minerCount >= (initialMiners+1) *rc.getArchonCount() && !enemyArchonNearby && builderCount<rc.getArchonCount() && mapArea > mapThres
                 && buildersBuilt < 1 && rc.getTeamLeadAmount(rc.getTeam()) < 400 && canBuildWatchtower) {
             rc.setIndicatorString("3");
             if (rc.readSharedArray(55) >> 7 == 0  && shouldBuildWt && rc.canBuildRobot(RobotType.BUILDER, dir)) {
@@ -413,7 +419,7 @@ public class Archon extends RobotPlayer {
                 //System.out.println("yeet");
             }
         }
-        else if (soldierCount + minerCount >= (initialMiners+1) *rc.getArchonCount() && !enemyArchonNearby && builderCount<rc.getArchonCount() && mapArea > 900
+        else if (soldierCount + minerCount >= (initialMiners+1) *rc.getArchonCount() && !enemyArchonNearby && builderCount<rc.getArchonCount() && mapArea > mapThres
                 && buildersBuilt < 1 && rc.getTeamLeadAmount(rc.getTeam()) < 400 && !canBuildWatchtower && rc.getTeamGoldAmount(rc.getTeam()) == 0) {
             rc.setIndicatorString("3.5");
             if (rc.readSharedArray(55) >> 7 == 0  && shouldBuildLab && rc.canBuildRobot(RobotType.BUILDER, dir)) {
@@ -429,7 +435,7 @@ public class Archon extends RobotPlayer {
         }
         else if (rc.readSharedArray(55) >> 7 == 0 || rc.getTeamLeadAmount(rc.getTeam()) > 400) {
             rc.setIndicatorString("4");
-            if (mapArea <= 900 && rc.getArchonCount() == 1) {
+            if (mapArea <= mapThres && rc.getArchonCount() == 1) {
                 if (soldierCount < minerCount) {
                     if (rc.canBuildRobot(RobotType.SOLDIER, dir)) {
                         rc.buildRobot(RobotType.SOLDIER, dir);

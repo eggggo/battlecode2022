@@ -12,6 +12,7 @@ public class Builder extends RobotPlayer {
     static boolean aboveHpThresh = true;
     static MapLocation home = null;
     static MapLocation[] sectorMdpts = new MapLocation[49];
+    static int mapThres = 900;
 
     static Direction stallOnGoodRubble(RobotController rc) throws GameActionException {
         MapLocation src = rc.getLocation();
@@ -45,6 +46,11 @@ public class Builder extends RobotPlayer {
             for (int i = 48; i >= 0; i --) {
                 sectorMdpts[i] = Comms.sectorMidpt(rc, i);
             }
+        }
+        if (rc.getArchonCount() == 1) {
+            mapThres = 0;
+        } else {
+            mapThres = 900;
         }
         MapLocation src = rc.getLocation();
         int currentIncome = rc.readSharedArray(49);
@@ -153,10 +159,10 @@ public class Builder extends RobotPlayer {
         for (Direction dire : directions) {
             MapLocation loc = src.add(dire);
             if (rc.onTheMap(loc) && rc.senseRobotAtLocation(loc) == null) {
-                if (rc.senseRubble(loc) < rubble && mapArea > 900) {
+                if (rc.senseRubble(loc) < rubble && mapArea > mapThres) {
                     rubble = rc.senseRubble(loc);
                     builddir = dire;
-                } else if (mapArea <= 900){
+                } else if (mapArea <= mapThres){
                     builddir = dire;
                     break;
                 }

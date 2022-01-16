@@ -343,7 +343,7 @@ public class Soldier extends RobotPlayer {
     Direction a = null;
     if (chase) {
       a = src.directionTo(priorTarget.location);
-      if (rc.senseRubble(rc.getLocation().add(a)) > rubbleThreshold) {
+      if (rc.senseRubble(rc.getLocation().add(a)) > rubbleThreshold && isHostile(priorTarget)) {
         chase = false;
       }
     }
@@ -392,7 +392,7 @@ public class Soldier extends RobotPlayer {
       if (src.distanceSquaredTo(inVisionTgt.location) > 5) {
         dir = src.directionTo(inVisionTgt.location);
         int chaseSpotRubble = rc.senseRubble(src.add(dir));
-      if (chaseSpotRubble > rubbleThreshold) {
+      if (chaseSpotRubble > rubbleThreshold && isHostile(inVisionTgt)) {
         dir = stallOnGoodRubble(rc);
       }
       //close enough to engage, go to low rubble to fight

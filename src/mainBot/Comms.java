@@ -137,7 +137,6 @@ public class Comms {
         }
 
         int msg = (homeArchon << 15) | (enemyArchon << 14) | (resourceCount << 8) | (enemyCount << 3) | (turnMod << 2);
-        rc.setIndicatorString("resource patches: " + resourceCount);
         rc.writeSharedArray(sector, msg);
     }
 

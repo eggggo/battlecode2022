@@ -121,7 +121,7 @@ public class Watchtower extends RobotPlayer {
     if (attackTgt != null && rc.getMode() == RobotMode.PORTABLE && rc.canTransform()
         && stallDir == Direction.CENTER) {
         rc.transform();
-    } else if (turnsNotKilledStuff > 30 && rc.getMode() == RobotMode.TURRET && rc.canTransform()) {
+    } else if (turnsNotKilledStuff > 30 && rc.getMode() == RobotMode.TURRET && rc.canTransform() && rc.getLevel() > 1) {
         rc.transform();
     }
 

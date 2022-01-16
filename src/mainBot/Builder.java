@@ -97,12 +97,14 @@ public class Builder extends RobotPlayer {
         Direction dir;
 
         //If there is no nearby repariable building, follow a nearby non-crowded soldier, otherwise move randomly
-        if (nearbyBuilding != null) {
-            if (src.distanceSquaredTo(nearbyBuilding) > 0) {
-                dir = Pathfinder.getMoveDir(rc, nearbyBuilding);
-            } else {
-                dir = stallOnGoodRubble(rc);
-            }
+        if (nearbyBuilding != null && src.distanceSquaredTo(nearbyBuilding) > 5) {
+            dir = Pathfinder.getMoveDir(rc, nearbyBuilding);
+        } else if (closestAttacker != null) {
+            Direction opposite = src.directionTo(closestAttacker).opposite();
+            MapLocation runawayTgt = src.add(opposite).add(opposite);
+            runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1), 
+            Math.min(Math.max(0, runawayTgt.y), rc.getMapHeight() - 1));
+            dir = Pathfinder.getMoveDir(rc, runawayTgt);
         } else if (rc.getTeamLeadAmount(rc.getTeam())>100) {
             Direction center = rc.getLocation().directionTo(new MapLocation(rc.getMapWidth()/2, rc.getMapHeight()/2));
             dir = center;
@@ -119,13 +121,6 @@ public class Builder extends RobotPlayer {
                         leastRubble = rc.senseRubble(loc);
                     }
                 }
-        }
-        else if (closestAttacker != null) {
-            Direction opposite = src.directionTo(closestAttacker).opposite();
-            MapLocation runawayTgt = src.add(opposite).add(opposite);
-            runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1), 
-            Math.min(Math.max(0, runawayTgt.y), rc.getMapHeight() - 1));
-            dir = Pathfinder.getMoveDir(rc, runawayTgt);
         } else if (nearbySoldier != null) {
             dir = Pathfinder.getMoveDir(rc, nearbySoldier);
         } else {

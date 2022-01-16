@@ -26,6 +26,7 @@ public class Archon extends RobotPlayer {
     static double soldierToMinerRatioAdj = 0;
     static int unitsAfterEnemySeen = 0;
     static int mapThres = 900;
+    static int startNumArchons = 0;
 
     /**
      * Run a single turn for an Archon.
@@ -51,7 +52,10 @@ public class Archon extends RobotPlayer {
         boolean archonSpotted = false;
         int leadNearArchons = 0;
         MapLocation[] nearbyLead = rc.senseNearbyLocationsWithLead(RobotType.ARCHON.visionRadiusSquared);
-        if (rc.getArchonCount() == 1) {
+        if (turnsAlive == 0) {
+            startNumArchons = rc.getArchonCount();
+        }
+        if (startNumArchons == 1) {
             mapThres = 0;
         } else {
             mapThres = 900;
@@ -367,7 +371,7 @@ public class Archon extends RobotPlayer {
         boolean shouldBuildSoldierConds = (sageCount + soldierCount) * (1.5 - soldierToMinerRatioAdj) < minerCount && leadNearArchons < 75;
 
         int initialMiners = 3;
-        if (mapArea < mapThres) {
+        if (mapArea <= mapThres) {
             initialMiners = 2;
         }
 

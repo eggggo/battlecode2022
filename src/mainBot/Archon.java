@@ -285,7 +285,7 @@ public class Archon extends RobotPlayer {
             shouldBuildLab = true;
         }
 
-        double friendlyToEnemyRatio = ((double) 1+soldierCount + wtCount + sageCount)/ (double) (1+enemyCount);
+        double friendlyToEnemyRatio = ((double) 1+soldierCount + wtCount + sageCount)/ (double) (Math.max(1, (1+enemyCount)/5));
         //cap friendlyToEnemyRatio at 5 for building alg purposes.
         if (friendlyToEnemyRatio > 5) {
             friendlyToEnemyRatio = 5;

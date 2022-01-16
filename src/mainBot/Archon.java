@@ -340,7 +340,7 @@ public class Archon extends RobotPlayer {
         }
 
         //UNIT BUILDING:
-        boolean shouldBuildBuilder = rc.getTeamLeadAmount(rc.getTeam())>220 && builderCount < maxBuilderCount && buildersBuiltInARow < 1;
+        boolean shouldBuildBuilder = rc.getTeamLeadAmount(rc.getTeam())>220 && builderCount < maxBuilderCount;
         boolean shouldBuildMiner = targetMinerCount > minerCount;
         boolean shouldBuildSoldierConds = (sageCount + soldierCount) * (1.5 - soldierToMinerRatioAdj) < minerCount && leadNearArchons < 75;
 
@@ -494,13 +494,15 @@ public class Archon extends RobotPlayer {
             //If there is no enemyArchonNearby and we should build a builder or our minerCount is greater than our target and friendlyToEnemy is greater than 3 build a builder.
             else if (rc.canBuildRobot(RobotType.BUILDER, dir) &&
                     !enemyArchonNearby && shouldBuildBuilder) {
-                rc.setIndicatorString("4.8");
-                rc.buildRobot(RobotType.BUILDER, dir);
-                buildersBuilt++;
-                soldiersBuiltInARow = 0;
-                minersBuiltInARow = 0;
-                buildersBuiltInARow++;
-                rc.writeSharedArray(54, rc.readSharedArray(54) + 1);
+                if (rc.readSharedArray(55) >> 7 == 0  && shouldBuildWt && rc.canBuildRobot(RobotType.BUILDER, dir)) {
+                    rc.buildRobot(RobotType.BUILDER, dir);
+                    buildersBuilt++;
+                    soldiersBuiltInARow = 0;
+                    minersBuiltInARow = 0;
+                    buildersBuiltInARow++;
+                    rc.writeSharedArray(54, rc.readSharedArray(54) + 1);
+                    rc.writeSharedArray(55, (rc.readSharedArray(55) | 0b10000000));
+                }
             }
         } else {
             rc.setIndicatorString("4.9");

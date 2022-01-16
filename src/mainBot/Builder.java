@@ -197,6 +197,7 @@ public class Builder extends RobotPlayer {
         boolean currentHpThresh = (double)rc.getHealth()/rc.getType().getMaxHealth(1) > 0.2;
         if (!currentHpThresh && aboveHpThresh) {
             rc.writeSharedArray(54, rc.readSharedArray(54) - 1);
+            rc.writeSharedArray(55, (rc.readSharedArray(55) & 0b1111111));
         } else if (currentHpThresh && !aboveHpThresh) {
             rc.writeSharedArray(54, rc.readSharedArray(54) + 1);
         }

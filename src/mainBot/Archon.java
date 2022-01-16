@@ -360,12 +360,12 @@ public class Archon extends RobotPlayer {
         if (mapArea <= 900) {
             initialMiners = 2;
         }
-        System.out.println(wtCount);
         //System.out.println(rc.readSharedArray(55) >> 7 == 0);
         //System.out.println(rc.readSharedArray(55) >> 7);
         //If there is no enemyArchonNearby and the first enemy hasn't been seen or there is nearby lead between 50 and 100, build a miner
         //If our minerCount is less than the target or our miner count is greater than our attacker count times a ratio and we shouldn't build a builder or theres an enemyArchonNearby, build a soldier.
         if (rc.canBuildRobot(RobotType.SAGE, dir)) {
+            rc.setIndicatorString("1");
             if (shouldBuildSoldier) {
                 rc.buildRobot(RobotType.SAGE, dir);
                 minersBuiltInARow = 0;
@@ -375,6 +375,7 @@ public class Archon extends RobotPlayer {
             }
         }
         else if (wtCount * 2 > builderCount && rc.canBuildRobot(RobotType.BUILDER, dir) && wtCount >= rc.getArchonCount() && buildersBuilt < wtCount) {
+            rc.setIndicatorString("2");
                 rc.buildRobot(RobotType.BUILDER, dir);
                 buildersBuilt++;
                 soldiersBuiltInARow = 0;
@@ -383,8 +384,9 @@ public class Archon extends RobotPlayer {
                 rc.writeSharedArray(54, rc.readSharedArray(54) + 1);
         }
         else if (soldierCount + minerCount >= 4*rc.getArchonCount() && !enemyArchonNearby && builderCount<rc.getArchonCount() && mapArea > 900
-                && rc.getTeamLeadAmount(rc.getTeam()) < 275) {
-            if (buildersBuilt < 1 && rc.readSharedArray(55) >> 7 == 0  && shouldBuildWt && rc.canBuildRobot(RobotType.BUILDER, dir)) {
+                && buildersBuilt < 1 &&rc.getTeamLeadAmount(rc.getTeam()) < 400) {
+            rc.setIndicatorString("3");
+            if (rc.readSharedArray(55) >> 7 == 0  && shouldBuildWt && rc.canBuildRobot(RobotType.BUILDER, dir)) {
                 rc.buildRobot(RobotType.BUILDER, dir);
                 buildersBuilt++;
                 soldiersBuiltInARow = 0;
@@ -396,6 +398,7 @@ public class Archon extends RobotPlayer {
             }
         }
         else if (rc.readSharedArray(55) >> 7 == 0 || rc.getTeamLeadAmount(rc.getTeam()) > 400) {
+            rc.setIndicatorString("4");
             if (mapArea <= 900 && rc.getArchonCount() == 1) {
                 if (soldierCount < minerCount) {
                     if (rc.canBuildRobot(RobotType.SOLDIER, dir)) {

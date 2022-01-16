@@ -106,7 +106,7 @@ public class Miner extends RobotPlayer {
                     rc.mineGold(mineLocation);
                     income += 5;
                 }
-                boolean shouldContinue = nearbyEnemy && distanceFromSpawn > .75 * Math.sqrt(mapArea);
+                boolean shouldContinue = nearbyEnemy && distanceFromSpawn > (.75 * Math.sqrt(mapArea)) * (.75 * Math.sqrt(mapArea));
                 int stopMiningThres = 1;
                 if (shouldContinue) {
                     stopMiningThres = 0;

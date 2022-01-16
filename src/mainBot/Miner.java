@@ -17,6 +17,7 @@ public class Miner extends RobotPlayer {
     static MapLocation home = null;
     static MapLocation closestEnemyArchon = null;
     static int scoutPattern = 0;
+    static MapLocation scoutTgt = null;
     /**
      * Run a single turn for a Miner.
      * This code is wrapped inside the infinite loop in run(), so it is called once per turn.
@@ -78,6 +79,7 @@ public class Miner extends RobotPlayer {
             }
             scoutPattern = rc.readSharedArray(50) % 3;
             bounceDir = spawnDir;
+            scoutTgt = new MapLocation(rc.getMapWidth() - 1 - src.x, rc.getMapHeight() - 1 - src.y);
         }
 
         int distanceFromSpawn = 0;
@@ -216,12 +218,10 @@ public class Miner extends RobotPlayer {
                 bounceDir = dir;
             } else {
                 if (scoutPattern == 0) {
-                    if (closestEnemyArchon == null) {
-                        MapLocation opposite = new MapLocation(rc.getMapWidth() - 1 - src.x, rc.getMapHeight() - 1 - src.y);
-                        dir = Pathfinder.getMoveDir(rc, opposite);
-                    } else {
-                        dir = Pathfinder.getMoveDir(rc, closestEnemyArchon);
+                    if (!rc.onTheMap(src.add(src.directionTo(scoutTgt)))) {
+                        scoutTgt = new MapLocation(rc.getMapWidth() - 1 - src.x, rc.getMapHeight() - 1 - src.y);
                     }
+                    dir = Pathfinder.getMoveDir(rc, scoutTgt);
                 } else {
                     if (!rc.onTheMap(src.add(bounceDir))) {
                         bounceDir = bounceDir.opposite();

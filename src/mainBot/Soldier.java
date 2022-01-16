@@ -219,7 +219,7 @@ public class Soldier extends RobotPlayer {
           }
         }
       }
-      return Pathfinder.getMoveDir(rc, minRubbleLoc);
+      return src.directionTo(minRubbleLoc);
   }
 
   static boolean isHostile(RobotInfo enemy) {
@@ -342,7 +342,7 @@ public class Soldier extends RobotPlayer {
     Direction dir = null;
     Direction a = null;
     if (chase) {
-      a = Pathfinder.getMoveDir(rc, priorTarget.getLocation());
+      a = src.directionTo(priorTarget.location);
       if (rc.senseRubble(rc.getLocation().add(a)) > rubbleThreshold) {
         chase = false;
       }
@@ -350,7 +350,7 @@ public class Soldier extends RobotPlayer {
     //1: if less than 50/3 hp go back and repair
     if ((notRepaired || (rc.getHealth() < RobotType.SOLDIER.getMaxHealth(rc.getLevel())/5)) && home != null
             && !stall && rc.getLocation().distanceSquaredTo(home) > 9 && (rc.getArchonCount() > 2 || rc.getTeamLeadAmount(rc.getTeam()) < 75 * rc.getArchonCount())) { // If low health run home
-      dir = Pathfinder.getMoveDir(rc, home);
+      dir = src.directionTo(home);
       notRepaired = true;
 
     } else if (chase) {
@@ -363,7 +363,7 @@ public class Soldier extends RobotPlayer {
       runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1), 
       Math.min(Math.max(0, runawayTgt.y), rc.getMapHeight() - 1));
       //maybe don't go if tgt has bad rubble? definitely need to revise this
-      dir = Pathfinder.getMoveDir(rc, runawayTgt);
+      dir = src.directionTo(runawayTgt);
       MapLocation kitingTgt = src.add(dir);
       if (rc.senseRubble(kitingTgt) > rubbleThreshold) {
         dir = stallOnGoodRubble(rc);
@@ -378,7 +378,7 @@ public class Soldier extends RobotPlayer {
         runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1), 
         Math.min(Math.max(0, runawayTgt.y), rc.getMapHeight() - 1));
         //maybe don't go if tgt has bad rubble? definitely need to revise this
-        dir = Pathfinder.getMoveDir(rc, runawayTgt);
+        dir = src.directionTo(runawayTgt);
         MapLocation kitingTgt = src.add(dir);
         if (rc.senseRubble(kitingTgt) > rubbleThreshold) {
           dir = stallOnGoodRubble(rc);
@@ -390,8 +390,8 @@ public class Soldier extends RobotPlayer {
     } else if (inVisionTgt != null){
       //far, follow
       if (src.distanceSquaredTo(inVisionTgt.location) > 5) {
-      dir = Pathfinder.getMoveDir(rc, inVisionTgt.location);
-      int chaseSpotRubble = rc.senseRubble(src.add(dir));
+        dir = src.directionTo(inVisionTgt.location);
+        int chaseSpotRubble = rc.senseRubble(src.add(dir));
       if (chaseSpotRubble > rubbleThreshold) {
         dir = stallOnGoodRubble(rc);
       }
@@ -422,7 +422,7 @@ public class Soldier extends RobotPlayer {
       }
       //don't go if bad rubble and close
       if (closestEnemies != null) {
-        dir = Pathfinder.getMoveDir(rc, closestEnemies);
+        dir = src.directionTo(closestEnemies);
         MapLocation togo = src.add(dir);
         int rubble = rc.senseRubble(togo);
         //if an enemy present sector is within 40 r^2 and the spot pathfinder returns is not great rubble, wait on good rubble squares
@@ -432,7 +432,7 @@ public class Soldier extends RobotPlayer {
         }
       //otherwise no enemies reported anywhere, just spread
       } else if (closestEnemyArchon != null) {
-        dir = Pathfinder.getMoveDir(rc, closestEnemyArchon);
+        dir = src.directionTo(closestEnemyArchon);
         MapLocation togo = src.add(dir);
         int rubble = rc.senseRubble(togo);
         //if an enemy archon present sector is within 40 r^2 and the spot pathfinder returns is not great rubble, wait on good rubble squares
@@ -456,7 +456,7 @@ public class Soldier extends RobotPlayer {
             MapLocation vectorTgt = src.translate((int)xVector, (int)yVector);
             MapLocation inBounds = new MapLocation(Math.min(Math.max(0, vectorTgt.x), rc.getMapWidth() - 1), 
             Math.min(Math.max(0, vectorTgt.y), rc.getMapHeight() - 1));
-            dir = Pathfinder.getMoveDir(rc, inBounds);
+            dir = src.directionTo(inBounds);
       }
     }
 

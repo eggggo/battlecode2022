@@ -30,7 +30,7 @@ public class Builder extends RobotPlayer {
               }
             }
           }
-          return Pathfinder.getMoveDir(rc, minRubbleLoc);
+          return src.directionTo(minRubbleLoc);
       }
 
     public static void runBuilder(RobotController rc) throws GameActionException {

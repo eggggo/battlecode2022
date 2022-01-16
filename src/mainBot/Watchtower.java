@@ -47,7 +47,7 @@ public class Watchtower extends RobotPlayer {
           }
         }
       }
-      return Pathfinder.getMoveDir(rc, minRubbleLoc);
+      return src.directionTo(minRubbleLoc);
   }
 
   static boolean isHostile(RobotInfo enemy) {
@@ -134,7 +134,7 @@ public class Watchtower extends RobotPlayer {
             for (int i = 48; i >= 0; i--) {
                 int[] sector = Comms.readSectorInfo(rc, i);
                 MapLocation loc = sectorMdpts[i];
-                if ((sector[1] > 0) && (closestEnemies == null || closestEnemies.distanceSquaredTo(src) > src.distanceSquaredTo(loc))) {
+                if ((sector[1] > 0 || sector[3] > 3) && (closestEnemies == null || closestEnemies.distanceSquaredTo(src) > src.distanceSquaredTo(loc))) {
                     closestEnemies = loc;
                 }
             }

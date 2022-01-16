@@ -105,7 +105,7 @@ public class Builder extends RobotPlayer {
             runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1), 
             Math.min(Math.max(0, runawayTgt.y), rc.getMapHeight() - 1));
             dir = Pathfinder.getMoveDir(rc, runawayTgt);
-        } else if (rc.getTeamLeadAmount(rc.getTeam())>100) {
+        } else if (rc.getTeamLeadAmount(rc.getTeam())>100 && watchtowersBuilt == 0) {
             Direction center = rc.getLocation().directionTo(new MapLocation(rc.getMapWidth()/2, rc.getMapHeight()/2));
             dir = center;
             // If the direction to the center of the map is Direction.Center(means you're in the center), set your default

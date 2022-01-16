@@ -151,12 +151,14 @@ public class Watchtower extends RobotPlayer {
     turnsAlive++;
     Comms.updateSector(rc, turnCount);
 
-    boolean currentHpThresh = (double)rc.getHealth()/rc.getType().getMaxHealth(1) > 0.7;
-    if (!currentHpThresh && aboveHpThresh) {
-        rc.writeSharedArray(52, rc.readSharedArray(52) - 1);
-    } else if (currentHpThresh && !aboveHpThresh) {
-        rc.writeSharedArray(52, rc.readSharedArray(52) + 1);
+    if (rc.getLevel() > 1) {
+        boolean currentHpThresh = (double)rc.getHealth()/rc.getType().getMaxHealth(1) > 0.7;
+        if (!currentHpThresh && aboveHpThresh) {
+            rc.writeSharedArray(52, rc.readSharedArray(52) - 1);
+        } else if (currentHpThresh && !aboveHpThresh) {
+            rc.writeSharedArray(52, rc.readSharedArray(52) + 1);
+        }
+        aboveHpThresh = currentHpThresh;
     }
-    aboveHpThresh = currentHpThresh;
   }
 }

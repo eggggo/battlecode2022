@@ -104,6 +104,7 @@ public class Builder extends RobotPlayer {
         if (mapArea >= 2500 && rc.getTeamGoldAmount(rc.getTeam()) ==0) {
             labOverWt = true;
         }
+        labOverWt = false;
 
         //If there is no nearby repariable building, follow a nearby non-crowded soldier, otherwise move randomly
         if (nearbyBuilding != null && src.distanceSquaredTo(nearbyBuilding) > 5) {

@@ -72,6 +72,7 @@ public class Watchtower extends RobotPlayer {
     RobotInfo attackTgt = null;
     RobotInfo inVisionTgt = null;
     int rubbleThreshold = rc.senseRubble(rc.getLocation()) + 20;
+    int soldierCount = rc.readSharedArray(51);
 
     if (rc.getLevel() == 2 && rc.getArchonCount() ==4) {
         turnsHaveBeenTwo++;
@@ -131,7 +132,8 @@ public class Watchtower extends RobotPlayer {
         && rc.getMode() == RobotMode.PORTABLE && rc.canTransform()
         && stallDir == Direction.CENTER && rc.senseRubble(src) <= rubbleThreshold) {
         rc.transform();
-    } else if (turnsNotKilledStuff > turnsNotKilledStuffMove && rc.getMode() == RobotMode.TURRET && rc.canTransform() && rc.getLevel() > 1) {
+    } else if (turnsNotKilledStuff > turnsNotKilledStuffMove && rc.getMode() == RobotMode.TURRET && rc.canTransform()
+            && rc.getLevel() > 1) {
         rc.transform();
     }
 

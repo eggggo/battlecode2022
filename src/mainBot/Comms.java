@@ -80,15 +80,21 @@ public class Comms {
             } else {
                 homeArchon = 0;
             }
-        } else {
-            RobotInfo[] friendlies = rc.senseNearbyRobots(range, rc.getTeam());
-            for (int i = friendlies.length - 1; i >= 0; i --) {
-                RobotInfo r = friendlies[i];
-                if (r.getType() == RobotType.ARCHON && withinSector(rc, r.getLocation(), sector)) {
-                    homeArchon = 1;
-                    break;
+        } else {/*
+            MapLocation mdpt = sectorMidpt(rc, sector);
+            boolean trueVision = rc.getLocation().distanceSquaredTo(mdpt) <= 2;
+            if (entry[0] == 0 || trueVision) {
+                RobotInfo[] friendlies = rc.senseNearbyRobots(range, rc.getTeam());
+                for (int i = friendlies.length - 1; i >= 0; i --) {
+                    RobotInfo r = friendlies[i];
+                    if (r.getType() == RobotType.ARCHON && withinSector(rc, r.getLocation(), sector)) {
+                        homeArchon = 1;
+                        break;
+                    }
                 }
-            }
+            } else {*/
+                homeArchon = entry[0];
+            //}
         }
 
         RobotInfo[] enemies = rc.senseNearbyRobots(range, rc.getTeam().opponent());
@@ -128,7 +134,6 @@ public class Comms {
             enemyArchon = Math.max(enemyArchon, entry[1]);
             enemyCount = Math.max(enemyCount, entry[3]);
             resourceCount = Math.max(resourceCount, entry[2]);
-            homeArchon = Math.max(homeArchon, entry[0]);
         }
 
         int msg = (homeArchon << 15) | (enemyArchon << 14) | (resourceCount << 8) | (enemyCount << 3) | (turnMod << 2);

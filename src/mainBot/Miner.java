@@ -169,7 +169,7 @@ public class Miner extends RobotPlayer {
             dir = Pathfinder.getMoveDir(rc, runawayTgt);
             bounceDir = dir;
         //if good resources nearby go there
-        } else if (resources != null) {
+        } else if (resources != null && (nearbyLead.length + nearbyGold.length) > 2*nearbyFriendlyMinerCount) {
             dir = Pathfinder.getMoveDir(rc, resources);
         //else go to sector with reported resources + spread vector + away from closest archon vector
         } else if (nearbyFriendlySoldierCount > nearbyFriendlyMinerCount) {
@@ -196,7 +196,7 @@ public class Miner extends RobotPlayer {
                     }
                 }
             }
-            if (sectorNumber != -1 || friendlies.length > 1) {
+            if (sectorNumber != -1 || nearbyFriendlyMinerCount > 1) {
                 double xVector = 0;
                 double yVector = 0;
                 if (sectorNumber != -1) {

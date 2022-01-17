@@ -27,6 +27,8 @@ public class Archon extends RobotPlayer {
     static int unitsAfterEnemySeen = 0;
     static int mapThres = 900;
     static int startNumArchons = 0;
+    static int turnsPortable = 0;
+    static int previousSector = 50;
 
     /**
      * Run a single turn for an Archon.
@@ -52,6 +54,7 @@ public class Archon extends RobotPlayer {
         boolean archonSpotted = false;
         int leadNearArchons = 0;
         MapLocation[] nearbyLead = rc.senseNearbyLocationsWithLead(RobotType.ARCHON.visionRadiusSquared);
+        MapLocation src = rc.getLocation();
         if (turnsAlive == 0) {
             startNumArchons = rc.getArchonCount();
         }
@@ -91,6 +94,32 @@ public class Archon extends RobotPlayer {
                 }
                 leadNearArchons += sector[2];
             }
+        }
+
+        int nearestFriendlyArchon = 50;
+        int distMax = Integer.MAX_VALUE;
+        for (int i = friendlyArchonSectors.length-1; i>=0; i--) {
+            MapLocation loc = Comms.sectorMidpt(rc, friendlyArchonSectors[i]);
+            if (src.distanceSquaredTo(loc) < distMax && Comms.sectorMidpt(rc, Comms.locationToSector(rc, src)).distanceSquaredTo(loc) != 0) {
+                distMax = src.distanceSquaredTo(loc);
+                nearestFriendlyArchon = friendlyArchonSectors[i];
+            }
+        }
+
+        if (RobotMode.PORTABLE == rc.getMode()) {
+            turnsPortable++;
+        } else {
+            turnsPortable = 0;
+        }
+        if (rc.readSharedArray(55) >> 7 == 1 && rc.getMode() == RobotMode.TURRET && rc.canTransform()) {
+            rc.transform();
+        } else if (rc.readSharedArray(55) >> 7 == 0 && rc.getMode() == RobotMode.PORTABLE && rc.canTransform() && turnsPortable > 0) {
+            rc.transform();
+        }
+
+        Direction moveDir = null;
+        if (rc.getMode() == RobotMode.PORTABLE && nearestFriendlyArchon != 50) {
+            moveDir = Pathfinder.getMoveDir(rc, Comms.sectorMidpt(rc, nearestFriendlyArchon));
         }
 
         //Find the closest enemy to any friendlySector
@@ -160,7 +189,6 @@ public class Archon extends RobotPlayer {
 
         //Accounting for rubble when creating a unit.  Don't care about rubble if mapArea > mapThres
         double rubble = 200;
-        MapLocation src = rc.getLocation();
         for (Direction dire : directions) {
             MapLocation loc = src.add(dire);
             if (rc.onTheMap(loc) && rc.senseRobotAtLocation(loc) == null) {
@@ -509,7 +537,6 @@ public class Archon extends RobotPlayer {
         }
         //Updating Stuff
         lastTurnMiners = rc.readSharedArray(50);
-        Comms.updateSector(rc, turnCount);
         turnsAlive++;
 
         if (roundStartLead >= (rc.getArchonCount() - minerDiff) * 50) {
@@ -518,5 +545,15 @@ public class Archon extends RobotPlayer {
         if (rc.isActionReady()) {
             turnsNotActioning++;
         }
+        if (moveDir != null && rc.canMove(moveDir)) {
+            rc.move(moveDir);
+        }
+
+        if (previousSector != 50 && Comms.locationToSector(rc, src) != previousSector) {
+            rc.writeSharedArray(previousSector, rc.readSharedArray(previousSector) & 0x7FFF);
+        }
+
+        Comms.updateSector(rc, turnCount);
+        previousSector = Comms.locationToSector(rc, src);
     }
 }

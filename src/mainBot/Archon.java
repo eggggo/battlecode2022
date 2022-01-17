@@ -30,6 +30,26 @@ public class Archon extends RobotPlayer {
     static int turnsPortable = 0;
     static int previousSector = 50;
 
+    static Direction stallOnGoodRubble(RobotController rc) throws GameActionException {
+        MapLocation src = rc.getLocation();
+        int currRubble = rc.senseRubble(src);
+        int minRubble = currRubble;
+        MapLocation minRubbleLoc = src;
+        if (currRubble > 0) {
+            for (Direction d : Direction.allDirections()) {
+                MapLocation test = src.add(d);
+                if (rc.onTheMap(test) && !rc.isLocationOccupied(test) && rc.canSenseLocation(test)) {
+                    int rubbleHere = rc.senseRubble(test);
+                    if (rubbleHere < minRubble) {
+                        minRubble = rubbleHere;
+                        minRubbleLoc = test;
+                    }
+                }
+            }
+        }
+        return src.directionTo(minRubbleLoc);
+    }
+
     /**
      * Run a single turn for an Archon.
      * This code is wrapped inside the infinite loop in run(), so it is called once per turn.
@@ -54,6 +74,7 @@ public class Archon extends RobotPlayer {
         boolean archonSpotted = false;
         int leadNearArchons = 0;
         MapLocation[] nearbyLead = rc.senseNearbyLocationsWithLead(RobotType.ARCHON.visionRadiusSquared);
+        int rubbleThreshold = rc.senseRubble(rc.getLocation()) + 20;
         MapLocation src = rc.getLocation();
         if (turnsAlive == 0) {
             startNumArchons = rc.getArchonCount();
@@ -111,11 +132,13 @@ public class Archon extends RobotPlayer {
         } else {
             turnsPortable = 0;
         }
-        if (rc.readSharedArray(55) >> 7 == 1 && rc.getMode() == RobotMode.TURRET && rc.canTransform()) {
-            rc.transform();
-        } else if (rc.readSharedArray(55) >> 7 == 0 && rc.getMode() == RobotMode.PORTABLE && rc.canTransform() && turnsPortable > 100) {
-            rc.transform();
-        }
+        Direction stallDir = stallOnGoodRubble(rc);
+//        if (rc.readSharedArray(55) >> 7 == 1 && rc.getMode() == RobotMode.TURRET && rc.canTransform()) {
+//            rc.transform();
+//        } else if (rc.readSharedArray(55) >> 7 == 0 && rc.getMode() == RobotMode.PORTABLE && rc.canTransform() && turnsPortable > 10 && rc.getMode() == RobotMode.PORTABLE && rc.canTransform()
+//                && stallDir == Direction.CENTER && rc.senseRubble(src) <= rubbleThreshold) {
+//            rc.transform();
+//        }
 
         Direction moveDir = null;
         if (rc.getMode() == RobotMode.PORTABLE && nearestFriendlyArchon != 50) {
@@ -274,7 +297,7 @@ public class Archon extends RobotPlayer {
         }
 
         int minersCanBuild = rc.getTeamLeadAmount(rc.getTeam()) / 50;
-        if (minersCanBuild >= rc.getArchonCount()) {
+        if (minersCanBuild > rc.getArchonCount()) {
             minersCanBuild = rc.getArchonCount();
         }
         if (minersCanBuild > 0 && (soldierCount % 4 < 3 ||  Comms.sectorMidpt(rc, Comms.locationToSector(rc, rc.getLocation())).distanceSquaredTo(combatMdpt) == 0)) {
@@ -292,7 +315,7 @@ public class Archon extends RobotPlayer {
         }
 
         int sagesCanBuild = rc.getTeamGoldAmount(rc.getTeam()) / 20;
-        if (sagesCanBuild >= rc.getArchonCount()) {
+        if (sagesCanBuild > rc.getArchonCount()) {
             sagesCanBuild = rc.getArchonCount();
         }
 
@@ -409,7 +432,7 @@ public class Archon extends RobotPlayer {
                 buildersBuiltInARow++;
                 rc.writeSharedArray(54, rc.readSharedArray(54) + 1);
         }
-        else if (soldierCount + minerCount >= (initialMiners+1) *rc.getArchonCount() && !enemyArchonNearby && builderCount<rc.getArchonCount() && mapArea > mapThres
+        else if (soldierCount + minerCount >= (initialMiners + 1) *rc.getArchonCount() && !enemyArchonNearby && builderCount<rc.getArchonCount() && mapArea > mapThres
                 && buildersBuilt < 1 && rc.getTeamLeadAmount(rc.getTeam()) < 400 && canBuildWatchtower) {
             rc.setIndicatorString("3");
             if (rc.readSharedArray(55) >> 7 == 0  && shouldBuildWt && rc.canBuildRobot(RobotType.BUILDER, dir)) {
@@ -422,7 +445,7 @@ public class Archon extends RobotPlayer {
                 rc.writeSharedArray(55, (rc.readSharedArray(55) | 0b10000000));
             }
         }
-        else if (soldierCount + minerCount >= (initialMiners+1) *rc.getArchonCount() && !enemyArchonNearby && builderCount<rc.getArchonCount() && mapArea > mapThres
+        else if (soldierCount + minerCount >= (initialMiners + 1) *rc.getArchonCount() && !enemyArchonNearby && builderCount<rc.getArchonCount() && mapArea > mapThres
                 && builderCount == 0 && rc.getTeamLeadAmount(rc.getTeam()) < 400 && !canBuildWatchtower && rc.getTeamGoldAmount(rc.getTeam()) == 0) {
             rc.setIndicatorString("3.5");
             if (rc.readSharedArray(55) >> 7 == 0 && shouldBuildLab && rc.canBuildRobot(RobotType.BUILDER, dir)) {

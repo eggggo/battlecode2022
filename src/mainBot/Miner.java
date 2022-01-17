@@ -1,7 +1,5 @@
 package mainBot;
 
-import org.apache.commons.io.input.BoundedInputStream;
-
 import battlecode.common.*;
 
 public class Miner extends RobotPlayer {
@@ -46,7 +44,7 @@ public class Miner extends RobotPlayer {
     static boolean isHostile(RobotInfo enemy) {
         return (enemy.getType() == RobotType.SOLDIER || enemy.getType() == RobotType.SAGE 
         || enemy.getType() == RobotType.WATCHTOWER);
-      }
+    }
 
     //action flow:
     //1. mine
@@ -169,7 +167,7 @@ public class Miner extends RobotPlayer {
             dir = Pathfinder.getMoveDir(rc, runawayTgt);
             bounceDir = dir;
         //if good resources nearby go there
-        } else if (resources != null && (nearbyLead.length + nearbyGold.length) > 2*nearbyFriendlyMinerCount) {
+        } else if (resources != null && ((nearbyLead.length + nearbyGold.length) > 2*nearbyFriendlyMinerCount || highLead > 100)) {
             dir = Pathfinder.getMoveDir(rc, resources);
         //else go to sector with reported resources + spread vector + away from closest archon vector
         } else if (nearbyFriendlySoldierCount > nearbyFriendlyMinerCount) {

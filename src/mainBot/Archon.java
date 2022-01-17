@@ -113,7 +113,7 @@ public class Archon extends RobotPlayer {
         }
         if (rc.readSharedArray(55) >> 7 == 1 && rc.getMode() == RobotMode.TURRET && rc.canTransform()) {
             rc.transform();
-        } else if (rc.readSharedArray(55) >> 7 == 0 && rc.getMode() == RobotMode.PORTABLE && rc.canTransform() && turnsPortable > 0) {
+        } else if (rc.readSharedArray(55) >> 7 == 0 && rc.getMode() == RobotMode.PORTABLE && rc.canTransform() && turnsPortable > 100) {
             rc.transform();
         }
 

@@ -1,5 +1,6 @@
 package mainBot;
 
+import java.awt.*;
 import java.util.Arrays;
 
 import battlecode.common.*;
@@ -85,7 +86,8 @@ public class Builder extends RobotPlayer {
             if (nearbyRobots[i].getType() == RobotType.WATCHTOWER && rc.getLocation().distanceSquaredTo(nearbyRobots[i].getLocation()) < distanceFromBuilding) {
                 nearbyBuilding = nearbyRobots[i].getLocation();
                 distanceFromBuilding = rc.getLocation().distanceSquaredTo(nearbyRobots[i].getLocation());
-            } else if (nearbyRobots[i].getType() == RobotType.LABORATORY && rc.getLocation().distanceSquaredTo(nearbyRobots[i].getLocation()) < distanceFromBuilding) {
+            } else if (nearbyRobots[i].getType() == RobotType.LABORATORY && rc.getLocation().distanceSquaredTo(nearbyRobots[i].getLocation()) < distanceFromBuilding
+            && nearbyRobots[i].getHealth() < RobotType.LABORATORY.getMaxHealth(nearbyRobots[i].getLevel())) {
                 nearbyBuilding = nearbyRobots[i].getLocation();
                 distanceFromBuilding = rc.getLocation().distanceSquaredTo(nearbyRobots[i].getLocation());
             }
@@ -104,7 +106,6 @@ public class Builder extends RobotPlayer {
         if (mapArea >= 2500 && rc.getTeamGoldAmount(rc.getTeam()) ==0) {
             labOverWt = true;
         }
-        labOverWt = false;
 
         //If there is no nearby repariable building, follow a nearby non-crowded soldier, otherwise move randomly
         if (nearbyBuilding != null && src.distanceSquaredTo(nearbyBuilding) > 5) {
@@ -167,9 +168,12 @@ public class Builder extends RobotPlayer {
             }
         }
 
+        int wtCount = rc.readSharedArray(52);
+        int minerCount = rc.readSharedArray(50);
+        int labCount = rc.readSharedArray(56);
         //System.out.println(nearbyBuilding != null && rc.canMutate(nearbyBuilding) && rc.getTeamLeadAmount(rc.getTeam()) >= 200);
         //If there is a nearby building that can be repaired, repair it, otherwise go to the nearest repariable buidling and repair it.
-        if (nearbyBuilding != null && rc.canMutate(nearbyBuilding) && rc.getTeamLeadAmount(rc.getTeam()) >= 200) {
+        if (nearbyBuilding != null && rc.canMutate(nearbyBuilding)) {
             rc.mutate(nearbyBuilding);
             rc.writeSharedArray(52, rc.readSharedArray(52) + 1);
             rc.writeSharedArray(55, (rc.readSharedArray(55) & 0b1111111));
@@ -177,14 +181,14 @@ public class Builder extends RobotPlayer {
         }
         else if (nearbyBuilding != null && rc.canRepair(nearbyBuilding)) {
             rc.repair(nearbyBuilding);
-        } else if (labOverWt && laboratoriesBuilt == 0) {
+        } else if (rc.getTeamGoldAmount(rc.getTeam()) < 10 || minerCount / 10 > labCount) {
             if (rc.canBuildRobot(RobotType.LABORATORY, builddir)) {
                 rc.buildRobot(RobotType.LABORATORY, builddir);
                 laboratoriesBuilt++;
                 rc.writeSharedArray(56, rc.readSharedArray(56) + 1);
                 rc.writeSharedArray(55, (rc.readSharedArray(55) & 0b1111111));
             }
-        } else if (rc.canBuildRobot(RobotType.WATCHTOWER, builddir) && (watchtowersBuilt == 0 || numNearbyWatchtowers == 9)) {
+        } else if (rc.canBuildRobot(RobotType.WATCHTOWER, builddir) && (watchtowersBuilt < 3 || numNearbyWatchtowers == 9)) {
             rc.buildRobot(RobotType.WATCHTOWER, builddir);
             watchtowersBuilt++;
         }

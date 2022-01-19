@@ -181,6 +181,7 @@ public class Builder extends RobotPlayer {
             if (rc.canBuildRobot(RobotType.LABORATORY, builddir)) {
                 rc.buildRobot(RobotType.LABORATORY, builddir);
                 laboratoriesBuilt++;
+                rc.writeSharedArray(56, rc.readSharedArray(56) + 1);
                 rc.writeSharedArray(55, (rc.readSharedArray(55) & 0b1111111));
             }
         } else if (rc.canBuildRobot(RobotType.WATCHTOWER, builddir) && (watchtowersBuilt == 0 || numNearbyWatchtowers == 9)) {

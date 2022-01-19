@@ -425,7 +425,7 @@ public class Archon extends RobotPlayer {
                 rc.writeSharedArray(50, rc.readSharedArray(50) + 1);
                 unitsAfterEnemySeen++;
             }
-            else if (rc.canBuildRobot(RobotType.SAGE, dir)) {
+            else if (firstEnemySeen && rc.canBuildRobot(RobotType.SAGE, dir)) {
                 rc.setIndicatorString("2");
                 if (shouldBuildSage) {
                     rc.buildRobot(RobotType.SAGE, dir);

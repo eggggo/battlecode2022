@@ -65,9 +65,9 @@ public class Sage extends RobotPlayer{
         RobotInfo[] enemies = rc.senseNearbyRobots(senseRadius, opponent);
         RobotInfo attackTgt = null;
         RobotInfo inVisionTgt = null;
-        int units = 0;
-        int buildings = 0;
-        int archons = 0;
+        int unitHP = 0;
+        int buildingHP = 0;
+        int archonHP = 0;
         int rubbleThreshold = rc.senseRubble(rc.getLocation()) + 20;
 
         if (turnsAlive == 0) {
@@ -86,17 +86,20 @@ public class Sage extends RobotPlayer{
                     if (attackTgt == null ||
                         isHostile(enemy) && !isHostile(attackTgt) ||
                         isHostile(enemy) == isHostile(attackTgt) && enemy.getHealth() < lowestHPTgt) {
+                        //note: && has higher precedence than ||
 
                         lowestHPTgt = enemy.getHealth();
                         attackTgt = enemy;
                     }
 
                     if (enemy.getType() == RobotType.ARCHON) {
-                        archons ++;
+                        int archonMaxHP = RobotType.ARCHON.getMaxHealth(enemy.getLevel());
+                        archonHP += archonMaxHP;
+                        buildingHP += archonMaxHP;
                     } else if (enemy.getType() == RobotType.WATCHTOWER || enemy.getType() == RobotType.LABORATORY) {
-                        buildings ++;
+                        buildingHP += enemy.getType().getMaxHealth(enemy.getLevel());
                     } else {
-                        units ++;
+                        unitHP += enemy.getType().getMaxHealth(1);
                     }
                 } else {
                     if (inVisionTgt == null ||
@@ -112,11 +115,14 @@ public class Sage extends RobotPlayer{
                 inVisionTgt = attackTgt;
             }
 
-            if (units >= 9  && rc.canEnvision(AnomalyType.CHARGE)) {
+            //maximize damage done
+            if ( AnomalyType.CHARGE.sagePercentage * unitHP >= rc.getType().getDamage(1)
+                    && rc.canEnvision(AnomalyType.CHARGE)) {
                 rc.envision(AnomalyType.CHARGE);
                 turnsNotKilledStuff = 0;
                 castNum++;
-            } else if ((archons >= 1 || buildings >= 4) && rc.canEnvision(AnomalyType.FURY)) {
+            } else if ((AnomalyType.FURY.sagePercentage * archonHP >= 300 || AnomalyType.FURY.sagePercentage * buildingHP >= 600)
+                    && rc.canEnvision(AnomalyType.FURY)) {
                 rc.envision(AnomalyType.FURY);
                 turnsNotKilledStuff = 0;
                 castNum++;
@@ -127,7 +133,7 @@ public class Sage extends RobotPlayer{
             }
         }
         if (castNum > 2) {
-            System.out.println(castNum);
+            //System.out.println(castNum);
         }
 
         Direction dir = null;

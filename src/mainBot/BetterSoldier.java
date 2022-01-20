@@ -148,7 +148,7 @@ public class BetterSoldier extends RobotPlayer {
     double averageHealth = (double)nearbyDamageHealth/nearbyDamage;
 
     //comms access every other turn for bytecode reduction
-    if (turnCount % 2 == 0 || turnsAlive == 0) {
+    if (turnCount % 3 == 0 || turnsAlive == 0) {
         bestTgtSector = null;
         double highScore = 0;
         for (int i = 48; i >= 0; i --) {

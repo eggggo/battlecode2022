@@ -66,21 +66,21 @@ public class BetterMiner extends RobotPlayer {
             if (scoutPattern == 0) {
                 scoutTgt = sectorMdpts[rng.nextInt(49)];
             } else {
-                int designatedLoc = rng.nextInt(5);
+                int designatedLoc = rc.readSharedArray(50) % 10;
                 switch (designatedLoc) {
-                    case 0:
+                    case 1:
                         scoutTgt = new MapLocation(0, 0);
                         break;
-                    case 1:
+                    case 3:
                         scoutTgt = new MapLocation(rc.getMapWidth() - 1, 0);
                         break;
-                    case 2:
+                    case 5:
                         scoutTgt = new MapLocation(0, rc.getMapHeight() - 1);
                         break;
-                    case 3:
+                    case 7:
                         scoutTgt = new MapLocation(rc.getMapWidth() - 1, rc.getMapHeight() - 1);
                         break;
-                    case 4:
+                    case 9:
                         scoutTgt = new MapLocation(rc.getMapWidth()/2, rc.getMapHeight()/2);
                         break;
                 }
@@ -90,10 +90,10 @@ public class BetterMiner extends RobotPlayer {
         //main comms loop, do all comms stuff here
         //finds mdpt of closest friendly archon, best resources in travel distance
         //refreshes every 2 turns to reduce bytecode load
-        if (turnCount % 2 == 0) {
+        if (turnCount % 3 == 0) {
             nearestFriendlyArchon = null;
             bestOOVResource = null;
-            int bestResource = 0;
+            double bestResource = 0;
             for (int i = 48; i >= 0; i --) {
                 int[] sectorInfo = Comms.readSectorInfo(rc, i);
                 MapLocation sectorMdpt = sectorMdpts[i];
@@ -101,9 +101,12 @@ public class BetterMiner extends RobotPlayer {
                 || sectorMdpt.distanceSquaredTo(src) < nearestFriendlyArchon.distanceSquaredTo(src))) {
                     nearestFriendlyArchon = sectorMdpt;
                 }
-                if (sectorInfo[2] > bestResource && maxTravelDistance >= sectorMdpt.distanceSquaredTo(src)) {
-                    bestResource = sectorInfo[2];
-                    bestOOVResource = sectorMdpt;
+                if (sectorInfo[2] > 0) {
+                    double score = sectorInfo[2]/Math.sqrt(src.distanceSquaredTo(sectorMdpt));
+                    if (score > bestResource && score >= 0.5) {
+                        bestResource = score;
+                        bestOOVResource = sectorMdpt;
+                    }
                 }
             }
         }
@@ -169,6 +172,9 @@ public class BetterMiner extends RobotPlayer {
         //if good nearby resources go there
         if (resources != null) {
             dir = src.directionTo(resources);
+            if (src.distanceSquaredTo(resources) <= 2) {
+                dir = stallOnGoodRubble(rc);
+            }
         //if good comms nearby resources go there
         } else if (bestOOVResource != null) {
             dir = src.directionTo(bestOOVResource);

@@ -1,25 +1,27 @@
-package stratBot;
+package samBot;
 
 import battlecode.common.*;
 import mainBot.betterJavaUtil.*;
 
 public class Pathfinder {
 
-    static Direction getMoveDir(RobotController bot, MapLocation tgt) throws GameActionException {
-        MapLocation src = bot.getLocation();
+    static Direction getMoveDir(RobotController rc, MapLocation tgt) throws GameActionException {
+        MapLocation src = rc.getLocation();
         int range = 8;
+        rc.setIndicatorString("tgt: " + tgt);
         
         //simple heuristic using only nearby 8
         MapLocation immTgt;
-        if (Clock.getBytecodesLeft() < 6000) {
+        if (tgt.isWithinDistanceSquared(src, range) && Clock.getBytecodesLeft() < 4000
+                || Clock.getBytecodesLeft() < 5500) {
             Direction optimalDir = Direction.CENTER;
             double optimalCost = 9999;
             for (Direction dir : Direction.allDirections()) {
                 MapLocation loc = src.add(dir);
-                if (!bot.onTheMap(loc) || bot.isLocationOccupied(loc)) {
+                if (!rc.onTheMap(loc) || rc.isLocationOccupied(loc)) {
                     continue;
                 }
-                double currCost = Math.sqrt(loc.distanceSquaredTo(tgt))*20 + (bot.senseRubble(loc));
+                double currCost = Math.sqrt(loc.distanceSquaredTo(tgt))*20 + (rc.senseRubble(loc));
                 if (currCost < optimalCost) {
                     optimalDir = dir;
                     optimalCost = currCost;
@@ -50,12 +52,11 @@ public class Pathfinder {
                     costs[i][j] = -1;
                 }
             }
-            MapLocation moveTo = src.add(src.directionTo(immTgt));
+            MapLocation moveTo = null;
             LinkedList<MapLocation> processQ = new LinkedList<>();
-            int tgtRubble = bot.senseRubble(immTgt);
+            int tgtRubble = rc.senseRubble(immTgt);
             costs[immTgt.x - src.x + 2][immTgt.y - src.y + 2] = tgtRubble;
             processQ.add(immTgt);
-            bot.setIndicatorString(immTgt.toString());
 
             Node<MapLocation> h = processQ.head;
 
@@ -71,8 +72,8 @@ public class Pathfinder {
                 int currCds = currRubble;
 
                 MapLocation left = current.add(straightDir.rotateLeft());
-                if (bot.onTheMap(left) && left.isWithinDistanceSquared(src, range) && (left.equals(src) || !bot.isLocationOccupied(left))) {
-                    int leftRubble = bot.senseRubble(left);
+                if (rc.onTheMap(left) && left.isWithinDistanceSquared(src, range) && (left.equals(src) || !rc.isLocationOccupied(left))) {
+                    int leftRubble = rc.senseRubble(left);
                     int leftCds = leftRubble;
                     if (costs[left.x - src.x + 2][left.y - src.y + 2] == -1 || costs[left.x - src.x + 2][left.y - src.y + 2] > leftCds + currCds) {
                         costs[left.x - src.x + 2][left.y - src.y + 2] = leftCds + currCds;
@@ -86,8 +87,8 @@ public class Pathfinder {
                 }
 
                 MapLocation right = current.add(straightDir.rotateRight());
-                if (bot.onTheMap(right) && right.isWithinDistanceSquared(src, range) && (right.equals(src) || !bot.isLocationOccupied(right))) {
-                    int rightRubble = bot.senseRubble(right);
+                if (rc.onTheMap(right) && right.isWithinDistanceSquared(src, range) && (right.equals(src) || !rc.isLocationOccupied(right))) {
+                    int rightRubble = rc.senseRubble(right);
                     int rightCds = rightRubble;
                     if (costs[right.x - src.x + 2][right.y - src.y + 2] == -1 || costs[right.x - src.x + 2][right.y - src.y + 2] > rightCds + currCds) {
                         costs[right.x - src.x + 2][right.y - src.y + 2] = rightCds + currCds;
@@ -101,8 +102,8 @@ public class Pathfinder {
                 }
 
                 MapLocation towards = current.add(straightDir);
-                if (bot.onTheMap(towards) && towards.isWithinDistanceSquared(src, range) && (towards.equals(src) || !bot.isLocationOccupied(towards))) {
-                    int toRubble = bot.senseRubble(towards);
+                if (rc.onTheMap(towards) && towards.isWithinDistanceSquared(src, range) && (towards.equals(src) || !rc.isLocationOccupied(towards))) {
+                    int toRubble = rc.senseRubble(towards);
                     int towardsCds = toRubble;
                     if (costs[towards.x - src.x + 2][towards.y - src.y + 2] == -1 || costs[towards.x - src.x + 2][towards.y - src.y + 2] > towardsCds + currCds) {
                         costs[towards.x - src.x + 2][towards.y - src.y + 2] = towardsCds + currCds;
@@ -116,7 +117,52 @@ public class Pathfinder {
                 }
                 h = h.next;
             }
+            if (moveTo == null) {
+                Direction optimalDir = Direction.CENTER;
+                double optimalCost = 9999;
+                for (Direction dir : Direction.allDirections()) {
+                    MapLocation loc = src.add(dir);
+                    if (!rc.onTheMap(loc) || rc.isLocationOccupied(loc)) {
+                        continue;
+                    }
+                    double currCost = Math.sqrt(loc.distanceSquaredTo(tgt))*20 + (rc.senseRubble(loc));
+                    if (currCost < optimalCost) {
+                        optimalDir = dir;
+                        optimalCost = currCost;
+                    }
+                }
+                moveTo = src.add(optimalDir);
+            }
             return src.directionTo(moveTo);
+        }
+    }
+
+    //return direction away from a location
+    //will try to find a way to maximize distance even if it's not directly away
+    static Direction getAwayDir(RobotController rc, MapLocation loc) throws GameActionException {
+        MapLocation src = rc.getLocation();
+
+        Direction opposite = src.directionTo(loc).opposite();
+
+        MapLocation runawayTgt = src.add(opposite).add(opposite);
+        runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1),
+                Math.min(Math.max(0, runawayTgt.y), rc.getMapHeight() - 1));
+        Direction toReturn = Pathfinder.getMoveDir(rc, runawayTgt);
+
+        if(rc.canMove(toReturn)){
+            return toReturn;
+        }
+        else if(rc.canMove(toReturn.rotateRight() )){
+            return toReturn.rotateRight();
+        }
+        else if(rc.canMove(toReturn.rotateLeft() )){
+            return toReturn.rotateLeft();
+        }
+        else if(rc.canMove(toReturn.rotateLeft().rotateLeft() )){
+            return toReturn.rotateLeft().rotateLeft();
+        }
+        else{
+            return toReturn.rotateRight().rotateRight();
         }
     }
 }

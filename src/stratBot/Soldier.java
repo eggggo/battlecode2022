@@ -15,6 +15,7 @@ public class Soldier extends RobotPlayer {
   static int attackLocation = 0;
   //Role: 2 for defense, 1 for attack, 0 for scout
   static int role;
+  static boolean aboveHpThresh = true;
 
   static int getQuadrant(RobotController rc, int x, int y) {
     int quad = 0;
@@ -44,13 +45,7 @@ public class Soldier extends RobotPlayer {
     Team opponent = rc.getTeam().opponent();
     RobotInfo[] enemies = rc.senseNearbyRobots(radius, opponent);
     int archonCount = 4;
-    if (enemies.length > 0) {
-      MapLocation toAttack = enemies[0].location;
-      if (rc.canAttack(toAttack)) {
-        rc.attack(toAttack);
-        turnsNotKilledStuff = 0;
-      }
-    }
+
     if (turnsAlive == 0) {
       RobotInfo[] nearbyRobots = rc.senseNearbyRobots(senseRadius, friendly);
       initializeSoldier(rc, nearbyRobots);
@@ -62,42 +57,68 @@ public class Soldier extends RobotPlayer {
     //3: If an archon is under attack (defense or offense) go help
     //4: Defense pathing/Scout pathing/Attack pathing
 
-
     Direction dir = null;
-    if (rc.getHealth() < RobotType.SOLDIER.getMaxHealth(rc.getLevel()) / 2 && home != null) { // If low health run home
+    if (rc.getHealth() < RobotType.SOLDIER.getMaxHealth(rc.getLevel()) / 50 && home != null) { // If low health run home
       dir = Pathfinder.getMoveDir(rc, home);
     } else if (enemies.length > 0) { //If enemy, attack
-      MapLocation toAttack = enemies[0].location;
+      MapLocation src = rc.getLocation();
+      MapLocation closestEnemy = null;
+      MapLocation closestAttackingEnemy = null;
+      for (int i = enemies.length - 1; i >= 0; i --) {
+        RobotInfo enemy = enemies[i];
+        if (closestEnemy == null || enemy.location.distanceSquaredTo(src) < closestEnemy.distanceSquaredTo(src)) {
+          closestEnemy = enemy.location;
+        } else if ((enemy.getType() == RobotType.SOLDIER || enemy.getType() == RobotType.SAGE 
+        || enemy.getType() == RobotType.WATCHTOWER) && (closestAttackingEnemy == null 
+        || enemy.location.distanceSquaredTo(src) < closestAttackingEnemy.distanceSquaredTo(src))) {
+          closestAttackingEnemy = enemy.location;
+        }
+      }
+      MapLocation toAttack = closestEnemy;
+      if (closestAttackingEnemy != null) {
+        toAttack = closestAttackingEnemy;
+      }
       if (rc.canAttack(toAttack)) {
         rc.attack(toAttack);
         turnsNotKilledStuff = 0;
       }
-    }// else if Communicated something is under attack do stuff
-    else if (role == 2) {
-      //Idk i think defense sucks but maybe we should setup to defend
-    } else if (role == 1) { //If attacker, go attack
-      //Attacks at one of the random spots of a potential enemy base
-
-      MapLocation attackTarget = enemyArchons[attackLocation];
-
-
-      //Change target if theres nothing at the target
-      if (rc.canSenseLocation(attackTarget)) {
-        RobotInfo rb = rc.senseRobotAtLocation(attackTarget);
-        if (rb == null || rb.getType() != RobotType.ARCHON) {
-          attackOffset += 1;
-          attackLocation = (rc.getID() + attackOffset) % (enemyArchons.length);
-
+    } else {
+      int distance = Integer.MAX_VALUE;
+      MapLocation actualArchonsTarget = null;
+      int enemySectorDistance = 9999;
+      MapLocation closestEnemies = null;
+      for (int i = 48; i >= 0; i--) {
+        int[] sector = Comms.readSectorInfo(rc, i);
+        MapLocation loc = Comms.sectorMidpt(rc,i);
+        if (sector[3] > 5 && enemySectorDistance > rc.getLocation().distanceSquaredTo(loc)) {
+          closestEnemies = loc;
+          enemySectorDistance = rc.getLocation().distanceSquaredTo(loc);
+        } if (sector[1] == 1 && distance > rc.getLocation().distanceSquaredTo(loc)) {
+          actualArchonsTarget = loc;
+          distance = rc.getLocation().distanceSquaredTo(loc);
         }
       }
-      dir = Pathfinder.getMoveDir(rc, attackTarget);
-    } else if (role == 0) {
-      //Same copy of random pathing code that miners have
-      //Needs to be fixed cause its random and garbage
-      dir = directions[rng.nextInt(directions.length)];
 
+      if (actualArchonsTarget != null) {
+        dir = Pathfinder.getMoveDir(rc, actualArchonsTarget);
+      } else {
+        //Attacks at one of the random spots of a potential enemy base
 
+        MapLocation attackTarget = enemyArchons[attackLocation];
+
+        //Change target if theres nothing at the target
+        if (rc.canSenseLocation(attackTarget)) {
+          RobotInfo rb = rc.senseRobotAtLocation(attackTarget);
+          if (rb == null || rb.getType() != RobotType.ARCHON) {
+            attackOffset += 1;
+            attackLocation = (rc.getID() + attackOffset) % (enemyArchons.length);
+
+          }
+        }
+        dir = Pathfinder.getMoveDir(rc, attackTarget);
+      }
     }
+    
     if (dir != null && rc.canMove(dir)) {
       rc.move(dir);
     }
@@ -105,10 +126,18 @@ public class Soldier extends RobotPlayer {
     turnsNotKilledStuff++;
     turnsAlive++;
     Comms.updateSector(rc);
+
+    boolean currentHpThresh = (double)rc.getHealth()/rc.getType().getMaxHealth(1) > 0.7;
+    if (!currentHpThresh && aboveHpThresh) {
+        rc.writeSharedArray(51, rc.readSharedArray(51) - 1);
+    } else if (currentHpThresh && !aboveHpThresh) {
+        rc.writeSharedArray(51, rc.readSharedArray(51) + 1);
+    }
+    aboveHpThresh = currentHpThresh;
   }
 
   static void initializeSoldier(RobotController rc, RobotInfo[] nearbyRobots) throws GameActionException{
-    role = rc.getID() % 2;
+    role = 1;
     int archonCount = 4;
     for (int i = nearbyRobots.length - 1; i >= 0; i--) {
       if (nearbyRobots[i].getType() == RobotType.ARCHON) {
@@ -118,7 +147,6 @@ public class Soldier extends RobotPlayer {
     }
 
 
-    enemyArchons = new MapLocation[archonCount * 3];
     //if all of the archons have written to the comms
     boolean quad1 = false;
     boolean quad2 = false;
@@ -131,6 +159,7 @@ public class Soldier extends RobotPlayer {
     MapLocation[] coords = new MapLocation[archonCount];
     for (int i = 48; i >= 0; i--) {
       int[] sector = Comms.readSectorInfo(rc, i);
+      //System.out.println("sector " + i + ": " + Arrays.toString(sector));
       if (sector[0] == 1) {
         MapLocation mdpt = Comms.sectorMidpt(rc, i);
         quads[currentArchonIndex] = getQuadrant(rc, mdpt.x, mdpt.y);
@@ -138,37 +167,17 @@ public class Soldier extends RobotPlayer {
         currentArchonIndex++;
       }
     }
-    if (coords[1] == null) {
-      archonCount = 1;
-      int[] tempQuads = new int[1];
-      MapLocation[] tempCoords = new MapLocation[1];
-      tempQuads[0] = quads[0];
-      quads = tempQuads;
-      tempCoords[0] = coords[0];
-      coords = tempCoords;
-    } else if (coords[2] == null) {
-      archonCount = 2;
-      int[] tempQuads = new int[2];
-      MapLocation[] tempCoords = new MapLocation[2];
-      tempQuads[0] = quads[0];
-      tempQuads[1] = quads[1];
-      quads = tempQuads;
-      tempCoords[0] = coords[0];
-      tempCoords[1] = coords[1];
-      coords = tempCoords;
-    } else if (coords[3] == null) {
-      archonCount = 3;
-      int[] tempQuads = new int[3];
-      MapLocation[] tempCoords = new MapLocation[3];
-      tempQuads[0] = quads[0];
-      tempQuads[1] = quads[1];
-      tempQuads[2] = quads[2];
-      quads = tempQuads;
-      tempCoords[0] = coords[0];
-      tempCoords[1] = coords[1];
-      tempCoords[2] = coords[2];
-      coords = tempCoords;
+    archonCount = currentArchonIndex;
+    int[] tempQuads = new int[currentArchonIndex];
+    MapLocation[] tempCoords = new MapLocation[currentArchonIndex];
+    for (int i = currentArchonIndex - 1; i >= 0; i --) {
+        tempQuads[i] = quads[i];
+        tempCoords[i] = coords[i];
     }
+    quads = tempQuads;
+    coords = tempCoords;
+
+    enemyArchons = new MapLocation[archonCount * 3];
 
     //initialize whether there's a friendly archon in each quad
     for (int a = archonCount - 1; a >= 0; a--) {
@@ -217,6 +226,6 @@ public class Soldier extends RobotPlayer {
         enemyArchons[3 * i + 2] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, rc.getMapHeight() - 1 - coords[i].y); // 180 rotate
       }
     }
-
+    rc.writeSharedArray(51, rc.readSharedArray(51) + 1);
   }
 }

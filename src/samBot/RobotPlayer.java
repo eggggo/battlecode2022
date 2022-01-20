@@ -1,4 +1,4 @@
-package stratBot;
+package samBot;
 
 import battlecode.common.*;
 import java.util.Random;
@@ -53,9 +53,9 @@ public strictfp class RobotPlayer {
         rc.setIndicatorString("Hello world!");
 
         while (true) {
-        //    if (turnCount == 500) {
-        //        rc.resign();
-        //    }
+//            if (turnCount == 500) {
+//                rc.resign();
+//            }
             // This code runs during the entire lifespan of the robot, which is why it is in an infinite
             // loop. If we ever leave this loop and return from run(), the robot dies! At the end of the
             // loop, we call Clock.yield(), signifying that we've done everything we want to do.
@@ -70,8 +70,8 @@ public strictfp class RobotPlayer {
                 // this into a different control structure!
                 switch (rc.getType()) {
                     case ARCHON:     Archon.runArchon(rc);  break;
-                    case MINER:      Miner.runMiner(rc);   break;
-                    case SOLDIER:    Soldier.runSoldier(rc); break;
+                    case MINER:      BetterMiner.runMiner(rc);   break;
+                    case SOLDIER:    BetterSoldier.runSoldier(rc); break;
                     case LABORATORY: Laboratory.runLaboratory(rc); break;
                     case WATCHTOWER: Watchtower.runWatchtower(rc); break;
                     case BUILDER:    Builder.runBuilder(rc); break;

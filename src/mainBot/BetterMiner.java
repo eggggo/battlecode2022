@@ -149,9 +149,9 @@ public class BetterMiner extends RobotPlayer {
         //finding best mining spot in vision
         MapLocation[] nearbyLead = rc.senseNearbyLocationsWithLead(senseRadius, 5);
         MapLocation[] nearbyGold = rc.senseNearbyLocationsWithGold(senseRadius);
-        double highLead = 0;
+        int highLead = 0;
         for (int i = nearbyLead.length - 1; i >= 0; i --) {
-            double leadCount = (double)rc.senseLead(nearbyLead[i])/(1 + rc.senseRubble(nearbyLead[i])/10.0);
+            int leadCount = rc.senseLead(nearbyLead[i]);
             if (leadCount > highLead) {
                 highLead = leadCount;
                 resources = nearbyLead[i];
@@ -159,6 +159,25 @@ public class BetterMiner extends RobotPlayer {
         }
         if (nearbyGold.length > 0) {
             resources = nearbyGold[0];
+        }
+
+        //finding best adj resource with lowest rubble to mine from
+        if (resources != null) {
+            MapLocation lowestRubble = null;
+            int lowestRubbleAmt = 128;
+            for (int i = -1; i <= 1; i ++) {
+                for (int j = -1; j <= 1; j ++) {
+                    MapLocation adjLead = resources.translate(i, j);
+                    if (src.distanceSquaredTo(adjLead) <= senseRadius && rc.onTheMap(adjLead)) {
+                        int currRubble = rc.senseRubble(adjLead);
+                        if (currRubble < lowestRubbleAmt) {
+                            lowestRubble = adjLead;
+                            lowestRubbleAmt = currRubble;
+                        }
+                    }
+                }
+            }
+            resources = lowestRubble;
         }
 
         //if you can see the scout target sector mdpt, randomize and go to somewhere else
@@ -172,9 +191,6 @@ public class BetterMiner extends RobotPlayer {
         //if good nearby resources go there
         if (resources != null) {
             dir = src.directionTo(resources);
-            if (src.distanceSquaredTo(resources) <= 2) {
-                dir = stallOnGoodRubble(rc);
-            }
         //if good comms nearby resources go there
         } else if (bestOOVResource != null) {
             dir = src.directionTo(bestOOVResource);

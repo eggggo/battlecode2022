@@ -32,6 +32,7 @@ public class Builder extends RobotPlayer {
       }
 
     public static void runBuilder(RobotController rc) throws GameActionException {
+        int sageCount = rc.readSharedArray(53);
         if (turnsAlive == 0) {
             RobotInfo[] nearbyRobots = rc.senseNearbyRobots();
             for (int i = nearbyRobots.length - 1; i >= 0; i--) {
@@ -180,7 +181,7 @@ public class Builder extends RobotPlayer {
         else if (nearbyBuilding != null && rc.canRepair(nearbyBuilding)) {
             rc.setIndicatorString("2");
             rc.repair(nearbyBuilding);
-        } else if (rc.getTeamGoldAmount(rc.getTeam()) < 10 || minerCount / 10 > labCount) {
+        } else if (rc.getTeamGoldAmount(rc.getTeam()) < 10 && minerCount / 10 + 1 > labCount) {
             rc.setIndicatorString("3");
             if (rc.canBuildRobot(RobotType.LABORATORY, builddir)) {
                 rc.buildRobot(RobotType.LABORATORY, builddir);
@@ -188,7 +189,8 @@ public class Builder extends RobotPlayer {
                 rc.writeSharedArray(56, rc.readSharedArray(56) + 1);
                 rc.writeSharedArray(55, (rc.readSharedArray(55) & 0b1111111));
             }
-        } else if (rc.canBuildRobot(RobotType.WATCHTOWER, builddir) && (watchtowersBuilt < 3 || numNearbyWatchtowers == 9)) {
+        } else if (rc.canBuildRobot(RobotType.WATCHTOWER, builddir) && sageCount > 3* rc.getArchonCount()
+                && (watchtowersBuilt < 3 || numNearbyWatchtowers == 9)) {
             rc.setIndicatorString("4");
             rc.buildRobot(RobotType.WATCHTOWER, builddir);
             watchtowersBuilt++;

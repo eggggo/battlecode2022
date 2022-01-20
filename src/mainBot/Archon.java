@@ -506,25 +506,29 @@ public class Archon extends RobotPlayer {
             initialMiners = 2;
         }
 
-        boolean canBuildWatchtower = true;
-        int buildMoreWatchtower = 1;
-
-        if (mapArea >= 2500) {
-            canBuildWatchtower = false;
-            buildMoreWatchtower = 2;
+        int minerBuilderRatio = 3;
+        if (mapArea < 1200) {
+            minerBuilderRatio = 5;
         }
-
 
         //If there is no enemyArchonNearby and the first enemy hasn't been seen or there is nearby lead between 50 and 100, build a miner
         //If our minerCount is less than the target or our miner count is greater than our attacker count times a ratio and we shouldn't build a builder or theres an enemyArchonNearby, build a soldier.
 
-        if (rc.readSharedArray(55) >> 7 == 0 && rc.getTeamLeadAmount(rc.getTeam()) > 350 || rc.getTeamGoldAmount(rc.getTeam()) > rc.getArchonCount() * 20) {
+        if (rc.readSharedArray(55) >> 7 == 1 && (rc.getTeamLeadAmount(rc.getTeam()) > 350 || rc.getTeamGoldAmount(rc.getTeam()) > rc.getArchonCount() * 20)) {
             rc.writeSharedArray(55, (rc.readSharedArray(55) & 0b1111111));
         }
-
-
+        
         if (rc.readSharedArray(55) >> 7 == 0) {
-            if (minersBuilt < initialMiners && rc.canBuildRobot(RobotType.MINER, dir)) {
+            if (soldierCount < minerCount/rc.getArchonCount() && minerCount >= rc.getArchonCount() && firstEnemySeen && !rc.canBuildRobot(RobotType.SAGE, dir)) {
+                rc.setIndicatorString("soldier?");
+                    if (rc.canBuildRobot(RobotType.SOLDIER, dir) && shouldBuildSoldier) {
+                        rc.buildRobot(RobotType.SOLDIER, dir);
+                        soldiersBuilt++;
+                        rc.writeSharedArray(51, rc.readSharedArray(51) + 1);
+                        unitsAfterEnemySeen++;
+                    }
+            }
+            else if (minersBuilt < initialMiners && rc.canBuildRobot(RobotType.MINER, dir)) {
                 rc.setIndicatorString("3");
                 rc.buildRobot(RobotType.MINER, dir);
                 minersBuilt++;
@@ -541,7 +545,7 @@ public class Archon extends RobotPlayer {
                     sagesBuilt++;
                 }
             } else if (buildersBuilt < 1 ||
-                    (minerCount /2 > builderCount && rc.getTeamGoldAmount(rc.getTeam()) > 0)) {
+                    (minerCount /minerBuilderRatio > builderCount && rc.getTeamGoldAmount(rc.getTeam()) > 0)) {
                 if (rc.canBuildRobot(RobotType.BUILDER, dir)) {
                     rc.setIndicatorString("4");
                     rc.buildRobot(RobotType.BUILDER, dir);
@@ -553,12 +557,17 @@ public class Archon extends RobotPlayer {
                     rc.writeSharedArray(55, (rc.readSharedArray(55) | 0b10000000));
                 }
             } else if (rc.canBuildRobot(RobotType.MINER, dir)) {
+                rc.setIndicatorString("5");
                     rc.buildRobot(RobotType.MINER, dir);
                     minersBuilt++;
                     rc.writeSharedArray(50, rc.readSharedArray(50) + 1);
                     unitsAfterEnemySeen++;
 
+            } else {
+                rc.setIndicatorString("6");
             }
+        } else {
+            rc.setIndicatorString("7");
         }
 //
 //        if (enemyArchonNearby && rc.canBuildRobot(RobotType.MINER,dir) && rc.getArchonCount() > 1) {

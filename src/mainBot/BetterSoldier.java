@@ -144,8 +144,9 @@ public class BetterSoldier extends RobotPlayer {
     //main movement loop
     //TODO: make these thresholds based off map size
     //if low enough hp run back to heal
-    if (rc.getHealth() <= 5 && src.distanceSquaredTo(closestFriendlyArchon) > 8) {
+    if ((notRepaired || rc.getHealth() <= 5) && src.distanceSquaredTo(closestFriendlyArchon) > 8) {
         dir = Pathfinder.getMoveDir(rc, closestFriendlyArchon);
+        notRepaired = true;
     //if mid hp comparatively, shuffle
     } else if (attackTgt != null && frontline && rc.getHealth() < averageHealth && rc.getHealth() < 20) {
         Direction opposite = src.directionTo(inVisionTgt.location).opposite();
@@ -203,7 +204,7 @@ public class BetterSoldier extends RobotPlayer {
     }
 
     turnsAlive++;
-    
+
     //update comms
     Comms.updateSector(rc, turnCount);
     boolean currentHpThresh = (double)rc.getHealth()/rc.getType().getMaxHealth(1) > 0.2;

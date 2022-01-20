@@ -99,14 +99,10 @@ public class Sage extends RobotPlayer{
                         units ++;
                     }
                 } else {
-                    if (inVisionTgt == null) {
-                        lowestInVisionHPTgt = enemy.getHealth();
-                        inVisionTgt = enemy;
-                    } else if (isHostile(enemy) && !isHostile(inVisionTgt)) {
-                        lowestInVisionHPTgt = enemy.getHealth();
-                        inVisionTgt = enemy;
-                    } else if (enemy.getHealth() < lowestInVisionHPTgt 
-                        && ((isHostile(enemy) && isHostile(inVisionTgt)) || (!isHostile(enemy) && !isHostile(inVisionTgt)))) {
+                    if (inVisionTgt == null ||
+                        isHostile(enemy) && !isHostile(inVisionTgt) ||
+                        isHostile(enemy) == isHostile(attackTgt) && enemy.getHealth() < lowestInVisionHPTgt) {
+
                         lowestInVisionHPTgt = enemy.getHealth();
                         inVisionTgt = enemy;
                     }

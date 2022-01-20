@@ -25,7 +25,7 @@ public class Pathfinder {
      * @throws GameActionException
      */
     public Direction getMoveDir(MapLocation tgt) throws GameActionException {
-        rc.setIndicatorString("tgt: " + tgt);
+        rc.setIndicatorString("tgt: " + tgt + ", origin: " + origin);
 
         if (Clock.getBytecodesLeft() < 5500) {
             Direction optimalDir = Direction.CENTER;
@@ -75,9 +75,9 @@ public class Pathfinder {
         // pathing works in terms of offset from the bot's current location
         int dx = tgt.x-origin.x;
         int dy = tgt.y-origin.y;
-        Clock.getBytecodeNum();
+        System.out.println(Clock.getBytecodeNum());
         int result = cell(dx, dy);
-        Clock.getBytecodeNum();
+        System.out.println(Clock.getBytecodeNum());
         // decompose the result back into its component parts
         int pathCost = result/100;
         int directionOrdinal = pathCost%10;

@@ -83,17 +83,14 @@ public class Sage extends RobotPlayer{
             for (int i = enemies.length - 1; i >= 0; i --) {
                 RobotInfo enemy = enemies[i];
                 if (enemy.getLocation().distanceSquaredTo(src) <= radius) {
-                    if (attackTgt == null) {
-                        lowestHPTgt = enemy.getHealth();
-                        attackTgt = enemy;
-                    } else if (isHostile(enemy) && !isHostile(attackTgt)) {
-                        lowestHPTgt = enemy.getHealth();
-                        attackTgt = enemy;
-                    } else if (enemy.getHealth() < lowestHPTgt 
-                    && ((isHostile(enemy) && isHostile(attackTgt)) || (!isHostile(enemy) && !isHostile(attackTgt)))) {
+                    if (attackTgt == null ||
+                        isHostile(enemy) && !isHostile(attackTgt) ||
+                        isHostile(enemy) == isHostile(attackTgt) && enemy.getHealth() < lowestHPTgt) {
+
                         lowestHPTgt = enemy.getHealth();
                         attackTgt = enemy;
                     }
+
                     if (enemy.getType() == RobotType.ARCHON) {
                         archons ++;
                     } else if (enemy.getType() == RobotType.WATCHTOWER || enemy.getType() == RobotType.LABORATORY) {
@@ -102,14 +99,10 @@ public class Sage extends RobotPlayer{
                         units ++;
                     }
                 } else {
-                    if (inVisionTgt == null) {
-                        lowestInVisionHPTgt = enemy.getHealth();
-                        inVisionTgt = enemy;
-                    } else if (isHostile(enemy) && !isHostile(inVisionTgt)) {
-                        lowestInVisionHPTgt = enemy.getHealth();
-                        inVisionTgt = enemy;
-                    } else if (enemy.getHealth() < lowestInVisionHPTgt 
-                        && ((isHostile(enemy) && isHostile(inVisionTgt)) || (!isHostile(enemy) && !isHostile(inVisionTgt)))) {
+                    if (inVisionTgt == null ||
+                        isHostile(enemy) && !isHostile(inVisionTgt) ||
+                        isHostile(enemy) == isHostile(inVisionTgt) && enemy.getHealth() < lowestInVisionHPTgt) {
+
                         lowestInVisionHPTgt = enemy.getHealth();
                         inVisionTgt = enemy;
                     }

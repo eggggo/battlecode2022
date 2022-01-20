@@ -145,7 +145,7 @@ public class BetterSoldier extends RobotPlayer {
     //main movement loop
     //TODO: make these thresholds based off map size
     //if low enough hp run back to heal
-    if ((notRepaired || rc.getHealth() <= 5) && src.distanceSquaredTo(closestFriendlyArchon) > 8) {
+    if ((notRepaired || rc.getHealth() <= 5) && src.distanceSquaredTo(closestFriendlyArchon) >= 3) {
         dir = Pathfinder.getMoveDir(rc, closestFriendlyArchon);
         notRepaired = true;
     //if mid hp comparatively or no cd, shuffle

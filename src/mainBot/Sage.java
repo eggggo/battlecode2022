@@ -67,7 +67,6 @@ public class Sage extends RobotPlayer{
         RobotInfo inVisionTgt = null;
         int unitHP = 0;
         int buildingHP = 0;
-        int archonHP = 0;
         int rubbleThreshold = rc.senseRubble(rc.getLocation()) + 20;
 
         if (turnsAlive == 0) {
@@ -92,11 +91,7 @@ public class Sage extends RobotPlayer{
                         attackTgt = enemy;
                     }
 
-                    if (enemy.getType() == RobotType.ARCHON) {
-                        int archonMaxHP = RobotType.ARCHON.getMaxHealth(enemy.getLevel());
-                        archonHP += archonMaxHP;
-                        buildingHP += archonMaxHP;
-                    } else if (enemy.getType() == RobotType.WATCHTOWER || enemy.getType() == RobotType.LABORATORY) {
+                    if (enemy.getType() == RobotType.ARCHON || enemy.getType() == RobotType.WATCHTOWER || enemy.getType() == RobotType.LABORATORY) {
                         buildingHP += enemy.getType().getMaxHealth(enemy.getLevel());
                     } else {
                         unitHP += enemy.getType().getMaxHealth(1);
@@ -121,7 +116,7 @@ public class Sage extends RobotPlayer{
                 rc.envision(AnomalyType.CHARGE);
                 turnsNotKilledStuff = 0;
                 castNum++;
-            } else if ((AnomalyType.FURY.sagePercentage * archonHP >= 150 || AnomalyType.FURY.sagePercentage * buildingHP >= 60)
+            } else if ((AnomalyType.FURY.sagePercentage * buildingHP >= 60)
                     && rc.canEnvision(AnomalyType.FURY)) {
                 rc.envision(AnomalyType.FURY);
                 turnsNotKilledStuff = 0;

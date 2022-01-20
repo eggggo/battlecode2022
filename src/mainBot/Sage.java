@@ -101,7 +101,7 @@ public class Sage extends RobotPlayer{
                 } else {
                     if (inVisionTgt == null ||
                         isHostile(enemy) && !isHostile(inVisionTgt) ||
-                        isHostile(enemy) == isHostile(attackTgt) && enemy.getHealth() < lowestInVisionHPTgt) {
+                        isHostile(enemy) == isHostile(inVisionTgt) && enemy.getHealth() < lowestInVisionHPTgt) {
 
                         lowestInVisionHPTgt = enemy.getHealth();
                         inVisionTgt = enemy;

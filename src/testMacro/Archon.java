@@ -1,6 +1,11 @@
-package mainBot;
+package testMacro;
 
 import battlecode.common.*;
+
+import java.awt.*;
+import java.sql.SQLOutput;
+import java.util.Arrays;
+import java.util.Map;
 
 public class Archon extends RobotPlayer {
 
@@ -43,117 +48,6 @@ public class Archon extends RobotPlayer {
             }
         }
         return src.directionTo(minRubbleLoc);
-    }
-
-    static int getQuadrant(RobotController rc, int x, int y) {
-        int quad = 0;
-        if (x >= rc.getMapWidth() / 2 && y >= rc.getMapHeight() / 2) {
-          quad = 1;
-        } else if (x >= rc.getMapWidth() / 2 && y < rc.getMapHeight() / 2) {
-          quad = 4;
-        } else if (x < rc.getMapWidth() / 2 && y >= rc.getMapHeight() / 2) {
-          quad = 2;
-        } else if (x < rc.getMapWidth() / 2 && y < rc.getMapHeight() / 2) {
-          quad = 3;
-        } else {
-          System.out.println("Error: not in a quadrant");
-        }
-        return quad;
-      }
-
-    static void updateGuesses(RobotController rc) throws GameActionException {
-        int archonCount = 4;
-        //if all of the archons have written to the comms
-        boolean quad1 = false;
-        boolean quad2 = false;
-        boolean quad3 = false;
-        boolean quad4 = false;
-    
-        //Create an array for the quads each archon is contained in and another 2D array for each of the archons' coords
-        int currentArchonIndex = 0;
-        int[] quads = new int[archonCount];
-        MapLocation[] coords = new MapLocation[archonCount];
-        for (int i = 48; i >= 0; i--) {
-            int[] sector = Comms.readSectorInfo(rc, i);
-            MapLocation mdpt = Comms.sectorMidpt(rc, i);
-            if (sector[0] == 1) {
-            quads[currentArchonIndex] = getQuadrant(rc, mdpt.x, mdpt.y);
-            coords[currentArchonIndex] = mdpt;
-            currentArchonIndex++;
-            }
-        }
-        archonCount = currentArchonIndex;
-        int[] tempQuads = new int[currentArchonIndex];
-        MapLocation[] tempCoords = new MapLocation[currentArchonIndex];
-        for (int i = currentArchonIndex - 1; i >= 0; i --) {
-            tempQuads[i] = quads[i];
-            tempCoords[i] = coords[i];
-        }
-        quads = tempQuads;
-        coords = tempCoords;
-    
-        MapLocation[] enemyArchons = new MapLocation[archonCount * 3];
-    
-        //initialize whether there's a friendly archon in each quad
-        for (int a = archonCount - 1; a >= 0; a--) {
-            if (quads[a] == 1) {
-            quad1 = true;
-            } else if (quads[a] == 2) {
-            quad2 = true;
-            } else if (quads[a] == 3) {
-            quad3 = true;
-            } else if (quads[a] == 4) {
-            quad4 = true;
-            }
-        }
-    
-        //Predict location of enemy archons based on potential symmetry.  For each archon, I check the 180 rotation,
-        // horizontal flip, and vertical flip.  These are only potential locations, as roataion can occur at other degrees of rotation.
-        if (quad1 && quad3 || quad2 && quad4) {
-            //System.out.println("Rotational Symmetry");
-            for (int i = archonCount - 1; i >= 0; i--) {
-            enemyArchons[3 * i] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, rc.getMapHeight() - 1 - coords[i].y); // 180 rotate
-            }
-    
-        } else if (quad1 && quad2 || quad3 && quad4 || rc.getMapWidth()*2.5 < rc.getMapHeight()) {
-            //System.out.println("Horizontal Symmetry or Rotational Symmetry");
-            //thought that it was unecessary to check horizontal when its likely horizontally symmetric, so i just copied another vertical fip instead of using horz
-            for (int i = archonCount - 1; i >= 0; i--) {
-            enemyArchons[3 * i] = new MapLocation(coords[i].x, rc.getMapHeight() - 1 - coords[i].y); //vert flip
-            enemyArchons[3 * i + 2] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, rc.getMapHeight() - 1 - coords[i].y); // 180 rotate
-            //if map width times 2.5 is less than the height, its pretty likely to be vertical flip coords
-            if (rc.getMapWidth()*2.5 < rc.getMapHeight()) {
-                enemyArchons[3 * i + 2] = null;
-            }
-            }
-        } else if (quad1 && quad4 || quad2 && quad3 || rc.getMapHeight()*2.5 < rc.getMapWidth()) {
-            //System.out.println("Vertical Symmetry or Rotational Symmetry");
-            //thought that it was unecessary to check vertical when its likely vertically symmetric, so i just copied another horiz fip instead of using vert
-            for (int i = archonCount - 1; i >= 0; i--) {
-            enemyArchons[3 * i] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, coords[i].y); //horz flip
-            enemyArchons[3 * i + 2] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, rc.getMapHeight() - 1 - coords[i].y); // 180 rotate
-            //if map height times 2.5 is less than the width, its pretty likely to be horizontal flip coords
-            if (rc.getMapHeight()*2.5 < rc.getMapWidth()) {
-                enemyArchons[3 * i + 2] = null;
-            }
-            }
-        } else {
-            //System.out.println("only in one quad so cannot tell");
-            for (int i = archonCount - 1; i >= 0; i--) {
-            enemyArchons[3 * i] = new MapLocation(coords[i].x, rc.getMapHeight() - 1 - coords[i].y); //vert flip
-            enemyArchons[3 * i + 1] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, coords[i].y); // horz flip
-            enemyArchons[3 * i + 2] = new MapLocation(rc.getMapWidth() - 1 - coords[i].x, rc.getMapHeight() - 1 - coords[i].y); // 180 rotate
-            }
-        }
-
-        for (int i = enemyArchons.length - 1; i >= 0; i --) {
-            MapLocation archon = enemyArchons[i];
-            if (archon != null) {
-                int sector = Comms.locationToSector(rc, archon);
-                rc.writeSharedArray(sector, rc.readSharedArray(sector) | 0b0100000000000000);
-            }
-        }
-        rc.writeSharedArray(55, rc.readSharedArray(55) | 0b1000000);
     }
 
     /**
@@ -730,9 +624,6 @@ public class Archon extends RobotPlayer {
         }
 
         Comms.updateSector(rc, turnCount);
-        if (((rc.readSharedArray(55) >> 6) & 0b1) == 0) {
-            updateGuesses(rc);
-        }
         previousSector = Comms.locationToSector(rc, src);
     }
 }

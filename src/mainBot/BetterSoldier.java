@@ -147,8 +147,9 @@ public class BetterSoldier extends RobotPlayer {
     if ((notRepaired || rc.getHealth() <= 5) && src.distanceSquaredTo(closestFriendlyArchon) > 8) {
         dir = Pathfinder.getMoveDir(rc, closestFriendlyArchon);
         notRepaired = true;
-    //if mid hp comparatively, shuffle
-    } else if (attackTgt != null && frontline && rc.getHealth() < averageHealth && rc.getHealth() < 20) {
+    //if mid hp comparatively or no cd, shuffle
+    } else if ((attackTgt != null && frontline && rc.getHealth() < averageHealth && rc.getHealth() < 20) 
+                || !rc.isActionReady()) {
         Direction opposite = src.directionTo(inVisionTgt.location).opposite();
         MapLocation runawayTgt = src.add(opposite).add(opposite);
         runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1), 

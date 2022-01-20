@@ -116,12 +116,12 @@ public class Sage extends RobotPlayer{
             }
 
             //maximize damage done
-            if ( AnomalyType.CHARGE.sagePercentage * unitHP >= rc.getType().getDamage(1)
+            if ( AnomalyType.CHARGE.sagePercentage * unitHP >= RobotType.SAGE.getDamage(1)
                     && rc.canEnvision(AnomalyType.CHARGE)) {
                 rc.envision(AnomalyType.CHARGE);
                 turnsNotKilledStuff = 0;
                 castNum++;
-            } else if ((AnomalyType.FURY.sagePercentage * archonHP >= 300 || AnomalyType.FURY.sagePercentage * buildingHP >= 600)
+            } else if ((AnomalyType.FURY.sagePercentage * archonHP >= 150 || AnomalyType.FURY.sagePercentage * buildingHP >= 60)
                     && rc.canEnvision(AnomalyType.FURY)) {
                 rc.envision(AnomalyType.FURY);
                 turnsNotKilledStuff = 0;

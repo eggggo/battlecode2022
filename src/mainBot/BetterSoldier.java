@@ -196,8 +196,10 @@ public class BetterSoldier extends RobotPlayer {
       if (rc.senseRubble(kitingTgt) > rubbleThreshold) {
         dir = stallOnGoodRubble(rc);
       }
+    //otherwise if there is an enemy sector go to best scored one
     } else if (bestTgtSector != null) {
       dir = Pathfinder.getMoveDir(rc, bestTgtSector);
+    //otherwise scout same as miner
     } else {
       dir = Pathfinder.getMoveDir(rc, scoutTgt);
     }

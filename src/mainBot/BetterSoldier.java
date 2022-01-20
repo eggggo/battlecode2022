@@ -115,7 +115,8 @@ public class BetterSoldier extends RobotPlayer {
         if (isHostile(friend)) {
             nearbyDamage ++;
             nearbyDamageHealth += friend.getHealth();
-            if (frontline && friend.location.distanceSquaredTo(attackTgt.location) < src.distanceSquaredTo(attackTgt.location)) {
+            if (frontline && attackTgt != null 
+            && friend.location.distanceSquaredTo(attackTgt.location) < src.distanceSquaredTo(attackTgt.location)) {
                 frontline = false;
             }
         }
@@ -123,7 +124,7 @@ public class BetterSoldier extends RobotPlayer {
     double averageHealth = (double)nearbyDamageHealth/nearbyDamage;
 
     //comms access every other turn for bytecode reduction
-    if (turnCount % 2 == 0) {
+    if (turnCount % 2 == 0 || turnsAlive == 0) {
         bestTgtSector = null;
         double highScore = 0;
         for (int i = 48; i >= 0; i --) {
@@ -133,7 +134,7 @@ public class BetterSoldier extends RobotPlayer {
                 closestFriendlyArchon = sectorMdpts[i];
             }
             if (sector[1] == 1 || sector[3] > 0) {
-                double currentScore = (50.0*sector[1] + sector[3])/src.distanceSquaredTo(sectorMdpts[i]);
+                double currentScore = (50.0*sector[1] + sector[3])/Math.sqrt(src.distanceSquaredTo(sectorMdpts[i]));
                 if (currentScore > highScore) {
                     bestTgtSector = sectorMdpts[i];
                 }
@@ -148,8 +149,8 @@ public class BetterSoldier extends RobotPlayer {
         dir = Pathfinder.getMoveDir(rc, closestFriendlyArchon);
         notRepaired = true;
     //if mid hp comparatively or no cd, shuffle
-    } else if ((attackTgt != null && frontline && rc.getHealth() < averageHealth && rc.getHealth() < 20) 
-                || !rc.isActionReady()) {
+    } else if (attackTgt != null && ((frontline && rc.getHealth() < averageHealth && rc.getHealth() < 20) 
+                || !rc.isActionReady())) {
         Direction opposite = src.directionTo(inVisionTgt.location).opposite();
         MapLocation runawayTgt = src.add(opposite).add(opposite);
         runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1), 
@@ -160,7 +161,7 @@ public class BetterSoldier extends RobotPlayer {
             dir = stallOnGoodRubble(rc);
         }
     //if enough soldiers nearby advance to make space
-    } else if (nearbyDamage > 4) {
+    } else if (nearbyDamage > 4 && attackTgt != null) {
         dir = Pathfinder.getMoveDir(rc, attackTgt.location);
         MapLocation kitingTgt = src.add(dir);
         if (rc.senseRubble(kitingTgt) > rubbleThreshold) {

@@ -62,25 +62,25 @@ public class BetterMiner extends RobotPlayer {
             for (int i = 48; i >= 0; i --) {
                 sectorMdpts[i] = Comms.sectorMidpt(rc, i);
             }
-            int scoutPattern = rc.readSharedArray(50) % 2;
+            int scoutPattern = rc.readSharedArray(50) % 3;
             if (scoutPattern == 0) {
                 scoutTgt = sectorMdpts[rng.nextInt(49)];
             } else {
-                int designatedLoc = rc.readSharedArray(50) % 10;
+                int designatedLoc = rng.nextInt(5);
                 switch (designatedLoc) {
-                    case 1:
+                    case 0:
                         scoutTgt = new MapLocation(0, 0);
                         break;
-                    case 3:
+                    case 1:
                         scoutTgt = new MapLocation(rc.getMapWidth() - 1, 0);
                         break;
-                    case 5:
+                    case 2:
                         scoutTgt = new MapLocation(0, rc.getMapHeight() - 1);
                         break;
-                    case 7:
+                    case 3:
                         scoutTgt = new MapLocation(rc.getMapWidth() - 1, rc.getMapHeight() - 1);
                         break;
-                    case 9:
+                    case 4:
                         scoutTgt = new MapLocation(rc.getMapWidth()/2, rc.getMapHeight()/2);
                         break;
                 }
@@ -122,7 +122,7 @@ public class BetterMiner extends RobotPlayer {
                     income += 5;
                 }
                 //if we are farther than a certain distance from nearest friendly archon, let's mine out the area
-                int friendlyResourceRadius = (int)Math.pow((rc.getMapWidth()/2 + rc.getMapHeight()/2)/2, 2);
+                int friendlyResourceRadius = (int)Math.pow(Math.max(rc.getMapWidth()/2, rc.getMapHeight()/2), 2);
                 boolean shouldContinue = nearestFriendlyArchon != null 
                 && src.distanceSquaredTo(nearestFriendlyArchon) > friendlyResourceRadius;
                 int stopMiningThres = 1;

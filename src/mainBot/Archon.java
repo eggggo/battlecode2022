@@ -535,7 +535,7 @@ public class Archon extends RobotPlayer {
             }
         }
         else if (rc.readSharedArray(55) >> 7 == 0) {
-            if (soldierCount < minerCount/rc.getArchonCount() && minerCount >= rc.getArchonCount() && !rc.canBuildRobot(RobotType.SAGE, dir)) {
+            if (minerCount >= 4 && soldierCount < minerCount/Math.max(rc.getArchonCount(), 3) && !rc.canBuildRobot(RobotType.SAGE, dir)) {
                 rc.setIndicatorString("soldier?");
                     if (rc.canBuildRobot(RobotType.SOLDIER, dir) && shouldBuildSoldier) {
                         rc.buildRobot(RobotType.SOLDIER, dir);

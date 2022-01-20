@@ -197,7 +197,7 @@ public class Builder extends RobotPlayer {
         else if (nearbyBuilding != null && rc.canRepair(nearbyBuilding)) {
             rc.setIndicatorString("2");
             rc.repair(nearbyBuilding);
-        } else if ((rc.getTeamGoldAmount(rc.getTeam()) < 10 && minerCount / 10 + initLabCount > labCount)
+        } else if ((minerCount / 10 + initLabCount > labCount)
                 || (rc.getTeamLeadAmount(rc.getTeam()) >= 180 && !(sageCount > 3* rc.getArchonCount()))) {
             rc.setIndicatorString("3");
             if (rc.canBuildRobot(RobotType.LABORATORY, builddir)) {

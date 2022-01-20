@@ -162,6 +162,7 @@ public class Archon extends RobotPlayer {
      */
     static void runArchon(RobotController rc) throws GameActionException {
 
+        int labCount = rc.readSharedArray(56);
         int maxBuilderCount = (int) (Math.sqrt(rc.getMapHeight() * rc.getMapWidth())/20) * 15;
         int addMaxBuilder = rc.getTeamLeadAmount(rc.getTeam())/10000 * 10;
         maxBuilderCount += addMaxBuilder;
@@ -511,15 +512,30 @@ public class Archon extends RobotPlayer {
             minerBuilderRatio = 5;
         }
 
+        int initLabCount = rc.getArchonCount();
+        if (firstEnemySeen) {
+            initLabCount = 1;
+        }
+
         //If there is no enemyArchonNearby and the first enemy hasn't been seen or there is nearby lead between 50 and 100, build a miner
         //If our minerCount is less than the target or our miner count is greater than our attacker count times a ratio and we shouldn't build a builder or theres an enemyArchonNearby, build a soldier.
 
-        if (rc.readSharedArray(55) >> 7 == 1 && (rc.getTeamLeadAmount(rc.getTeam()) > 350 || rc.getTeamGoldAmount(rc.getTeam()) > rc.getArchonCount() * 20)) {
+        if (rc.readSharedArray(55) >> 7 == 1 && (rc.getTeamLeadAmount(rc.getTeam()) > 350)) {
             rc.writeSharedArray(55, (rc.readSharedArray(55) & 0b1111111));
         }
-        
-        if (rc.readSharedArray(55) >> 7 == 0) {
-            if (soldierCount < minerCount/rc.getArchonCount() && minerCount >= rc.getArchonCount() && firstEnemySeen && !rc.canBuildRobot(RobotType.SAGE, dir)) {
+
+        if (firstEnemySeen && rc.canBuildRobot(RobotType.SAGE, dir)) {
+            rc.setIndicatorString("2");
+            if (shouldBuildSage) {
+                rc.buildRobot(RobotType.SAGE, dir);
+                minersBuiltInARow = 0;
+                buildersBuiltInARow = 0;
+                rc.writeSharedArray(53, rc.readSharedArray(53) + 1);
+                sagesBuilt++;
+            }
+        }
+        else if (rc.readSharedArray(55) >> 7 == 0) {
+            if (soldierCount < minerCount/rc.getArchonCount() && minerCount >= rc.getArchonCount() && !rc.canBuildRobot(RobotType.SAGE, dir)) {
                 rc.setIndicatorString("soldier?");
                     if (rc.canBuildRobot(RobotType.SOLDIER, dir) && shouldBuildSoldier) {
                         rc.buildRobot(RobotType.SOLDIER, dir);
@@ -535,17 +551,8 @@ public class Archon extends RobotPlayer {
                 rc.writeSharedArray(50, rc.readSharedArray(50) + 1);
                 unitsAfterEnemySeen++;
             }
-            else if (firstEnemySeen && rc.canBuildRobot(RobotType.SAGE, dir)) {
-                rc.setIndicatorString("2");
-                if (shouldBuildSage) {
-                    rc.buildRobot(RobotType.SAGE, dir);
-                    minersBuiltInARow = 0;
-                    buildersBuiltInARow = 0;
-                    rc.writeSharedArray(53, rc.readSharedArray(53) + 1);
-                    sagesBuilt++;
-                }
-            } else if (buildersBuilt < 1 ||
-                    (minerCount /minerBuilderRatio > builderCount && rc.getTeamGoldAmount(rc.getTeam()) > 0)) {
+            else if ((builderCount == 0) || (minerCount / 10 + initLabCount > builderCount &&
+                    (minerCount /minerBuilderRatio > builderCount && rc.getTeamGoldAmount(rc.getTeam()) > 0))) {
                 if (rc.canBuildRobot(RobotType.BUILDER, dir)) {
                     rc.setIndicatorString("4");
                     rc.buildRobot(RobotType.BUILDER, dir);
@@ -553,8 +560,10 @@ public class Archon extends RobotPlayer {
                     soldiersBuiltInARow = 0;
                     minersBuiltInARow = 0;
                     buildersBuiltInARow++;
+                    if ((minerCount / 10 + initLabCount > builderCount || sageCount > 3* rc.getArchonCount() || builderCount == 0)) {
+                        rc.writeSharedArray(55, (rc.readSharedArray(55) | 0b10000000));
+                    }
                     rc.writeSharedArray(54, rc.readSharedArray(54) + 1);
-                    rc.writeSharedArray(55, (rc.readSharedArray(55) | 0b10000000));
                 }
             } else if (rc.canBuildRobot(RobotType.MINER, dir)) {
                 rc.setIndicatorString("5");

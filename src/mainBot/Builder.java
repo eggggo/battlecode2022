@@ -10,6 +10,7 @@ public class Builder extends RobotPlayer {
     static boolean aboveHpThresh = true;
     static MapLocation home = null;
     static MapLocation[] sectorMdpts = new MapLocation[49];
+    static boolean firstEnemySeen = false;
 
     static Direction stallOnGoodRubble(RobotController rc) throws GameActionException {
         MapLocation src = rc.getLocation();
@@ -166,6 +167,21 @@ public class Builder extends RobotPlayer {
             }
         }
 
+        if (!firstEnemySeen) {
+            for (int i = 48; i >= 0; i--) {
+                int[] sector = Comms.readSectorInfo(rc, i);
+                if (sector[3] > 0) {
+                    firstEnemySeen = true;
+                    break;
+                }
+            }
+        }
+
+        int initLabCount = rc.getArchonCount();
+        if (firstEnemySeen) {
+            initLabCount = 1;
+        }
+
         int wtCount = rc.readSharedArray(52);
         int minerCount = rc.readSharedArray(50);
         int labCount = rc.readSharedArray(56);
@@ -181,7 +197,8 @@ public class Builder extends RobotPlayer {
         else if (nearbyBuilding != null && rc.canRepair(nearbyBuilding)) {
             rc.setIndicatorString("2");
             rc.repair(nearbyBuilding);
-        } else if (rc.getTeamGoldAmount(rc.getTeam()) < 10 && minerCount / 10 + 1 > labCount) {
+        } else if ((rc.getTeamGoldAmount(rc.getTeam()) < 10 && minerCount / 10 + initLabCount > labCount)
+                || (rc.getTeamLeadAmount(rc.getTeam()) >= 180 && !(sageCount > 3* rc.getArchonCount()))) {
             rc.setIndicatorString("3");
             if (rc.canBuildRobot(RobotType.LABORATORY, builddir)) {
                 rc.buildRobot(RobotType.LABORATORY, builddir);

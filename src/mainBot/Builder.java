@@ -1,8 +1,5 @@
 package mainBot;
 
-import java.awt.*;
-import java.util.Arrays;
-
 import battlecode.common.*;
 
 public class Builder extends RobotPlayer {

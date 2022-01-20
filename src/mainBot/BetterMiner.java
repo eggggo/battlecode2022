@@ -54,7 +54,6 @@ public class BetterMiner extends RobotPlayer {
         Team friendly = rc.getTeam();
         Team opponent = rc.getTeam().opponent();
         MapLocation src = rc.getLocation();
-        int currentSector = Comms.locationToSector(rc, src);
         Direction dir = null;
         MapLocation resources = null;
         RobotInfo[] enemies = rc.senseNearbyRobots(senseRadius, opponent);

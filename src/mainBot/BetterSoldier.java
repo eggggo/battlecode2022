@@ -10,6 +10,7 @@ public class BetterSoldier extends RobotPlayer {
   static MapLocation[] sectorMdpts = new MapLocation[49];
   static MapLocation bestTgtSector = null;
   static MapLocation closestFriendlyArchon = null;
+  static MapLocation scoutTgt = null;
 
   static Direction stallOnGoodRubble(RobotController rc) throws GameActionException {
     MapLocation src = rc.getLocation();
@@ -60,6 +61,29 @@ public class BetterSoldier extends RobotPlayer {
       for (int i = 48; i >= 0; i --) {
           sectorMdpts[i] = Comms.sectorMidpt(rc, i);
       }
+      int scoutPattern = rc.readSharedArray(50) % 2;
+      if (scoutPattern == 0) {
+        scoutTgt = sectorMdpts[rng.nextInt(49)];
+      } else {
+        int designatedLoc = rng.nextInt(5);
+        switch (designatedLoc) {
+            case 0:
+                scoutTgt = new MapLocation(0, 0);
+                break;
+            case 1:
+                scoutTgt = new MapLocation(rc.getMapWidth() - 1, 0);
+                break;
+            case 2:
+                scoutTgt = new MapLocation(0, rc.getMapHeight() - 1);
+                break;
+            case 3:
+                scoutTgt = new MapLocation(rc.getMapWidth() - 1, rc.getMapHeight() - 1);
+                break;
+            case 4:
+                scoutTgt = new MapLocation(rc.getMapWidth()/2, rc.getMapHeight()/2);
+                break;
+            }
+        }
     }
 
     //if we reach full health then we are repaired
@@ -142,33 +166,40 @@ public class BetterSoldier extends RobotPlayer {
         }
     }
 
-    int repairThresh = 600/(rc.getMapHeight() + rc.getMapWidth());
+    //if you can see the scout target sector mdpt, randomize and go to somewhere else
+    if (src.distanceSquaredTo(scoutTgt) <= senseRadius) {
+      scoutTgt = sectorMdpts[rng.nextInt(49)];
+    }
+
+    int repairThresh = (int)(15 + (-1.0*(Math.abs(src.x - closestFriendlyArchon.x) + Math.abs(src.y - closestFriendlyArchon.y)))/12);
     //main movement loop
     //if low enough hp run back to heal
     if ((notRepaired || rc.getHealth() <= repairThresh) && src.distanceSquaredTo(closestFriendlyArchon) >= 3) {
-        dir = Pathfinder.getMoveDir(rc, closestFriendlyArchon);
-        notRepaired = true;
+      dir = Pathfinder.getMoveDir(rc, closestFriendlyArchon);
+      notRepaired = true;
     //if mid hp comparatively or no cd, shuffle
     } else if (attackTgt != null && ((frontline && rc.getHealth() < averageHealth && rc.getHealth() < 15 + repairThresh) 
-                || !rc.isActionReady())) {
-        Direction opposite = src.directionTo(inVisionTgt.location).opposite();
-        MapLocation runawayTgt = src.add(opposite).add(opposite);
-        runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1), 
-        Math.min(Math.max(0, runawayTgt.y), rc.getMapHeight() - 1));
-        dir = Pathfinder.getMoveDir(rc, runawayTgt);
-        MapLocation kitingTgt = src.add(dir);
-        if (rc.senseRubble(kitingTgt) > rubbleThreshold) {
-            dir = stallOnGoodRubble(rc);
-        }
+              || !rc.isActionReady())) {
+      Direction opposite = src.directionTo(inVisionTgt.location).opposite();
+      MapLocation runawayTgt = src.add(opposite).add(opposite);
+      runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1), 
+      Math.min(Math.max(0, runawayTgt.y), rc.getMapHeight() - 1));
+      dir = Pathfinder.getMoveDir(rc, runawayTgt);
+      MapLocation kitingTgt = src.add(dir);
+      if (rc.senseRubble(kitingTgt) > rubbleThreshold) {
+          dir = stallOnGoodRubble(rc);
+      }
     //if enough soldiers nearby advance to make space
     } else if (nearbyDamage > 4 && attackTgt != null) {
-        dir = Pathfinder.getMoveDir(rc, attackTgt.location);
-        MapLocation kitingTgt = src.add(dir);
-        if (rc.senseRubble(kitingTgt) > rubbleThreshold) {
-            dir = stallOnGoodRubble(rc);
-        }
+      dir = Pathfinder.getMoveDir(rc, attackTgt.location);
+      MapLocation kitingTgt = src.add(dir);
+      if (rc.senseRubble(kitingTgt) > rubbleThreshold) {
+        dir = stallOnGoodRubble(rc);
+      }
+    } else if (bestTgtSector != null) {
+      dir = Pathfinder.getMoveDir(rc, bestTgtSector);
     } else {
-        dir = Pathfinder.getMoveDir(rc, bestTgtSector);
+      dir = Pathfinder.getMoveDir(rc, scoutTgt);
     }
 
     //move

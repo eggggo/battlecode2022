@@ -12,7 +12,6 @@ public class BetterMiner extends RobotPlayer {
     static int maxTravelDistance = 100;
     static MapLocation scoutTgt = null;
     static Random rng = new Random();
-    static int scoutPattern = 0;
     static MapLocation nearestFriendlyArchon = null;
     static MapLocation bestOOVResource = null;
 
@@ -63,7 +62,7 @@ public class BetterMiner extends RobotPlayer {
             for (int i = 48; i >= 0; i --) {
                 sectorMdpts[i] = Comms.sectorMidpt(rc, i);
             }
-            scoutPattern = rc.readSharedArray(50) % 2;
+            int scoutPattern = rc.readSharedArray(50) % 2;
             if (scoutPattern == 0) {
                 scoutTgt = sectorMdpts[rng.nextInt(49)];
             } else {

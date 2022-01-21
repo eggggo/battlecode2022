@@ -167,12 +167,24 @@ public class Comms {
     static void clearCounts(RobotController rc) throws GameActionException {
         if (rc.readSharedArray(57) != rc.getRoundNum()) {
             rc.writeSharedArray(57, rc.getRoundNum());
-            rc.writeSharedArray(50, 0);
-            rc.writeSharedArray(51, 0);
-            rc.writeSharedArray(52, 0);
-            rc.writeSharedArray(53, 0);
-            rc.writeSharedArray(54, 0);
-            rc.writeSharedArray(56, 0);
+            if (rc.readSharedArray(50) != 0) {
+                rc.writeSharedArray(50, 0);
+            }
+            if (rc.readSharedArray(51) != 0) {
+                rc.writeSharedArray(51, 0);
+            }
+            if (rc.readSharedArray(52) != 0) {
+                rc.writeSharedArray(52, 0);
+            }
+            if (rc.readSharedArray(53) != 0) {
+                rc.writeSharedArray(53, 0);
+            }
+            if (rc.readSharedArray(54) != 0) {
+                rc.writeSharedArray(54, 0);
+            }
+            if (rc.readSharedArray(56) != 0) {
+                rc.writeSharedArray(56, 0);
+            }
         }
     }
 }

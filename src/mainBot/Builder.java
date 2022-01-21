@@ -155,12 +155,11 @@ public class Builder extends RobotPlayer {
 
         boolean buildLab = (minerCount / 10 + initLabCount > labCount)
                 || (rc.getTeamLeadAmount(rc.getTeam()) >= 180 && !(sageCount > 3 * rc.getArchonCount()));
-        boolean buildWt = (sageCount > 15)&& (watchtowersBuilt < 3);
+        boolean buildWt = (sageCount > 15) && (watchtowersBuilt < 3);
 
         //movement flow
         //if unfinished building nearby finish it
         if (nearestPrototype != null) {
-
             if (!(src.distanceSquaredTo(nearestPrototype.location) <= 5 && stallDir == Direction.CENTER)) {
                 dir = Pathfinder.getMoveDir(rc, nearestPrototype.location);
             }

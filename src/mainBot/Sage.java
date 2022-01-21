@@ -13,12 +13,21 @@ public class Sage extends RobotPlayer{
     static MapLocation[] sectorMdpts = new MapLocation[49];
     static MapLocation scoutTgt = null;
 
+    //set upon initialization
+    static int senseRadius;
+    static int actionRadius;
+    static Team friendly;
+    static Team opponent;
+
+    /**
+     * @return the direction of the least rubble to move
+     */
     static Direction stallOnGoodRubble(RobotController rc) throws GameActionException {
         MapLocation src = rc.getLocation();
         int currRubble = rc.senseRubble(src);
-          int minRubble = currRubble;
-          MapLocation minRubbleLoc = src;
-          if (currRubble > 0) {
+        int minRubble = currRubble;
+        MapLocation minRubbleLoc = src;
+        if (currRubble > 0) {
             for (Direction d : Direction.allDirections()) {
               MapLocation test = src.add(d);
               if (rc.onTheMap(test) && !rc.isLocationOccupied(test) && rc.canSenseLocation(test)) {
@@ -29,8 +38,8 @@ public class Sage extends RobotPlayer{
                 }
               }
             }
-          }
-          return src.directionTo(minRubbleLoc);
+        }
+        return src.directionTo(minRubbleLoc);
       }
 
     static boolean isHostile(RobotInfo enemy) {
@@ -44,7 +53,7 @@ public class Sage extends RobotPlayer{
 
         if (turnsAlive == 0) {
             senseRadius = rc.getType().visionRadiusSquared;
-            radius = rc.getType().actionRadiusSquared;
+            actionRadius = rc.getType().actionRadiusSquared;
             friendly = rc.getTeam();
             opponent = rc.getTeam().opponent();
 
@@ -78,8 +87,8 @@ public class Sage extends RobotPlayer{
 
         //determined every turn
         RobotInfo[] enemies = rc.senseNearbyRobots(senseRadius, opponent);
-        RobotInfo attackTgt = null;
-        RobotInfo inVisionTgt = null;
+        RobotInfo attackTgt = null; //lowest health enemy within actionRadius
+        RobotInfo inVisionTgt = null; //lowest health enemy within visionRadius
         int unitHP = 0;
         int buildingHP = 0;
 
@@ -89,7 +98,7 @@ public class Sage extends RobotPlayer{
         if (enemies.length > 0) {
             for (int i = enemies.length - 1; i >= 0; i --) {
                 RobotInfo enemy = enemies[i];
-                if (enemy.getLocation().distanceSquaredTo(src) <= radius) {
+                if (enemy.getLocation().distanceSquaredTo(src) <= actionRadius) {
                     if (attackTgt == null ||
                         isHostile(enemy) && !isHostile(attackTgt) ||
                         isHostile(enemy) == isHostile(attackTgt) && enemy.getHealth() < lowestHPTgt) {
@@ -114,7 +123,7 @@ public class Sage extends RobotPlayer{
                     }
                 }
             }
-            if (attackTgt != null && inVisionTgt == null) {
+            if (attackTgt != null) {
                 inVisionTgt = attackTgt;
             }
 
@@ -136,9 +145,10 @@ public class Sage extends RobotPlayer{
             scoutTgt = sectorMdpts[rng.nextInt(49)];
         }
 
+        //Movement Code
         Direction dir = null;
         if (rc.getHealth() < RobotType.SAGE.getMaxHealth(rc.getLevel()) / 5 && home != null) {
-            // If low health run home
+            // If low health run home (for now its go suicide)
             dir = Pathfinder.getMoveDir(rc, home);
         } else if (inVisionTgt != null && isHostile(inVisionTgt) && !rc.isActionReady()) {
             //if cant attack and see enemies run away
@@ -157,6 +167,7 @@ public class Sage extends RobotPlayer{
                 }
             }
         } else {
+            //inVisionTgt is null
             MapLocation closestEnemies = null;
             MapLocation closestEnemyArchon = null;
             int archonDistance = 9999;

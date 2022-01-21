@@ -151,8 +151,6 @@ public class Sage extends RobotPlayer{
                 if (chaseSpotRubble > rubbleThreshold && isHostile(inVisionTgt)) {
                     dir = stallOnGoodRubble(rc);
                 }
-            } else {
-              dir = Pathfinder.getMoveDir(rc, scoutTgt);
             }
         } else {
             MapLocation closestEnemies = null;
@@ -188,6 +186,8 @@ public class Sage extends RobotPlayer{
               if (closestEnemyArchon.distanceSquaredTo(src) < 100 && rubble > rubbleThreshold) {
                 dir = stallOnGoodRubble(rc);
               }
+            } else {
+                dir = Pathfinder.getMoveDir(rc, scoutTgt);
             }
           }
 

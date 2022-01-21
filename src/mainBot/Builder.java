@@ -188,11 +188,10 @@ public class Builder extends RobotPlayer {
             }
         }
 
-        int initLabCount = rc.getArchonCount();
+        int initLabCount = 1;
         if (firstEnemySeen) {
             initLabCount = 1;
         }
-
         int wtCount = rc.readSharedArray(52);
         int minerCount = rc.readSharedArray(50);
         int labCount = rc.readSharedArray(56);
@@ -209,7 +208,7 @@ public class Builder extends RobotPlayer {
             rc.setIndicatorString("2");
             rc.repair(nearbyBuilding);
         } else if ((minerCount / 10 + initLabCount > labCount)
-                || (rc.getTeamLeadAmount(rc.getTeam()) >= 180 && !(sageCount > 3* rc.getArchonCount()))) {
+                || (rc.getTeamLeadAmount(rc.getTeam()) >= 180 && !(sageCount > 3 * rc.getArchonCount()))) {
             rc.setIndicatorString("3");
             if (rc.canBuildRobot(RobotType.LABORATORY, builddir)) {
                 rc.buildRobot(RobotType.LABORATORY, builddir);
@@ -217,7 +216,7 @@ public class Builder extends RobotPlayer {
                 rc.writeSharedArray(56, rc.readSharedArray(56) + 1);
                 rc.writeSharedArray(55, (rc.readSharedArray(55) & 0b1111111));
             }
-        } else if (rc.canBuildRobot(RobotType.WATCHTOWER, builddir) && sageCount > 3* rc.getArchonCount()
+        } else if (rc.canBuildRobot(RobotType.WATCHTOWER, builddir) && (sageCount > 3 * rc.getArchonCount())
                 && (watchtowersBuilt < 3 || numNearbyWatchtowers == 9)) {
             rc.setIndicatorString("4");
             rc.buildRobot(RobotType.WATCHTOWER, builddir);

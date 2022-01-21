@@ -520,11 +520,10 @@ public class Archon extends RobotPlayer {
             minerBuilderRatio = 5;
         }
 
-        int initLabCount = rc.getArchonCount();
+        int initLabCount = 1;
         if (firstEnemySeen) {
             initLabCount = 1;
         }
-
         //If there is no enemyArchonNearby and the first enemy hasn't been seen or there is nearby lead between 50 and 100, build a miner
         //If our minerCount is less than the target or our miner count is greater than our attacker count times a ratio and we shouldn't build a builder or theres an enemyArchonNearby, build a soldier.
 
@@ -543,7 +542,7 @@ public class Archon extends RobotPlayer {
             }
         }
         else if (rc.readSharedArray(55) >> 7 == 0) {
-            if (minerCount >= 4 && soldierCount < minerCount/Math.max(rc.getArchonCount(), 3) && !rc.canBuildRobot(RobotType.SAGE, dir)) {
+            if (minerCount >= 4 && soldierCount < minerCount/Math.max(rc.getArchonCount(), 3) && rc.getTeamGoldAmount(rc.getTeam()) == 0) {
                 rc.setIndicatorString("soldier?");
                     if (rc.canBuildRobot(RobotType.SOLDIER, dir) && shouldBuildSoldier) {
                         rc.buildRobot(RobotType.SOLDIER, dir);

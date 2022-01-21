@@ -756,6 +756,7 @@ public class Archon extends RobotPlayer {
         }
 
         Comms.updateSector(rc);
+        Comms.clearCounts(rc);
         if (((rc.readSharedArray(55) >> 6) & 0b1) == 0) {
             updateGuesses(rc);
         }

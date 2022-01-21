@@ -120,24 +120,24 @@ public class Comms {
         MapLocation[] nearbyLead = rc.senseNearbyLocationsWithLead(range, 10);
         MapLocation[] nearbyGold = rc.senseNearbyLocationsWithGold(range);
         for (int i = nearbyGold.length - 1; i >= 0; i --) {
+            if (resourceCount >= 63) {
+                break;
+            }
             MapLocation loc = nearbyGold[i];
             if (loc.x >= lowerX && loc.x < lowerX + xSize && loc.y >= lowerY && loc.y < lowerY + ySize) {
-                resourceCount += 5;
+                resourceCount += 5*rc.senseGold(loc);
             }
         }
-        if (nearbyLead.length > 10) {
-            resourceCount += nearbyLead.length;
-        } else {
-            for (int i = nearbyLead.length - 1; i >= 0; i --) {
-                MapLocation loc = nearbyLead[i];
-                if (resourceCount == 63) {
-                    break;
-                }
-                if (loc.x >= lowerX && loc.x < lowerX + xSize && loc.y >= lowerY && loc.y < lowerY + ySize) {
-                    resourceCount ++;
-                }
+        for (int i = nearbyLead.length - 1; i >= 0; i --) {
+            if (resourceCount == 63) {
+                break;
+            }
+            MapLocation loc = nearbyLead[i];
+            if (loc.x >= lowerX && loc.x < lowerX + xSize && loc.y >= lowerY && loc.y < lowerY + ySize) {
+                resourceCount ++;
             }
         }
+        
         resourceCount = Math.min(63, resourceCount);
 
         if (readSectorInfo(rc, sector, 4) == turnMod) {

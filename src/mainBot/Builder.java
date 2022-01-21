@@ -182,7 +182,7 @@ public class Builder extends RobotPlayer {
                 dir = Pathfinder.getMoveDir(rc, bestTgtSector);
             }
         } else {
-            MapLocation tgt = src.translate(awayFromLabX + 2*awayFromEnemies.dx, awayFromLabY + 2*awayFromEnemies.dy);
+            MapLocation tgt = src.translate(awayFromLabX, awayFromLabY);
             MapLocation inBounds = new MapLocation(Math.min(Math.max(0, tgt.x), rc.getMapWidth() - 1), 
                 Math.min(Math.max(0, tgt.y), rc.getMapHeight() - 1));
             dir = Pathfinder.getMoveDir(rc, inBounds);
@@ -203,13 +203,7 @@ public class Builder extends RobotPlayer {
 
         //System.out.println(nearbyBuilding != null && rc.canMutate(nearbyBuilding) && rc.getTeamLeadAmount(rc.getTeam()) >= 200);
         //If there is a nearby building that can be repaired, repair it, otherwise go to the nearest repariable buidling and repair it.
-        if ((actionTgt != null) && (rc.canMutate(actionTgt))) {
-//            rc.setIndicatorString("1");
-            rc.mutate(actionTgt);
-            rc.writeSharedArray(55, (rc.readSharedArray(55) & 0b1111111));
-            //System.out.println("hello");
-        }
-        else if ((actionTgt != null) && needHealing && (rc.canRepair(actionTgt))) {
+        if ((actionTgt != null) && needHealing && (rc.canRepair(actionTgt))) {
 //            rc.setIndicatorString("2");
             rc.repair(actionTgt);
         } else if (buildLab) {
@@ -220,7 +214,11 @@ public class Builder extends RobotPlayer {
                 laboratoriesBuilt++;
                 rc.writeSharedArray(55, (rc.readSharedArray(55) & 0b1111111));
             }
-        } else if (buildWt) {
+        } else if ((actionTgt != null) && (rc.canMutate(actionTgt))) {
+            rc.mutate(actionTgt);
+            rc.writeSharedArray(55, (rc.readSharedArray(55) & 0b1111111));
+            //System.out.println("hello");
+        }else if (buildWt) {
 //            rc.setIndicatorString("4");
             if (rc.canBuildRobot(RobotType.WATCHTOWER, builddir)) {
                 rc.buildRobot(RobotType.WATCHTOWER, builddir);

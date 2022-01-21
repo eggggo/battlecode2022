@@ -136,57 +136,61 @@ public class Comms {
     }
 
     static void updateTypeCount(RobotController rc) throws GameActionException {
-        int index = -1;
-        switch (rc.getType()) {
-            case MINER:
-                index = 50;
-                break;
-            case SOLDIER:
-                index = 51;
-                break;
-            case WATCHTOWER:
-                index = 52;
-                break;
-            case SAGE:
-                index = 53;
-                break;
-            case BUILDER:
-                index = 54;
-                break;
-            case LABORATORY:
-                index = 56;
-                break;
-            default:
-                index = -1;
+        if (rc.getRoundNum() % 2 == 0) {
+            int index = -1;
+            switch (rc.getType()) {
+                case MINER:
+                    index = 50;
+                    break;
+                case SOLDIER:
+                    index = 51;
+                    break;
+                case WATCHTOWER:
+                    index = 52;
+                    break;
+                case SAGE:
+                    index = 53;
+                    break;
+                case BUILDER:
+                    index = 54;
+                    break;
+                case LABORATORY:
+                    index = 56;
+                    break;
+                default:
+                    index = -1;
+            }
+            rc.writeSharedArray(index, rc.readSharedArray(index) + 1);
         }
-        rc.writeSharedArray(index, rc.readSharedArray(index) + 1);
     }
 
     static void clearCounts(RobotController rc) throws GameActionException {
-        int numberArchon = ((rc.readSharedArray(57)) + 1) % rc.getArchonCount();
-        if (numberArchon == 0) {
-            if (rc.readSharedArray(49) != 0) {
-                rc.writeSharedArray(49, 0);
+        if (rc.getRoundNum() % 2 == 0) {
+            int numberArchon = ((rc.readSharedArray(57)) + 1) % rc.getArchonCount();
+            if (numberArchon == 0) {
+                if (rc.readSharedArray(49) != 0) {
+                    rc.writeSharedArray(49, 0);
+                }
+                if (rc.readSharedArray(50) != 0) {
+                    rc.writeSharedArray(50, 0);
+                }
+                if (rc.readSharedArray(51) != 0) {
+                    rc.writeSharedArray(51, 0);
+                }
+                if (rc.readSharedArray(52) != 0) {
+                    rc.writeSharedArray(52, 0);
+                }
+                if (rc.readSharedArray(53) != 0) {
+                    rc.writeSharedArray(53, 0);
+                }
+                if (rc.readSharedArray(54) != 0) {
+                    rc.writeSharedArray(54, 0);
+                }
+                if (rc.readSharedArray(56) != 0) {
+                    rc.writeSharedArray(56, 0);
+                }
             }
-            if (rc.readSharedArray(50) != 0) {
-                rc.writeSharedArray(50, 0);
-            }
-            if (rc.readSharedArray(51) != 0) {
-                rc.writeSharedArray(51, 0);
-            }
-            if (rc.readSharedArray(52) != 0) {
-                rc.writeSharedArray(52, 0);
-            }
-            if (rc.readSharedArray(53) != 0) {
-                rc.writeSharedArray(53, 0);
-            }
-            if (rc.readSharedArray(54) != 0) {
-                rc.writeSharedArray(54, 0);
-            }
-            if (rc.readSharedArray(56) != 0) {
-                rc.writeSharedArray(56, 0);
-            }
+            rc.writeSharedArray(57, numberArchon);
         }
-        rc.writeSharedArray(57, numberArchon);
     }
 }

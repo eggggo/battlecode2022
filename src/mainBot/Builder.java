@@ -11,6 +11,7 @@ public class Builder extends RobotPlayer {
     static MapLocation home = null;
     static MapLocation[] sectorMdpts = new MapLocation[49];
     static boolean firstEnemySeen = false;
+    static Direction awayFromEnemies = null;
 
     static Direction stallOnGoodRubble(RobotController rc) throws GameActionException {
         MapLocation src = rc.getLocation();
@@ -33,6 +34,7 @@ public class Builder extends RobotPlayer {
       }
 
     public static void runBuilder(RobotController rc) throws GameActionException {
+        MapLocation src = rc.getLocation();
         int sageCount = rc.readSharedArray(53);
         if (turnsAlive == 0) {
             RobotInfo[] nearbyRobots = rc.senseNearbyRobots();
@@ -42,11 +44,18 @@ public class Builder extends RobotPlayer {
                     break;
                 }
             }
+            int xVector = 0;
+            int yVector = 0;
             for (int i = 48; i >= 0; i --) {
                 sectorMdpts[i] = Comms.sectorMidpt(rc, i);
+                int[] sector = Comms.readSectorInfo(rc, i);
+                if (sector[1] == 1) {
+                    xVector += src.directionTo(sectorMdpts[i]).opposite().dx;
+                    yVector += src.directionTo(sectorMdpts[i]).opposite().dy;
+                }
             }
+            awayFromEnemies = src.directionTo(src.translate(xVector, yVector));
         }
-        MapLocation src = rc.getLocation();
         int currentIncome = rc.readSharedArray(49);
         int senseRadius = rc.getType().visionRadiusSquared;
         Team friendly = rc.getTeam();
@@ -117,7 +126,10 @@ public class Builder extends RobotPlayer {
             dir = Pathfinder.getMoveDir(rc, runawayTgt);
         }
         else if (labOverWt && nearestFriend != null && laboratoriesBuilt == 0) {
-            dir = Pathfinder.getAwayDir(rc, nearestFriend);
+            MapLocation awayTgt = src.add(awayFromEnemies).add(awayFromEnemies);
+            MapLocation inBounds = new MapLocation(Math.min(Math.max(0, awayTgt.x), rc.getMapWidth() - 1), 
+                Math.min(Math.max(0, awayTgt.y), rc.getMapHeight() - 1));
+            dir = Pathfinder.getMoveDir(rc, inBounds);
         }
         else if (rc.getTeamLeadAmount(rc.getTeam())>100 && watchtowersBuilt == 0) {
             Direction center = rc.getLocation().directionTo(new MapLocation(rc.getMapWidth()/2, rc.getMapHeight()/2));

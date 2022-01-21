@@ -170,6 +170,7 @@ public class Archon extends RobotPlayer {
         int currentIncome = rc.readSharedArray(49);
         totalIncomeGathered += currentIncome;
         int minerCount = rc.readSharedArray(50);
+        System.out.println(minerCount);
         int soldierCount = rc.readSharedArray(51);
         int wtCount = rc.readSharedArray(52);
         int sageCount = rc.readSharedArray(53);

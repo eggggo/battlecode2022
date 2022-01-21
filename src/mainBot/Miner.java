@@ -5,8 +5,6 @@ import battlecode.common.*;
 
 public class Miner extends RobotPlayer {
 
-    static int prevIncome = 0;
-    static boolean aboveHpThresh = true;
     static int turnsAlive = 0;
     static MapLocation[] sectorMdpts = new MapLocation[49];
     static int maxTravelDistance = 100;
@@ -220,20 +218,7 @@ public class Miner extends RobotPlayer {
         //Comms stuff
         Comms.updateSector(rc);
         Comms.updateTypeCount(rc);
-        int deltaIncome = income - prevIncome;
-        //index 49 is global income
-        int currentIncome = rc.readSharedArray(49);
-        rc.writeSharedArray(49, Math.max(0, currentIncome + deltaIncome));
-        prevIncome = income;
-
-        //self report alive or ded
-        boolean currentHpThresh = (double)rc.getHealth()/rc.getType().getMaxHealth(1) > 0.2;
-        if (!currentHpThresh && aboveHpThresh) {
-            rc.writeSharedArray(50, rc.readSharedArray(50) - 1);
-        } else if (currentHpThresh && !aboveHpThresh) {
-            rc.writeSharedArray(50, rc.readSharedArray(50) + 1);
-        }
-        aboveHpThresh = currentHpThresh;
+        rc.writeSharedArray(49, rc.readSharedArray(49) + income);
         turnsAlive++;
     }
 }

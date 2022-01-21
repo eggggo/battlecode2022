@@ -2,8 +2,6 @@ package mainBot;
 
 import java.util.Arrays;
 
-import javax.naming.directory.InvalidAttributeValueException;
-
 import battlecode.common.*;
 
 public class Comms {
@@ -19,7 +17,7 @@ public class Comms {
     //54: builder count - 16 bit builder count
     //55: 1 bit resource saving mode, 1 bit first soldier, last 6 bits sector of first seen enemy
     //56: lab count - 16 bit lab count
-    //57: turn count
+    //57: archon cycler for clearing
     static int locationToSector(RobotController rc, MapLocation loc) {
         int width = rc.getMapWidth();
         int height = rc.getMapHeight();
@@ -165,8 +163,11 @@ public class Comms {
     }
 
     static void clearCounts(RobotController rc) throws GameActionException {
-        if (rc.readSharedArray(57) != rc.getRoundNum()) {
-            rc.writeSharedArray(57, rc.getRoundNum());
+        int numberArchon = ((rc.readSharedArray(57)) + 1) % rc.getArchonCount();
+        if (numberArchon == 0) {
+            if (rc.readSharedArray(49) != 0) {
+                rc.writeSharedArray(49, 0);
+            }
             if (rc.readSharedArray(50) != 0) {
                 rc.writeSharedArray(50, 0);
             }
@@ -186,5 +187,6 @@ public class Comms {
                 rc.writeSharedArray(56, 0);
             }
         }
+        rc.writeSharedArray(57, numberArchon);
     }
 }

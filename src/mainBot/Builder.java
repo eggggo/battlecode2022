@@ -7,7 +7,6 @@ public class Builder extends RobotPlayer {
     static int laboratoriesBuilt = 0;
     static int watchtowersBuilt = 0;
     static int turnsAlive = 0;
-    static boolean aboveHpThresh = true;
     static MapLocation home = null;
     static MapLocation[] sectorMdpts = new MapLocation[49];
     static boolean firstEnemySeen = false;
@@ -232,14 +231,6 @@ public class Builder extends RobotPlayer {
         //Comms stuff
         Comms.updateSector(rc);
         Comms.updateTypeCount(rc);
-        boolean currentHpThresh = (double)rc.getHealth()/rc.getType().getMaxHealth(1) > 0.2;
-        if (!currentHpThresh && aboveHpThresh) {
-            rc.writeSharedArray(54, rc.readSharedArray(54) - 1);
-            rc.writeSharedArray(55, (rc.readSharedArray(55) & 0b1111111));
-        } else if (currentHpThresh && !aboveHpThresh) {
-            rc.writeSharedArray(54, rc.readSharedArray(54) + 1);
-        }
-        aboveHpThresh = currentHpThresh;
         turnsAlive ++;
     }
 }

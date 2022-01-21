@@ -4,7 +4,6 @@ import battlecode.common.*;
 
 public class Sage extends RobotPlayer{
     static int turnsAlive = 0;
-    static boolean aboveHpThresh = true;
     static int attackOffset = 0;
     static MapLocation home = null;
     static MapLocation[] enemyArchons = null;
@@ -185,18 +184,8 @@ public class Sage extends RobotPlayer{
             rc.move(dir);
         }
 
-        if (turnsAlive == 0) {
-            rc.writeSharedArray(53, rc.readSharedArray(53) + 1);
-        }
-        boolean currentHpThresh = (double)rc.getHealth()/rc.getType().getMaxHealth(1) > 0.2;
-        if (!currentHpThresh && aboveHpThresh) {
-            rc.writeSharedArray(53, rc.readSharedArray(53) - 1);
-        } else if (currentHpThresh && !aboveHpThresh) {
-            rc.writeSharedArray(53, rc.readSharedArray(53) + 1);
-        }
         Comms.updateSector(rc);
         Comms.updateTypeCount(rc);
-        aboveHpThresh = currentHpThresh;
         turnsAlive ++;
     }
 }

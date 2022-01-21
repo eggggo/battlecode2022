@@ -11,7 +11,6 @@ public class Watchtower extends RobotPlayer {
   static MapLocation[] enemyArchons = null;
   static MapLocation[] copyEnemyArchons = null;
   static int attackLocation = 0;
-  static boolean aboveHpThresh = true;
   static MapLocation[] sectorMdpts = new MapLocation[49];
   static int turnsHaveBeenTwo = 0;
   static MapLocation bestTgtSector = null;
@@ -182,15 +181,8 @@ public class Watchtower extends RobotPlayer {
     turnsNotKilledStuff++;
     turnsAlive++;
     Comms.updateSector(rc);
-    Comms.updateTypeCount(rc);
     if (rc.getLevel() > 1) {
-        boolean currentHpThresh = (double)rc.getHealth()/rc.getType().getMaxHealth(rc.getLevel()) > 0.2;
-        if (!currentHpThresh && aboveHpThresh) {
-            rc.writeSharedArray(52, rc.readSharedArray(52) - 1);
-        } else if (currentHpThresh && !aboveHpThresh) {
-            rc.writeSharedArray(52, rc.readSharedArray(52) + 1);
-        }
-        aboveHpThresh = currentHpThresh;
+      Comms.updateTypeCount(rc);
     }
   }
 }

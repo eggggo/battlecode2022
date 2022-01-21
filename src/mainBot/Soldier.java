@@ -5,7 +5,6 @@ import battlecode.common.*;
 public class Soldier extends RobotPlayer {
 
   static int turnsAlive = 0;
-  static boolean aboveHpThresh = true;
   static boolean notRepaired = false;
   static MapLocation[] sectorMdpts = new MapLocation[49];
   static MapLocation bestTgtSector = null;
@@ -243,12 +242,5 @@ public class Soldier extends RobotPlayer {
     //update comms
     Comms.updateSector(rc);
     Comms.updateTypeCount(rc);
-    boolean currentHpThresh = (double)rc.getHealth()/rc.getType().getMaxHealth(1) > 0.2;
-    if (!currentHpThresh && aboveHpThresh) {
-        rc.writeSharedArray(51, rc.readSharedArray(51) - 1);
-    } else if (currentHpThresh && !aboveHpThresh) {
-        rc.writeSharedArray(51, rc.readSharedArray(51) + 1);
-    }
-    aboveHpThresh = currentHpThresh;
   }
 }

@@ -5,14 +5,12 @@ import battlecode.common.*;
 public class Sage extends RobotPlayer{
     static int turnsAlive = 0;
     static boolean aboveHpThresh = true;
-    static int turnsNotKilledStuff = 0;
     static int attackOffset = 0;
     static MapLocation home = null;
     static MapLocation[] enemyArchons = null;
     static int attackLocation = 0;
     //Role: 2 for defense, 1 for attack, 0 for scout
     static int role;
-    static int castNum = 0;
     static MapLocation[] sectorMdpts = new MapLocation[49];
 
     static int getQuadrant(RobotController rc, int x, int y) {
@@ -114,21 +112,13 @@ public class Sage extends RobotPlayer{
             if ( AnomalyType.CHARGE.sagePercentage * unitHP >= RobotType.SAGE.getDamage(1)
                     && rc.canEnvision(AnomalyType.CHARGE)) {
                 rc.envision(AnomalyType.CHARGE);
-                turnsNotKilledStuff = 0;
-                castNum++;
             } else if ((AnomalyType.FURY.sagePercentage * buildingHP >= 60)
                     && rc.canEnvision(AnomalyType.FURY)) {
                 rc.envision(AnomalyType.FURY);
-                turnsNotKilledStuff = 0;
-                castNum++;
             } else if (attackTgt != null && rc.canAttack(attackTgt.location)) {
                 MapLocation toAttack = attackTgt.location;
                 rc.attack(toAttack);
-                turnsNotKilledStuff = 0;
             }
-        }
-        if (castNum > 2) {
-            //System.out.println(castNum);
         }
 
         Direction dir = null;
@@ -202,7 +192,6 @@ public class Sage extends RobotPlayer{
         } else if (currentHpThresh && !aboveHpThresh) {
             rc.writeSharedArray(53, rc.readSharedArray(53) + 1);
         }
-        turnsNotKilledStuff++;
         Comms.updateSector(rc, turnCount);
         aboveHpThresh = currentHpThresh;
         turnsAlive ++;

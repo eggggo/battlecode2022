@@ -38,6 +38,20 @@ public class Builder extends RobotPlayer {
 
     public static void runBuilder(RobotController rc) throws GameActionException {
         MapLocation src = rc.getLocation();
+        if (!firstEnemySeen) {
+            for (int i = 48; i >= 0; i--) {
+                int[] sector = Comms.readSectorInfo(rc, i);
+                if (sector[3] > 0) {
+                    firstEnemySeen = true;
+                    break;
+                }
+            }
+        }
+
+        int initLabCount = 1;
+        if (firstEnemySeen) {
+            initLabCount = 1;
+        }
         if (rc.getRoundNum() % 2 == 1) {
             sageCount = rc.readSharedArray(53);
             wtCount = rc.readSharedArray(52);
@@ -123,42 +137,6 @@ public class Builder extends RobotPlayer {
             labOverWt = true;
         }
 
-        //If there is no nearby repariable building, follow a nearby non-crowded soldier, otherwise move randomly
-        if (nearbyBuilding != null && src.distanceSquaredTo(nearbyBuilding) > 5) {
-            dir = Pathfinder.getMoveDir(rc, nearbyBuilding);
-        } else if (closestAttacker != null) {
-            Direction opposite = src.directionTo(closestAttacker).opposite();
-            MapLocation runawayTgt = src.add(opposite).add(opposite);
-            runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1), 
-            Math.min(Math.max(0, runawayTgt.y), rc.getMapHeight() - 1));
-            dir = Pathfinder.getMoveDir(rc, runawayTgt);
-        }
-        else if (labOverWt && nearestFriend != null && laboratoriesBuilt == 0) {
-            MapLocation awayTgt = src.add(awayFromEnemies).add(awayFromEnemies);
-            MapLocation inBounds = new MapLocation(Math.min(Math.max(0, awayTgt.x), rc.getMapWidth() - 1), 
-                Math.min(Math.max(0, awayTgt.y), rc.getMapHeight() - 1));
-            dir = Pathfinder.getMoveDir(rc, inBounds);
-        }
-        else if (rc.getTeamLeadAmount(rc.getTeam())>100 && watchtowersBuilt == 0) {
-            Direction center = rc.getLocation().directionTo(new MapLocation(rc.getMapWidth()/2, rc.getMapHeight()/2));
-            dir = center;
-            // If the direction to the center of the map is Direction.Center(means you're in the center), set your default
-            //direction to south, otherwise keep it center.
-            if (center == Direction.CENTER) {
-                dir = Direction.SOUTH;
-            }
-            int leastRubble = Integer.MAX_VALUE;
-                for (int i = directions.length - 1; i >= 0; i--) {
-                    MapLocation loc = src.add(directions[i]);
-                    if (rc.onTheMap(loc) && rc.senseRobotAtLocation(loc) == null && rc.senseRubble(loc) < leastRubble) {
-                        dir = directions[i];
-                        leastRubble = rc.senseRubble(loc);
-                    }
-                }
-        } else {
-            dir = stallOnGoodRubble(rc);
-        }
-
         Direction center = rc.getLocation().directionTo(new MapLocation(rc.getMapWidth()/2, rc.getMapHeight()/2));
         Direction builddir = center;
         // If the direction to the center of the map is Direction.Center(means you're in the center), set your default
@@ -187,42 +165,50 @@ public class Builder extends RobotPlayer {
             }
         }
 
-        if (!firstEnemySeen) {
-            for (int i = 48; i >= 0; i--) {
-                int[] sector = Comms.readSectorInfo(rc, i);
-                if (sector[3] > 0) {
-                    firstEnemySeen = true;
-                    break;
-                }
-            }
+        boolean buildLab = (minerCount / 10 + initLabCount > labCount)
+                || (rc.getTeamLeadAmount(rc.getTeam()) >= 180 && !(sageCount > 3 * rc.getArchonCount()));
+        boolean buildWt = rc.canBuildRobot(RobotType.WATCHTOWER, builddir) && (sageCount > 15)
+                && (watchtowersBuilt < 3 || numNearbyWatchtowers == 9);
+
+        //If there is no nearby repariable building, follow a nearby non-crowded soldier, otherwise move randomly
+        if (nearbyBuilding != null && src.distanceSquaredTo(nearbyBuilding) > 5) {
+            dir = Pathfinder.getMoveDir(rc, nearbyBuilding);
+        } else if (closestAttacker != null) {
+            Direction opposite = src.directionTo(closestAttacker).opposite();
+            MapLocation runawayTgt = src.add(opposite).add(opposite);
+            runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1), 
+            Math.min(Math.max(0, runawayTgt.y), rc.getMapHeight() - 1));
+            dir = Pathfinder.getMoveDir(rc, runawayTgt);
+        }
+        else if (buildLab) {
+            MapLocation awayTgt = src.add(awayFromEnemies).add(awayFromEnemies);
+            MapLocation inBounds = new MapLocation(Math.min(Math.max(0, awayTgt.x), rc.getMapWidth() - 1), 
+                Math.min(Math.max(0, awayTgt.y), rc.getMapHeight() - 1));
+            dir = Pathfinder.getMoveDir(rc, inBounds);
+        } else {
+            dir = stallOnGoodRubble(rc);
         }
 
-        int initLabCount = 1;
-        if (firstEnemySeen) {
-            initLabCount = 1;
-        }
         //System.out.println(nearbyBuilding != null && rc.canMutate(nearbyBuilding) && rc.getTeamLeadAmount(rc.getTeam()) >= 200);
         //If there is a nearby building that can be repaired, repair it, otherwise go to the nearest repariable buidling and repair it.
         if (nearbyBuilding != null && rc.canMutate(nearbyBuilding)) {
-            rc.setIndicatorString("1");
+//            rc.setIndicatorString("1");
             rc.mutate(nearbyBuilding);
             rc.writeSharedArray(55, (rc.readSharedArray(55) & 0b1111111));
             //System.out.println("hello");
         }
         else if (nearbyBuilding != null && rc.canRepair(nearbyBuilding)) {
-            rc.setIndicatorString("2");
+//            rc.setIndicatorString("2");
             rc.repair(nearbyBuilding);
-        } else if ((minerCount / 10 + initLabCount > labCount)
-                || (rc.getTeamLeadAmount(rc.getTeam()) >= 180 && !(sageCount > 3 * rc.getArchonCount()))) {
-            rc.setIndicatorString("3");
+        } else if (buildLab) {
+//            rc.setIndicatorString("3");
             if (rc.canBuildRobot(RobotType.LABORATORY, builddir)) {
                 rc.buildRobot(RobotType.LABORATORY, builddir);
                 laboratoriesBuilt++;
                 rc.writeSharedArray(55, (rc.readSharedArray(55) & 0b1111111));
             }
-        } else if (rc.canBuildRobot(RobotType.WATCHTOWER, builddir) && (sageCount > 3 * rc.getArchonCount())
-                && (watchtowersBuilt < 3 || numNearbyWatchtowers == 9)) {
-            rc.setIndicatorString("4");
+        } else if (buildWt) {
+//            rc.setIndicatorString("4");
             rc.buildRobot(RobotType.WATCHTOWER, builddir);
             watchtowersBuilt++;
         }

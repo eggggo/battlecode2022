@@ -12,7 +12,8 @@ public class Laboratory extends RobotPlayer {
             rc.transmute();
         }
 
-        Comms.updateSector(rc, turnCount);
+        Comms.updateSector(rc);
+        Comms.updateTypeCount(rc);
         boolean currentHpThresh = (double)rc.getHealth()/rc.getType().getMaxHealth(rc.getLevel()) > 0.2;
         if (!currentHpThresh && aboveHpThresh) {
             rc.writeSharedArray(56, rc.readSharedArray(56) - 1);

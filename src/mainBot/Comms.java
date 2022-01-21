@@ -2,6 +2,8 @@ package mainBot;
 
 import java.util.Arrays;
 
+import javax.naming.directory.InvalidAttributeValueException;
+
 import battlecode.common.*;
 
 public class Comms {
@@ -9,14 +11,15 @@ public class Comms {
     //each sector info contains 1 bit home archon presence, 1 bit enemy archon presence, 
     //6 bit resource patch count(capped at 61), 5 bit enemy count(capped at 31), 1 bit turnMod, (2 bits free)
     //indices 49 through 63 for other info:
-    //49: global income
-    //50: healthy miner count(above 20% hp)
-    //51: healthy soldier count(above 20%)
-    //52: healthy watchtower count(above 20%)
-    //53: healthy sage count(above 20%)
-    //54: healthy builder count(above 20% hp)
+    //49: global income - 16 bit income count
+    //50: miner count - 16 bit miner count
+    //51: soldier count - 16 bit soldier count
+    //52: watchtower count - 16 bit watchtower count
+    //53: sage count - 16 bit sage count
+    //54: builder count - 16 bit builder count
     //55: 1 bit resource saving mode, 1 bit first soldier, last 6 bits sector of first seen enemy
-    //56: healthy lab count(above 20% hp)
+    //56: lab count - 16 bit lab count
+    //57: turn count
     static int locationToSector(RobotController rc, MapLocation loc) {
         int width = rc.getMapWidth();
         int height = rc.getMapHeight();
@@ -58,7 +61,7 @@ public class Comms {
         return (loc.x >= lowerX && loc.x < lowerX + xSize && loc.y >= lowerY && loc.y < lowerY + ySize);
     }
 
-    static void updateSector(RobotController rc, int turn) throws GameActionException {
+    static void updateSector(RobotController rc) throws GameActionException {
         int sector = locationToSector(rc, rc.getLocation());
         int width = rc.getMapWidth();
         int height = rc.getMapHeight();
@@ -72,7 +75,7 @@ public class Comms {
         int[] entry = readSectorInfo(rc, sector);
         int lowerX = (int)((sector%7)*xSize);
         int lowerY = (int)((sector/7)*xSize);
-        int turnMod = turn % 2;
+        int turnMod = rc.getRoundNum() % 2;
         boolean firstSeenEnemy = (rc.readSharedArray(55) & 0b111111) == 0;
 
         if (rc.getType() == RobotType.ARCHON) {
@@ -81,21 +84,8 @@ public class Comms {
             } else {
                 homeArchon = 0;
             }
-        } else {/*
-            MapLocation mdpt = sectorMidpt(rc, sector);
-            boolean trueVision = rc.getLocation().distanceSquaredTo(mdpt) <= 2;
-            if (entry[0] == 0 || trueVision) {
-                RobotInfo[] friendlies = rc.senseNearbyRobots(range, rc.getTeam());
-                for (int i = friendlies.length - 1; i >= 0; i --) {
-                    RobotInfo r = friendlies[i];
-                    if (r.getType() == RobotType.ARCHON && withinSector(rc, r.getLocation(), sector)) {
-                        homeArchon = 1;
-                        break;
-                    }
-                }
-            } else {*/
-                homeArchon = entry[0];
-            //}
+        } else {
+            homeArchon = entry[0];
         }
 
         RobotInfo[] enemies = rc.senseNearbyRobots(range, rc.getTeam().opponent());
@@ -144,6 +134,45 @@ public class Comms {
     static void printComms(RobotController rc) throws GameActionException {
         for (int i = 48; i >= 0; i --) {
             System.out.println("sector: " + i + ", " + Arrays.toString(readSectorInfo(rc, i)));
+        }
+    }
+
+    static void updateTypeCount(RobotController rc) throws GameActionException {
+        int index = -1;
+        switch (rc.getType()) {
+            case MINER:
+                index = 50;
+                break;
+            case SOLDIER:
+                index = 51;
+                break;
+            case WATCHTOWER:
+                index = 52;
+                break;
+            case SAGE:
+                index = 53;
+                break;
+            case BUILDER:
+                index = 54;
+                break;
+            case LABORATORY:
+                index = 56;
+                break;
+            default:
+                index = -1;
+        }
+        rc.writeSharedArray(index, rc.readSharedArray(index) + 1);
+    }
+
+    static void clearCounts(RobotController rc) throws GameActionException {
+        if (rc.readSharedArray(57) != rc.getRoundNum()) {
+            rc.writeSharedArray(57, rc.getRoundNum());
+            rc.writeSharedArray(50, 0);
+            rc.writeSharedArray(51, 0);
+            rc.writeSharedArray(52, 0);
+            rc.writeSharedArray(53, 0);
+            rc.writeSharedArray(54, 0);
+            rc.writeSharedArray(56, 0);
         }
     }
 }

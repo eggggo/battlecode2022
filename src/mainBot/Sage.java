@@ -194,7 +194,8 @@ public class Sage extends RobotPlayer{
         } else if (currentHpThresh && !aboveHpThresh) {
             rc.writeSharedArray(53, rc.readSharedArray(53) + 1);
         }
-        Comms.updateSector(rc, turnCount);
+        Comms.updateSector(rc);
+        Comms.updateTypeCount(rc);
         aboveHpThresh = currentHpThresh;
         turnsAlive ++;
     }

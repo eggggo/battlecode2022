@@ -230,8 +230,8 @@ public class Builder extends RobotPlayer {
         }
 
         //Comms stuff
-        Comms.updateSector(rc, turnCount);
-
+        Comms.updateSector(rc);
+        Comms.updateTypeCount(rc);
         boolean currentHpThresh = (double)rc.getHealth()/rc.getType().getMaxHealth(1) > 0.2;
         if (!currentHpThresh && aboveHpThresh) {
             rc.writeSharedArray(54, rc.readSharedArray(54) - 1);

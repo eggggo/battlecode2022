@@ -183,6 +183,8 @@ public class Archon extends RobotPlayer {
         MapLocation[] nearbyLead = rc.senseNearbyLocationsWithLead(RobotType.ARCHON.visionRadiusSquared);
         int rubbleThreshold = rc.senseRubble(rc.getLocation()) + 20;
         MapLocation src = rc.getLocation();
+        int actionRadius = rc.getType().actionRadiusSquared;
+
         if (turnsAlive == 0) {
             startNumArchons = rc.getArchonCount();
         }
@@ -463,22 +465,27 @@ public class Archon extends RobotPlayer {
 
         //Repair Logic
         Team friendly = rc.getTeam();
-        RobotInfo[] alliedUnits = rc.senseNearbyRobots(senseRadius, friendly);
+        RobotInfo[] alliedUnits = rc.senseNearbyRobots(actionRadius, friendly);
 
         //if theres a wounded soldier nearby, repair it
-        MapLocation woundedWarrior = null;
+        RobotInfo woundedWarrior = null;
         for (int i = alliedUnits.length - 1; i >= 0; i--) {
             RobotInfo unit = alliedUnits[i];
-            if (unit.getType() == RobotType.SOLDIER && unit.getHealth() != RobotType.SOLDIER.getMaxHealth(unit.getLevel()) ||
-                unit.getType() == RobotType.SAGE && unit.getHealth() != RobotType.SAGE.getMaxHealth(unit.getLevel())) {
-                woundedWarrior = unit.getLocation();
-                break;
+            int unitHealth = unit.getHealth();
+            if (unitHealth < unit.getType().getMaxHealth(1) && (woundedWarrior == null || unitHealth < woundedWarrior.getHealth())) {
+                if (unit.getType() == RobotType.SAGE) {
+                    woundedWarrior = unit;
+                } else if (unit.getType() == RobotType.SOLDIER && (woundedWarrior == null || woundedWarrior.getType() != RobotType.SAGE)) {
+                    woundedWarrior = unit;
+                } else if (woundedWarrior == null || (woundedWarrior.getType() != RobotType.SOLDIER && woundedWarrior.getType() != RobotType.SAGE)) {
+                    woundedWarrior = unit;
+                }
             }
         }
 
         //If we can't build a miner and we can repair a soldier, do it.
-        if (woundedWarrior != null && rc.canRepair(woundedWarrior) && !rc.canBuildRobot(RobotType.MINER, dir) && !rc.canBuildRobot(RobotType.SAGE, dir)) {
-            rc.repair(woundedWarrior);
+        if (woundedWarrior != null && rc.canRepair(woundedWarrior.location) && !rc.canBuildRobot(RobotType.MINER, dir) && !rc.canBuildRobot(RobotType.SAGE, dir)) {
+            rc.repair(woundedWarrior.location);
         }
 
         // Logic for miner production spread.
@@ -748,7 +755,7 @@ public class Archon extends RobotPlayer {
             rc.writeSharedArray(previousSector, rc.readSharedArray(previousSector) & 0x7FFF);
         }
 
-        Comms.updateSector(rc, turnCount);
+        Comms.updateSector(rc);
         if (((rc.readSharedArray(55) >> 6) & 0b1) == 0) {
             updateGuesses(rc);
         }

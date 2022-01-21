@@ -16,7 +16,6 @@ public class Builder extends RobotPlayer {
     static int labCount = 0;
     static int currentIncome = 0;
     static MapLocation bestTgtSector = null;
-    static RobotInfo lastBuilt = null;
 
     static Direction stallOnGoodRubble(RobotController rc) throws GameActionException {
         MapLocation src = rc.getLocation();
@@ -28,7 +27,7 @@ public class Builder extends RobotPlayer {
               MapLocation test = src.add(d);
               if (rc.onTheMap(test) && !rc.isLocationOccupied(test) && rc.canSenseLocation(test)) {
                 int rubbleHere = rc.senseRubble(test);
-                if (rubbleHere <= minRubble) {
+                if (rubbleHere < minRubble) {
                   minRubble = rubbleHere;
                   minRubbleLoc = test;
                 }
@@ -50,8 +49,10 @@ public class Builder extends RobotPlayer {
         RobotInfo[] nearbyRobots = rc.senseNearbyRobots(senseRadius, friendly);
         RobotInfo[] enemies = rc.senseNearbyRobots(senseRadius, friendly.opponent());
         MapLocation closestAttacker = null;
-        MapLocation nearestWt = null;
-        MapLocation nearestLab = null;
+        RobotInfo nearestWt = null;
+        RobotInfo nearestLab = null;
+        RobotInfo nearestArchon = null;
+        RobotInfo nearestPrototype = null;
         int awayFromLabX = 0;
         int awayFromLabY = 0;
 
@@ -114,24 +115,29 @@ public class Builder extends RobotPlayer {
             }
         }
 
-        int distanceFromBuilding = 9999;
-        //If theres a nearby watchtower, or laboratory that needs to be repaired, set the nearbyBulding to it.
+        //Assess buildings in surroundings
         for (int i = nearbyRobots.length - 1; i >= 0; i--) {
             RobotInfo unit = nearbyRobots[i];
-            if (unit.getType() == RobotType.WATCHTOWER && rc.getLocation().distanceSquaredTo(unit.getLocation()) < distanceFromBuilding) {
-                nearestWt = unit.getLocation();
-                distanceFromBuilding = rc.getLocation().distanceSquaredTo(unit.getLocation());
+            if (unit.getMode() == RobotMode.PROTOTYPE && (nearestPrototype == null 
+            || nearestPrototype.location.distanceSquaredTo(src) > unit.location.distanceSquaredTo(src))) {
+                nearestPrototype = unit;
+            } else if (unit.getType() == RobotType.WATCHTOWER 
+            && (nearestWt == null || rc.getLocation().distanceSquaredTo(unit.getLocation()) < nearestWt.location.distanceSquaredTo(src))) {
+                nearestWt = unit;
             } else if (unit.getType() == RobotType.LABORATORY) { 
-                if (rc.getLocation().distanceSquaredTo(unit.getLocation()) < distanceFromBuilding) {
-                    nearestLab = unit.getLocation();
-                    distanceFromBuilding = rc.getLocation().distanceSquaredTo(unit.getLocation());
+                if (nearestLab == null || rc.getLocation().distanceSquaredTo(unit.getLocation()) < nearestLab.location.distanceSquaredTo(src)) {
+                    nearestLab = unit;
                 }
-                awayFromLabX += src.directionTo(unit.location).opposite().dx;
-                awayFromLabY += src.directionTo(unit.location).opposite().dy;
+                awayFromLabX += 2*src.directionTo(unit.location).opposite().dx;
+                awayFromLabY += 2*src.directionTo(unit.location).opposite().dy;
+            } else if (unit.getType() == RobotType.ARCHON && (nearestArchon == null 
+            || nearestArchon.location.distanceSquaredTo(src) > unit.location.distanceSquaredTo(src))) {
+                nearestArchon = unit;
             }
         }
 
         Direction dir = null;
+        Direction stallDir = stallOnGoodRubble(rc);
 
         Direction center = rc.getLocation().directionTo(new MapLocation(rc.getMapWidth()/2, rc.getMapHeight()/2));
         Direction builddir = center;
@@ -151,35 +157,42 @@ public class Builder extends RobotPlayer {
                 || (rc.getTeamLeadAmount(rc.getTeam()) >= 180 && !(sageCount > 3 * rc.getArchonCount()));
         boolean buildWt = (sageCount > 15)&& (watchtowersBuilt < 3);
 
-        if (lastBuilt != null && lastBuilt.getHealth() == lastBuilt.type.getMaxHealth(lastBuilt.level)) {
-            lastBuilt = null;
-        }
+        //movement flow
+        //if unfinished building nearby finish it
+        if (nearestPrototype != null) {
 
-        //If there is no nearby repariable building, follow a nearby non-crowded soldier, otherwise move randomly
-        if (lastBuilt != null) {
-            dir = Pathfinder.getMoveDir(rc, lastBuilt.location);
-            lastBuilt = rc.senseRobotAtLocation(lastBuilt.location);
-        }
-        else if (nearestWt != null && src.distanceSquaredTo(nearestWt) > 5) {
-            dir = Pathfinder.getMoveDir(rc, nearestWt);
+            if (!(src.distanceSquaredTo(nearestPrototype.location) <= 5 && stallDir == Direction.CENTER)) {
+                dir = Pathfinder.getMoveDir(rc, nearestPrototype.location);
+            }
+        //if watchtower nearby follow it to battle
+        } else if (nearestWt != null && src.distanceSquaredTo(nearestWt.location) > 5) {
+            dir = Pathfinder.getMoveDir(rc, nearestWt.location);
+        //if enemies nearby run
         } else if (closestAttacker != null) {
             Direction opposite = src.directionTo(closestAttacker).opposite();
             MapLocation runawayTgt = src.add(opposite).add(opposite);
             runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1), 
             Math.min(Math.max(0, runawayTgt.y), rc.getMapHeight() - 1));
             dir = Pathfinder.getMoveDir(rc, runawayTgt);
-        }
-        else if (buildLab) {
+        //if archon nearby low go heal it(TODO: add mutating conditions here as well)
+        } else if (nearestArchon != null && nearestArchon.getHealth() < nearestArchon.getType().getMaxHealth(nearestArchon.level)) {
+            if (!(src.distanceSquaredTo(nearestArchon.location) <= 5 && stallDir == Direction.CENTER)) {
+                dir = Pathfinder.getMoveDir(rc, nearestArchon.location);
+            }
+        //if we want to build a lab run away from civilization
+        } else if (buildLab) {
             MapLocation tgt = src.translate(awayFromLabX + 2*awayFromEnemies.dx, awayFromLabY + 2*awayFromEnemies.dy);
             MapLocation inBounds = new MapLocation(Math.min(Math.max(0, tgt.x), rc.getMapWidth() - 1), 
                 Math.min(Math.max(0, tgt.y), rc.getMapHeight() - 1));
             dir = Pathfinder.getMoveDir(rc, inBounds);
-        } else if (buildWt) {
+        //if we want to build a wt run towards enemies
+        } else if (buildWt && bestTgtSector != null) {
             if (src.distanceSquaredTo(bestTgtSector) < 150) {
-                dir = stallOnGoodRubble(rc);
+                dir = stallDir;
             } else {
                 dir = Pathfinder.getMoveDir(rc, bestTgtSector);
             }
+        //else, default behavior, currently same as running from civilization to build labs
         } else {
             MapLocation tgt = src.translate(awayFromLabX, awayFromLabY);
             MapLocation inBounds = new MapLocation(Math.min(Math.max(0, tgt.x), rc.getMapWidth() - 1), 
@@ -187,42 +200,56 @@ public class Builder extends RobotPlayer {
             dir = Pathfinder.getMoveDir(rc, inBounds);
         }
 
-        MapLocation actionTgt = null;
-        if (nearestWt != null) {
-            actionTgt = nearestWt;
-        } else if (nearestLab != null) {
-            actionTgt = nearestLab;
-        }
 
-        boolean needHealing = false;
-        if (actionTgt != null) {
-            RobotInfo actionTgtRobot = rc.senseRobotAtLocation(actionTgt);
-            needHealing = actionTgtRobot.getHealth() < actionTgtRobot.getType().getMaxHealth(actionTgtRobot.level);
+        //action flow. note that these are not else ifs since we can have a nearby building of higher prio but do nothing to it
+        //and instead do something to another lower prio building
+        //repair prototypes
+        if (rc.isActionReady() && (nearestPrototype != null) && (rc.canRepair(nearestPrototype.location))) {
+            rc.repair(nearestPrototype.location);
         }
-
-        //System.out.println(nearbyBuilding != null && rc.canMutate(nearbyBuilding) && rc.getTeamLeadAmount(rc.getTeam()) >= 200);
-        //If there is a nearby building that can be repaired, repair it, otherwise go to the nearest repariable buidling and repair it.
-        if ((actionTgt != null) && needHealing && (rc.canRepair(actionTgt))) {
-//            rc.setIndicatorString("2");
-            rc.repair(actionTgt);
-        } else if (buildLab) {
-//            rc.setIndicatorString("3");
+        //build a lab
+        if (rc.isActionReady() && buildLab) {
             if (rc.canBuildRobot(RobotType.LABORATORY, builddir)) {
                 rc.buildRobot(RobotType.LABORATORY, builddir);
-                lastBuilt = rc.senseRobotAtLocation(src.add(builddir));
                 laboratoriesBuilt++;
                 rc.writeSharedArray(55, (rc.readSharedArray(55) & 0b1111111));
             }
-        } else if ((actionTgt != null) && (rc.canMutate(actionTgt))) {
-            rc.mutate(actionTgt);
-            rc.writeSharedArray(55, (rc.readSharedArray(55) & 0b1111111));
-            //System.out.println("hello");
-        }else if (buildWt) {
-//            rc.setIndicatorString("4");
+        }
+        //build a wt
+        if (rc.isActionReady() && buildWt) {
             if (rc.canBuildRobot(RobotType.WATCHTOWER, builddir)) {
                 rc.buildRobot(RobotType.WATCHTOWER, builddir);
-                lastBuilt = rc.senseRobotAtLocation(src.add(builddir));
                 watchtowersBuilt++;
+            }
+        }
+        //mutate/repair an archon
+        if (rc.isActionReady() && nearestArchon != null) {
+            if (rc.canMutate(nearestArchon.location)) { //TODO: conditions for should mutate
+                rc.mutate(nearestArchon.location);
+                rc.writeSharedArray(55, (rc.readSharedArray(55) & 0b1111111));
+            } else if (rc.canRepair(nearestArchon.location) 
+            && nearestArchon.getHealth() < RobotType.ARCHON.getMaxHealth(nearestArchon.level)) {
+                rc.repair(nearestArchon.location);
+            }
+        }
+        //mutate/repair a watchtower
+        if (rc.isActionReady() && nearestWt != null) {
+            if (rc.canMutate(nearestWt.location)) { //TODO: conditions for should mutate
+                rc.mutate(nearestWt.location);
+                rc.writeSharedArray(55, (rc.readSharedArray(55) & 0b1111111));
+            } else if (rc.canRepair(nearestWt.location)
+            && nearestWt.getHealth() < RobotType.WATCHTOWER.getMaxHealth(nearestWt.level)) {
+                rc.repair(nearestWt.location);
+            }
+        }
+        //mutate/repair a lab
+        if (rc.isActionReady() && nearestLab != null) {
+            if (rc.canMutate(nearestLab.location)) { //TODO: conditions for should mutate
+                rc.mutate(nearestLab.location);
+                rc.writeSharedArray(55, (rc.readSharedArray(55) & 0b1111111));
+            } else if (rc.canRepair(nearestLab.location)
+            && nearestLab.getHealth() < RobotType.LABORATORY.getMaxHealth(nearestLab.level)) {
+                rc.repair(nearestLab.location);
             }
         }
 

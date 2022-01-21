@@ -87,7 +87,7 @@ public class Miner extends RobotPlayer {
 
         //main comms loop, do all comms stuff here
         //finds mdpt of closest friendly archon, best resources in travel distance
-        //refreshes every 2 turns to reduce bytecode load
+        //refreshes every 3rd turn to reduce bytecode load
         if (turnCount % 3 == 0) {
             nearestFriendlyArchon = null;
             bestOOVResource = null;

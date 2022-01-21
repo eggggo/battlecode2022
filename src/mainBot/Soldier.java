@@ -146,7 +146,7 @@ public class Soldier extends RobotPlayer {
     }
     double averageHealth = (double)nearbyDamageHealth/nearbyDamage;
 
-    //comms access every other turn for bytecode reduction
+    //comms access every 3rd turn for bytecode reduction
     if (turnCount % 3 == 0 || turnsAlive == 0) {
         bestTgtSector = null;
         double highScore = 0;

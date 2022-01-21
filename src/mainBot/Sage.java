@@ -11,22 +11,7 @@ public class Sage extends RobotPlayer{
     //Role: 2 for defense, 1 for attack, 0 for scout
     static int role;
     static MapLocation[] sectorMdpts = new MapLocation[49];
-
-    static int getQuadrant(RobotController rc, int x, int y) {
-        int quad = 0;
-        if (x >= rc.getMapWidth() / 2 && y >= rc.getMapHeight() / 2) {
-            quad = 1;
-        } else if (x >= rc.getMapWidth() / 2 && y < rc.getMapHeight() / 2) {
-            quad = 4;
-        } else if (x < rc.getMapWidth() / 2 && y >= rc.getMapHeight() / 2) {
-            quad = 2;
-        } else if (x < rc.getMapWidth() / 2 && y < rc.getMapHeight() / 2) {
-            quad = 3;
-        } else {
-            System.out.println("Error: not in a quadrant");
-        }
-        return quad;
-    }
+    static MapLocation scoutTgt = null;
 
     static Direction stallOnGoodRubble(RobotController rc) throws GameActionException {
         MapLocation src = rc.getLocation();
@@ -67,10 +52,32 @@ public class Sage extends RobotPlayer{
         int rubbleThreshold = rc.senseRubble(rc.getLocation()) + 20;
 
         if (turnsAlive == 0) {
-            RobotInfo[] nearbyRobots = rc.senseNearbyRobots(senseRadius, friendly);
             for (int i = 48; i >= 0; i --) {
                 sectorMdpts[i] = Comms.sectorMidpt(rc, i);
             }
+            int scoutPattern = rc.readSharedArray(50) % 2;
+            if (scoutPattern == 0) {
+                scoutTgt = sectorMdpts[rng.nextInt(49)];
+            } else {
+                int designatedLoc = rng.nextInt(5);
+                switch (designatedLoc) {
+                    case 0:
+                        scoutTgt = new MapLocation(0, 0);
+                        break;
+                    case 1:
+                        scoutTgt = new MapLocation(rc.getMapWidth() - 1, 0);
+                        break;
+                    case 2:
+                        scoutTgt = new MapLocation(0, rc.getMapHeight() - 1);
+                        break;
+                    case 3:
+                        scoutTgt = new MapLocation(rc.getMapWidth() - 1, rc.getMapHeight() - 1);
+                        break;
+                    case 4:
+                        scoutTgt = new MapLocation(rc.getMapWidth()/2, rc.getMapHeight()/2);
+                        break;
+                }
+             }
         }
 
         int lowestHPTgt = 9999;
@@ -120,6 +127,10 @@ public class Sage extends RobotPlayer{
             }
         }
 
+        //if you can see the scout target sector mdpt, randomize and go to somewhere else
+        if (src.distanceSquaredTo(scoutTgt) <= senseRadius) {
+            scoutTgt = sectorMdpts[rng.nextInt(49)];
+        }
 
         Direction dir = null;
         if (rc.getHealth() < RobotType.SAGE.getMaxHealth(rc.getLevel()) / 5 && home != null) {
@@ -141,7 +152,7 @@ public class Sage extends RobotPlayer{
                     dir = stallOnGoodRubble(rc);
                 }
             } else {
-              dir = stallOnGoodRubble(rc);
+              dir = Pathfinder.getMoveDir(rc, scoutTgt);
             }
         } else {
             MapLocation closestEnemies = null;

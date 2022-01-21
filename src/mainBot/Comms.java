@@ -119,30 +119,26 @@ public class Comms {
 
         MapLocation[] nearbyLead = rc.senseNearbyLocationsWithLead(range, 10);
         MapLocation[] nearbyGold = rc.senseNearbyLocationsWithGold(range);
-        if (nearbyGold.length > 0) {
-            for (int i = nearbyGold.length - 1; i >= 0; i --) {
-                MapLocation loc = nearbyGold[i];
-                if (loc.x >= lowerX && loc.x < lowerX + xSize && loc.y >= lowerY && loc.y < lowerY + ySize) {
-                    resourceCount = 63;
+        for (int i = nearbyGold.length - 1; i >= 0; i --) {
+            MapLocation loc = nearbyGold[i];
+            if (loc.x >= lowerX && loc.x < lowerX + xSize && loc.y >= lowerY && loc.y < lowerY + ySize) {
+                resourceCount += 5;
+            }
+        }
+        if (nearbyLead.length > 10) {
+            resourceCount += nearbyLead.length;
+        } else {
+            for (int i = nearbyLead.length - 1; i >= 0; i --) {
+                MapLocation loc = nearbyLead[i];
+                if (resourceCount == 63) {
                     break;
                 }
-            }
-        } else {
-            //resource counting guards against edge cases of edge reporting and stalling miners
-            if (nearbyLead.length > 10) {
-                resourceCount = nearbyLead.length;
-            } else {
-                for (int i = nearbyLead.length - 1; i >= 0; i --) {
-                    MapLocation loc = nearbyLead[i];
-                    if (resourceCount == 63) {
-                        break;
-                    }
-                    if (loc.x >= lowerX && loc.x < lowerX + xSize && loc.y >= lowerY && loc.y < lowerY + ySize) {
-                        resourceCount ++;
-                    }
+                if (loc.x >= lowerX && loc.x < lowerX + xSize && loc.y >= lowerY && loc.y < lowerY + ySize) {
+                    resourceCount ++;
                 }
             }
         }
+        resourceCount = Math.min(63, resourceCount);
 
         if (readSectorInfo(rc, sector, 4) == turnMod) {
             enemyArchon = Math.max(enemyArchon, readSectorInfo(rc, sector, 1));

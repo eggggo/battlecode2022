@@ -101,8 +101,8 @@ public class Miner extends RobotPlayer {
                     nearestFriendlyArchon = sectorMdpt;
                 }
                 if (resourceInSector > 0) {
-                    double score = resourceInSector/Math.sqrt(src.distanceSquaredTo(sectorMdpt));
-                    if (score > bestResource && score >= 0.5) {
+                    double score = resourceInSector/Math.max(1, Math.sqrt(src.distanceSquaredTo(sectorMdpt)));
+                    if (score > bestResource && score >= 0.6) {
                         bestResource = score;
                         bestOOVResource = sectorMdpt;
                     }
@@ -146,7 +146,7 @@ public class Miner extends RobotPlayer {
         }
 
         //finding best mining spot in vision
-        MapLocation[] nearbyLead = rc.senseNearbyLocationsWithLead(senseRadius, 5);
+        MapLocation[] nearbyLead = rc.senseNearbyLocationsWithLead(senseRadius, 6);
         MapLocation[] nearbyGold = rc.senseNearbyLocationsWithGold(senseRadius);
         int highLead = 0;
         for (int i = nearbyLead.length - 1; i >= 0; i --) {
@@ -162,8 +162,8 @@ public class Miner extends RobotPlayer {
 
         //finding best adj resource with lowest rubble to mine from
         if (resources != null) {
-            MapLocation lowestRubble = null;
-            int lowestRubbleAmt = 128;
+            MapLocation lowestRubble = resources;
+            int lowestRubbleAmt = rc.senseRubble(resources);
             for (int i = -1; i <= 1; i ++) {
                 for (int j = -1; j <= 1; j ++) {
                     MapLocation adjLead = resources.translate(i, j);

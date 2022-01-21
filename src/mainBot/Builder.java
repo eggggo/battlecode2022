@@ -197,11 +197,10 @@ public class Builder extends RobotPlayer {
             }
         }
 
-        int initLabCount = rc.getArchonCount();
+        int initLabCount = 1;
         if (firstEnemySeen) {
             initLabCount = 1;
         }
-
         //System.out.println(nearbyBuilding != null && rc.canMutate(nearbyBuilding) && rc.getTeamLeadAmount(rc.getTeam()) >= 200);
         //If there is a nearby building that can be repaired, repair it, otherwise go to the nearest repariable buidling and repair it.
         if (nearbyBuilding != null && rc.canMutate(nearbyBuilding)) {
@@ -214,14 +213,14 @@ public class Builder extends RobotPlayer {
             rc.setIndicatorString("2");
             rc.repair(nearbyBuilding);
         } else if ((minerCount / 10 + initLabCount > labCount)
-                || (rc.getTeamLeadAmount(rc.getTeam()) >= 180 && !(sageCount > 3* rc.getArchonCount()))) {
+                || (rc.getTeamLeadAmount(rc.getTeam()) >= 180 && !(sageCount > 3 * rc.getArchonCount()))) {
             rc.setIndicatorString("3");
             if (rc.canBuildRobot(RobotType.LABORATORY, builddir)) {
                 rc.buildRobot(RobotType.LABORATORY, builddir);
                 laboratoriesBuilt++;
                 rc.writeSharedArray(55, (rc.readSharedArray(55) & 0b1111111));
             }
-        } else if (rc.canBuildRobot(RobotType.WATCHTOWER, builddir) && sageCount > 3* rc.getArchonCount()
+        } else if (rc.canBuildRobot(RobotType.WATCHTOWER, builddir) && (sageCount > 3 * rc.getArchonCount())
                 && (watchtowersBuilt < 3 || numNearbyWatchtowers == 9)) {
             rc.setIndicatorString("4");
             rc.buildRobot(RobotType.WATCHTOWER, builddir);

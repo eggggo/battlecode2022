@@ -11,6 +11,10 @@ public class Builder extends RobotPlayer {
     static MapLocation[] sectorMdpts = new MapLocation[49];
     static boolean firstEnemySeen = false;
     static Direction awayFromEnemies = null;
+    static int sageCount = 0;
+    static int wtCount = 0;
+    static int minerCount = 0;
+    static int labCount = 0;
 
     static Direction stallOnGoodRubble(RobotController rc) throws GameActionException {
         MapLocation src = rc.getLocation();
@@ -34,7 +38,12 @@ public class Builder extends RobotPlayer {
 
     public static void runBuilder(RobotController rc) throws GameActionException {
         MapLocation src = rc.getLocation();
-        int sageCount = rc.readSharedArray(53);
+        if (rc.getRoundNum() % 2 == 1) {
+            sageCount = rc.readSharedArray(53);
+            wtCount = rc.readSharedArray(52);
+            minerCount = rc.readSharedArray(50);
+            labCount = rc.readSharedArray(56);
+        }
         if (turnsAlive == 0) {
             RobotInfo[] nearbyRobots = rc.senseNearbyRobots();
             for (int i = nearbyRobots.length - 1; i >= 0; i--) {
@@ -193,15 +202,11 @@ public class Builder extends RobotPlayer {
             initLabCount = 1;
         }
 
-        int wtCount = rc.readSharedArray(52);
-        int minerCount = rc.readSharedArray(50);
-        int labCount = rc.readSharedArray(56);
         //System.out.println(nearbyBuilding != null && rc.canMutate(nearbyBuilding) && rc.getTeamLeadAmount(rc.getTeam()) >= 200);
         //If there is a nearby building that can be repaired, repair it, otherwise go to the nearest repariable buidling and repair it.
         if (nearbyBuilding != null && rc.canMutate(nearbyBuilding)) {
             rc.setIndicatorString("1");
             rc.mutate(nearbyBuilding);
-            rc.writeSharedArray(52, rc.readSharedArray(52) + 1);
             rc.writeSharedArray(55, (rc.readSharedArray(55) & 0b1111111));
             //System.out.println("hello");
         }
@@ -214,7 +219,6 @@ public class Builder extends RobotPlayer {
             if (rc.canBuildRobot(RobotType.LABORATORY, builddir)) {
                 rc.buildRobot(RobotType.LABORATORY, builddir);
                 laboratoriesBuilt++;
-                rc.writeSharedArray(56, rc.readSharedArray(56) + 1);
                 rc.writeSharedArray(55, (rc.readSharedArray(55) & 0b1111111));
             }
         } else if (rc.canBuildRobot(RobotType.WATCHTOWER, builddir) && sageCount > 3* rc.getArchonCount()

@@ -13,6 +13,7 @@ public class Sage extends RobotPlayer{
     static MapLocation[] sectorMdpts = new MapLocation[49];
     static MapLocation scoutTgt = null;
     static int turnsSinceSeenHostile = 0;
+    static boolean notRepaired = false;
 
     //set upon initialization
     static int senseRadius;
@@ -52,6 +53,7 @@ public class Sage extends RobotPlayer{
         MapLocation src = rc.getLocation();
         int rubbleThreshold = rc.senseRubble(rc.getLocation()) + 20;
 
+        //initialization
         if (turnsAlive == 0) {
             senseRadius = rc.getType().visionRadiusSquared;
             actionRadius = rc.getType().actionRadiusSquared;
@@ -137,11 +139,17 @@ public class Sage extends RobotPlayer{
             scoutTgt = sectorMdpts[rng.nextInt(49)];
         }
 
+        //if we reach full health then we are repaired
+        if (rc.getHealth() == RobotType.SAGE.getMaxHealth(rc.getLevel())) {
+            notRepaired = false;
+        }
+
         //Movement Code
         Direction dir = null;
-        if (rc.getHealth() < RobotType.SAGE.getMaxHealth(rc.getLevel()) / 5 && home != null) {
+        if (notRepaired || rc.getHealth() < RobotType.SAGE.getMaxHealth(rc.getLevel()) / 5 && home != null) {
             // If low health run home (for now its go suicide)
             dir = Pathfinder.getMoveDir(rc, home);
+            notRepaired = true;
         } else if (inVisionTgt != null && attackTgt != null && !rc.isActionReady()) {
             //enemy is in action radius, but no cooldown to attack
             if(isHostile(inVisionTgt) || rc.getActionCooldownTurns() > 20){

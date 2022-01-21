@@ -17,7 +17,6 @@ public class Builder extends RobotPlayer {
     static int currentIncome = 0;
     static MapLocation bestTgtSector = null;
     static RobotInfo lastBuilt = null;
-    static MapLocation scoutTgt = null;
 
     static Direction stallOnGoodRubble(RobotController rc) throws GameActionException {
         MapLocation src = rc.getLocation();
@@ -89,26 +88,7 @@ public class Builder extends RobotPlayer {
                     yVector += src.directionTo(sectorMdpts[i]).opposite().dy;
                 }
             }
-            awayFromEnemies = src.directionTo(src.translate(xVector, yVector));
-            int designatedLoc = rng.nextInt(5);
-            switch (designatedLoc) {
-                case 0:
-                    scoutTgt = new MapLocation(0, 0);
-                    break;
-                case 1:
-                    scoutTgt = new MapLocation(rc.getMapWidth() - 1, 0);
-                    break;
-                case 2:
-                    scoutTgt = new MapLocation(0, rc.getMapHeight() - 1);
-                    break;
-                case 3:
-                    scoutTgt = new MapLocation(rc.getMapWidth() - 1, rc.getMapHeight() - 1);
-                    break;
-                case 4:
-                    scoutTgt = new MapLocation(rc.getMapWidth()/2, rc.getMapHeight()/2);
-                    break;
-            }
-             
+            awayFromEnemies = src.directionTo(src.translate(xVector, yVector));         
         }
 
         //finding closest enemy dps
@@ -176,11 +156,6 @@ public class Builder extends RobotPlayer {
             lastBuilt = null;
         }
 
-        //if you can see the scout target sector mdpt, randomize and go to somewhere else
-        if (src.distanceSquaredTo(scoutTgt) <= senseRadius) {
-            scoutTgt = sectorMdpts[rng.nextInt(49)];
-        }
-
         //If there is no nearby repariable building, follow a nearby non-crowded soldier, otherwise move randomly
         if (lastBuilt != null) {
             dir = Pathfinder.getMoveDir(rc, lastBuilt.location);
@@ -207,7 +182,10 @@ public class Builder extends RobotPlayer {
                 dir = Pathfinder.getMoveDir(rc, bestTgtSector);
             }
         } else {
-            dir = Pathfinder.getMoveDir(rc, scoutTgt);
+            MapLocation tgt = src.translate(awayFromLabX + 2*awayFromEnemies.dx, awayFromLabY + 2*awayFromEnemies.dy);
+            MapLocation inBounds = new MapLocation(Math.min(Math.max(0, tgt.x), rc.getMapWidth() - 1), 
+                Math.min(Math.max(0, tgt.y), rc.getMapHeight() - 1));
+            dir = Pathfinder.getMoveDir(rc, inBounds);
         }
 
         MapLocation actionTgt = null;

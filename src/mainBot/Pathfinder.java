@@ -8,7 +8,7 @@ public class Pathfinder {
     static Direction getMoveDir(RobotController rc, MapLocation tgt) throws GameActionException {
         MapLocation src = rc.getLocation();
         int range = 8;
-        rc.setIndicatorString("tgt: " + tgt);
+        //rc.setIndicatorString("tgt: " + tgt);
         
         //simple heuristic using only nearby 8
         MapLocation immTgt;

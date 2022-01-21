@@ -151,13 +151,15 @@ public class Soldier extends RobotPlayer {
         bestTgtSector = null;
         double highScore = 0;
         for (int i = 48; i >= 0; i --) {
-            int[] sector = Comms.readSectorInfo(rc, i);
-            if (sector[0] == 1 && (closestFriendlyArchon == null 
+            int homeArchon = Comms.readSectorInfo(rc, i, 0);
+            int enemyArchon = Comms.readSectorInfo(rc, i, 1);
+            int enemyInSector = Comms.readSectorInfo(rc, i, 3);
+            if (homeArchon == 1 && (closestFriendlyArchon == null 
             || sectorMdpts[i].distanceSquaredTo(src) < closestFriendlyArchon.distanceSquaredTo(src))) {
                 closestFriendlyArchon = sectorMdpts[i];
             }
-            if (sector[1] == 1 || sector[3] > 0) {
-                double currentScore = (50.0*sector[1] + sector[3])/Math.sqrt(src.distanceSquaredTo(sectorMdpts[i]));
+            if (enemyArchon == 1 || enemyInSector > 0) {
+                double currentScore = (50.0*enemyArchon + enemyInSector)/Math.sqrt(src.distanceSquaredTo(sectorMdpts[i]));
                 if (currentScore > highScore) {
                     bestTgtSector = sectorMdpts[i];
                 }

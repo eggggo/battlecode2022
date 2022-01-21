@@ -38,15 +38,22 @@ public class Comms {
         return new MapLocation(xCoord, yCoord);
     }
 
-    static int[] readSectorInfo(RobotController rc, int sector) throws GameActionException {
-        int[] res = new int[5];
+    static int readSectorInfo(RobotController rc, int sector, int index) throws GameActionException {
         int entry = rc.readSharedArray(sector);
-        res[0] = (entry >> 15); //home archon presence
-        res[1] = (entry >> 14) & 0b1; //enemy archon presence
-        res[2] = (entry >> 8) & 0b111111; //resource count max 63
-        res[3] = (entry >> 3) & 0b11111; //enemy attacker count max 31
-        res[4] = (entry >> 2) & 0b1; //turnMod
-        return res;
+        switch (index) {
+            case 0:
+                return entry >> 15; //home archon presence
+            case 1:
+                return (entry >> 14) & 0b1; //enemy archon presence
+            case 2:
+                return (entry >> 8) & 0b111111; //resource count max 63
+            case 3:
+                return (entry >> 3) & 0b11111; //enemy count max 31
+            case 4:
+                return (entry >> 2) & 0b1; //turnMod
+            default:
+                return -1;
+        }
     }
 
     static boolean withinSector(RobotController rc, MapLocation loc, int sector) throws GameActionException {
@@ -70,7 +77,6 @@ public class Comms {
         int resourceCount = 0;
         int enemyCount = 0;
         int range = rc.getType().visionRadiusSquared;
-        int[] entry = readSectorInfo(rc, sector);
         int lowerX = (int)((sector%7)*xSize);
         int lowerY = (int)((sector/7)*xSize);
         int turnMod = rc.getRoundNum() % 2;
@@ -83,7 +89,7 @@ public class Comms {
                 homeArchon = 0;
             }
         } else {
-            homeArchon = entry[0];
+            homeArchon =  readSectorInfo(rc, sector, 0);
         }
 
         RobotInfo[] enemies = rc.senseNearbyRobots(range, rc.getTeam().opponent());
@@ -97,7 +103,7 @@ public class Comms {
                 break;
             }
             RobotInfo r = enemies[i];
-            if (withinSector(rc, r.getLocation(), sector)) {
+            if (r.location.x >= lowerX && r.location.x < lowerX + xSize && r.location.y >= lowerY && r.location.y < lowerY + ySize) {
                 if (r.getType() == RobotType.ARCHON) {
                     enemyArchon = 1;
                 }
@@ -114,25 +120,38 @@ public class Comms {
         MapLocation[] nearbyLead = rc.senseNearbyLocationsWithLead(range, 10);
         MapLocation[] nearbyGold = rc.senseNearbyLocationsWithGold(range);
         if (nearbyGold.length > 0) {
-            resourceCount = 63;
+            for (int i = nearbyGold.length - 1; i >= 0; i --) {
+                MapLocation loc = nearbyGold[i];
+                if (loc.x >= lowerX && loc.x < lowerX + xSize && loc.y >= lowerY && loc.y < lowerY + ySize) {
+                    resourceCount = 63;
+                    break;
+                }
+            }
         } else {
-            resourceCount = Math.min(63, nearbyLead.length);
+            //resource counting guards against edge cases of edge reporting and stalling miners
+            if (nearbyLead.length > 10) {
+                resourceCount = nearbyLead.length;
+            } else {
+                for (int i = nearbyLead.length - 1; i >= 0; i --) {
+                    MapLocation loc = nearbyLead[i];
+                    if (resourceCount == 63) {
+                        break;
+                    }
+                    if (loc.x >= lowerX && loc.x < lowerX + xSize && loc.y >= lowerY && loc.y < lowerY + ySize) {
+                        resourceCount ++;
+                    }
+                }
+            }
         }
 
-        if (entry[4] == turnMod) {
-            enemyArchon = Math.max(enemyArchon, entry[1]);
-            enemyCount = Math.max(enemyCount, entry[3]);
-            resourceCount = Math.max(resourceCount, entry[2]);
+        if (readSectorInfo(rc, sector, 4) == turnMod) {
+            enemyArchon = Math.max(enemyArchon, readSectorInfo(rc, sector, 1));
+            enemyCount = Math.max(enemyCount, readSectorInfo(rc, sector, 3));
+            resourceCount = Math.max(resourceCount, readSectorInfo(rc, sector, 2));
         }
 
         int msg = (homeArchon << 15) | (enemyArchon << 14) | (resourceCount << 8) | (enemyCount << 3) | (turnMod << 2);
         rc.writeSharedArray(sector, msg);
-    }
-
-    static void printComms(RobotController rc) throws GameActionException {
-        for (int i = 48; i >= 0; i --) {
-            System.out.println("sector: " + i + ", " + Arrays.toString(readSectorInfo(rc, i)));
-        }
     }
 
     static void updateTypeCount(RobotController rc) throws GameActionException {

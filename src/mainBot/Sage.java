@@ -173,15 +173,17 @@ public class Sage extends RobotPlayer{
             int archonDistance = 9999;
             MapLocation closestHomeArchon = null;
             for (int i = 48; i >= 0; i--) {
-              int[] sector = Comms.readSectorInfo(rc, i);
+              int homeArchon = Comms.readSectorInfo(rc, i, 0);
+              int enemyArchon = Comms.readSectorInfo(rc, i, 1);
+              int enemiesInSector = Comms.readSectorInfo(rc, i, 3);
               MapLocation loc = sectorMdpts[i];
-              if (sector[3] > 0 && (closestEnemies == null || closestEnemies.distanceSquaredTo(src) > src.distanceSquaredTo(loc))) {
+              if (enemiesInSector > 0 && (closestEnemies == null || closestEnemies.distanceSquaredTo(src) > src.distanceSquaredTo(loc))) {
                 closestEnemies = loc;
               }
-              if (sector[1] == 1 && (closestEnemyArchon == null || closestEnemyArchon.distanceSquaredTo(src) > src.distanceSquaredTo(loc))) {
+              if (enemyArchon == 1 && (closestEnemyArchon == null || closestEnemyArchon.distanceSquaredTo(src) > src.distanceSquaredTo(loc))) {
                 closestEnemyArchon = loc;
               }
-              if (sector[0] == 1 && sectorMdpts[i].distanceSquaredTo(src) < archonDistance) {
+              if (homeArchon == 1 && sectorMdpts[i].distanceSquaredTo(src) < archonDistance) {
                 archonDistance = sectorMdpts[i].distanceSquaredTo(src);
                 closestHomeArchon = sectorMdpts[i];
                 home = closestEnemyArchon;

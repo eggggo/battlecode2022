@@ -93,14 +93,15 @@ public class Miner extends RobotPlayer {
             bestOOVResource = null;
             double bestResource = 0;
             for (int i = 48; i >= 0; i --) {
-                int[] sectorInfo = Comms.readSectorInfo(rc, i);
+                int homeArchon = Comms.readSectorInfo(rc, i, 0);
+                int resourceInSector = Comms.readSectorInfo(rc, i, 2);
                 MapLocation sectorMdpt = sectorMdpts[i];
-                if (sectorInfo[0] == 1 && (nearestFriendlyArchon == null 
+                if (homeArchon == 1 && (nearestFriendlyArchon == null 
                 || sectorMdpt.distanceSquaredTo(src) < nearestFriendlyArchon.distanceSquaredTo(src))) {
                     nearestFriendlyArchon = sectorMdpt;
                 }
-                if (sectorInfo[2] > 0) {
-                    double score = sectorInfo[2]/Math.sqrt(src.distanceSquaredTo(sectorMdpt));
+                if (resourceInSector > 0) {
+                    double score = resourceInSector/Math.sqrt(src.distanceSquaredTo(sectorMdpt));
                     if (score > bestResource && score >= 0.5) {
                         bestResource = score;
                         bestOOVResource = sectorMdpt;
@@ -189,12 +190,15 @@ public class Miner extends RobotPlayer {
         //if good nearby resources go there
         if (resources != null) {
             dir = src.directionTo(resources);
+            rc.setIndicatorString("res: " + resources);
         //if good comms nearby resources go there
         } else if (bestOOVResource != null) {
             dir = src.directionTo(bestOOVResource);
+            rc.setIndicatorString("oovres: " + bestOOVResource);
         //else, go to scout location
         } else {
             dir = src.directionTo(scoutTgt);
+            rc.setIndicatorString("scout: " + scoutTgt);
         }
         xVector += dir.dx;
         yVector += dir.dy;

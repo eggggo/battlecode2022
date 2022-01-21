@@ -74,9 +74,8 @@ public class Archon extends RobotPlayer {
         int[] quads = new int[archonCount];
         MapLocation[] coords = new MapLocation[archonCount];
         for (int i = 48; i >= 0; i--) {
-            int[] sector = Comms.readSectorInfo(rc, i);
             MapLocation mdpt = Comms.sectorMidpt(rc, i);
-            if (sector[0] == 1) {
+            if (Comms.readSectorInfo(rc, i, 0) == 1) {
             quads[currentArchonIndex] = getQuadrant(rc, mdpt.x, mdpt.y);
             coords[currentArchonIndex] = mdpt;
             currentArchonIndex++;
@@ -213,8 +212,7 @@ public class Archon extends RobotPlayer {
         int numUniqueArchonSectors = 0;
         //Find all nearby friendlyArchonSectors
         for (int i = 48; i >= 0; i--) {
-            int[] sector = Comms.readSectorInfo(rc, i);
-            if (sector[0] == 1) {
+            if (Comms.readSectorInfo(rc, i, 0) == 1) {
                 for (int j = friendlyArchonSectors.length-1; j >=0; j--) {
                     if (friendlyArchonSectors[j] == 50) {
                         friendlyArchonSectors[j] = i;
@@ -222,7 +220,7 @@ public class Archon extends RobotPlayer {
                         break;
                     }
                 }
-                leadNearArchons += sector[2];
+                leadNearArchons += Comms.readSectorInfo(rc, i, 2);
             }
         }
 
@@ -257,19 +255,18 @@ public class Archon extends RobotPlayer {
         //Find the closest enemy to any friendlySector
         int closestDistToAnyArchon = Integer.MAX_VALUE;
         for (int i = 48; i >= 0; i--) {
-            int[] sector = Comms.readSectorInfo(rc, i);
-            if (sector[3] > 0) {
+            if (Comms.readSectorInfo(rc, i, 3) > 0) {
                 for (int j = friendlyArchonSectors.length-1; j >=0; j--) {
                     if (Comms.sectorMidpt(rc, friendlyArchonSectors[j]).distanceSquaredTo(Comms.sectorMidpt(rc, i)) < closestDistToAnyArchon) {
                         combatSector = i;
                     }
                 }
             }
-            if (sector[1] != 0) {
+            if (Comms.readSectorInfo(rc, i, 1) != 0) {
                 archonSpotted = true;
             }
-            enemyCount += sector[3];
-            scoutedResources += sector[2];
+            enemyCount += Comms.readSectorInfo(rc, i, 3);
+            scoutedResources += Comms.readSectorInfo(rc, i, 2);
         }
 
         //Scan for nearby Soldiers and Archons of the enemy
@@ -764,6 +761,7 @@ public class Archon extends RobotPlayer {
             rc.writeSharedArray(previousSector, rc.readSharedArray(previousSector) & 0x7FFF);
         }
 
+        rc.setIndicatorString("sec: " + Comms.locationToSector(rc, src));
         Comms.updateSector(rc);
         Comms.clearCounts(rc);
         if (((rc.readSharedArray(55) >> 6) & 0b1) == 0) {

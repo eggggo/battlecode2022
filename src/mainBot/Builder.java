@@ -57,8 +57,7 @@ public class Builder extends RobotPlayer {
 
         if (!firstEnemySeen) {
             for (int i = 48; i >= 0; i--) {
-                int[] sector = Comms.readSectorInfo(rc, i);
-                if (sector[3] > 0) {
+                if (Comms.readSectorInfo(rc, i, 3) > 0) {
                     firstEnemySeen = true;
                     break;
                 }
@@ -82,8 +81,7 @@ public class Builder extends RobotPlayer {
             int yVector = 0;
             for (int i = 48; i >= 0; i --) {
                 sectorMdpts[i] = Comms.sectorMidpt(rc, i);
-                int[] sector = Comms.readSectorInfo(rc, i);
-                if (sector[1] == 1) {
+                if (Comms.readSectorInfo(rc, i, 1) == 1) {
                     xVector += src.directionTo(sectorMdpts[i]).opposite().dx;
                     yVector += src.directionTo(sectorMdpts[i]).opposite().dy;
                 }
@@ -105,9 +103,10 @@ public class Builder extends RobotPlayer {
             bestTgtSector = null;
             double highScore = 0;
             for (int i = 48; i >= 0; i --) {
-                int[] sector = Comms.readSectorInfo(rc, i);
-                if (sector[1] == 1 || sector[3] > 0) {
-                    double currentScore = (50.0*sector[1] + sector[3])/Math.sqrt(src.distanceSquaredTo(sectorMdpts[i]));
+                int enemyArchon = Comms.readSectorInfo(rc, i, 1);
+                int enemyScore = Comms.readSectorInfo(rc, i, 3);
+                if (enemyArchon > 0 || enemyScore > 0) {
+                    double currentScore = (50.0*enemyArchon + enemyScore)/Math.sqrt(src.distanceSquaredTo(sectorMdpts[i]));
                     if (currentScore > highScore) {
                         bestTgtSector = sectorMdpts[i];
                     }

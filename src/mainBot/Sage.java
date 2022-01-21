@@ -121,11 +121,13 @@ public class Sage extends RobotPlayer{
             }
         }
 
+
         Direction dir = null;
-        if (rc.getHealth() < RobotType.SAGE.getMaxHealth(rc.getLevel()) / 10 && home != null) { // If low health run home
+        if (rc.getHealth() < RobotType.SAGE.getMaxHealth(rc.getLevel()) / 2 && home != null) {
+            // If low health run home
             dir = Pathfinder.getMoveDir(rc, home);
-        //if cant attack and see enemies run
         } else if (inVisionTgt != null && isHostile(inVisionTgt) && !rc.isActionReady()) {
+            //if cant attack and see enemies run away
             Direction opposite = src.directionTo(inVisionTgt.location).opposite();
             MapLocation runawayTgt = src.add(opposite).add(opposite);
             runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1),
@@ -159,7 +161,7 @@ public class Sage extends RobotPlayer{
               if (sector[0] == 1 && sectorMdpts[i].distanceSquaredTo(src) < archonDistance) {
                 archonDistance = sectorMdpts[i].distanceSquaredTo(src);
                 closestHomeArchon = sectorMdpts[i];
-                home = closestEnemyArchon;
+                home = closestHomeArchon;
               }
             }
             if (closestEnemies != null) {

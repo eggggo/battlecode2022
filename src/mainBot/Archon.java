@@ -469,7 +469,8 @@ public class Archon extends RobotPlayer {
         MapLocation woundedWarrior = null;
         for (int i = alliedUnits.length - 1; i >= 0; i--) {
             RobotInfo unit = alliedUnits[i];
-            if (unit.getType() == RobotType.SOLDIER && unit.getHealth() != RobotType.SOLDIER.getMaxHealth(unit.getLevel())) {
+            if (unit.getType() == RobotType.SOLDIER && unit.getHealth() != RobotType.SOLDIER.getMaxHealth(unit.getLevel()) ||
+                unit.getType() == RobotType.SAGE && unit.getHealth() != RobotType.SAGE.getMaxHealth(unit.getLevel())) {
                 woundedWarrior = unit.getLocation();
                 break;
             }

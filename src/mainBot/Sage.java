@@ -40,18 +40,14 @@ public class Sage extends RobotPlayer{
 
     public static void runSage(RobotController rc) throws GameActionException {
         MapLocation src = rc.getLocation();
-        int senseRadius = rc.getType().visionRadiusSquared;
-        int radius = rc.getType().actionRadiusSquared;
-        Team friendly = rc.getTeam();
-        Team opponent = rc.getTeam().opponent();
-        RobotInfo[] enemies = rc.senseNearbyRobots(senseRadius, opponent);
-        RobotInfo attackTgt = null;
-        RobotInfo inVisionTgt = null;
-        int unitHP = 0;
-        int buildingHP = 0;
         int rubbleThreshold = rc.senseRubble(rc.getLocation()) + 20;
 
         if (turnsAlive == 0) {
+            senseRadius = rc.getType().visionRadiusSquared;
+            radius = rc.getType().actionRadiusSquared;
+            friendly = rc.getTeam();
+            opponent = rc.getTeam().opponent();
+
             for (int i = 48; i >= 0; i --) {
                 sectorMdpts[i] = Comms.sectorMidpt(rc, i);
             }
@@ -80,6 +76,14 @@ public class Sage extends RobotPlayer{
              }
         }
 
+        //determined every turn
+        RobotInfo[] enemies = rc.senseNearbyRobots(senseRadius, opponent);
+        RobotInfo attackTgt = null;
+        RobotInfo inVisionTgt = null;
+        int unitHP = 0;
+        int buildingHP = 0;
+
+        //attack code
         int lowestHPTgt = 9999;
         int lowestInVisionHPTgt = 9999;
         if (enemies.length > 0) {

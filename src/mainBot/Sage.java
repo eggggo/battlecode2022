@@ -12,6 +12,8 @@ public class Sage extends RobotPlayer{
     static int role;
     static MapLocation[] sectorMdpts = new MapLocation[49];
     static MapLocation scoutTgt = null;
+    static int turnsSinceSeenHostile = 0;
+    static boolean notRepaired = false;
 
     //set upon initialization
     static int senseRadius;
@@ -51,6 +53,7 @@ public class Sage extends RobotPlayer{
         MapLocation src = rc.getLocation();
         int rubbleThreshold = rc.senseRubble(rc.getLocation()) + 20;
 
+        //initialization
         if (turnsAlive == 0) {
             senseRadius = rc.getType().visionRadiusSquared;
             actionRadius = rc.getType().actionRadiusSquared;
@@ -91,13 +94,15 @@ public class Sage extends RobotPlayer{
         RobotInfo inVisionTgt = null; //lowest health enemy within visionRadius
         int unitHP = 0;
         int buildingHP = 0;
+        boolean sageOrWTSeen = false;
 
-        //attack code
+        //attack/vision targeting code
         int lowestHPTgt = 9999;
         int lowestInVisionHPTgt = 9999;
         if (enemies.length > 0) {
             for (int i = enemies.length - 1; i >= 0; i --) {
                 RobotInfo enemy = enemies[i];
+                sageOrWTSeen = (enemy.getType() == RobotType.SAGE || enemy.getType() == RobotType.WATCHTOWER) ? true:false;
                 if (enemy.getLocation().distanceSquaredTo(src) <= actionRadius) {
                     if (attackTgt == null ||
                         isHostile(enemy) && !isHostile(attackTgt) ||
@@ -127,17 +132,6 @@ public class Sage extends RobotPlayer{
                 inVisionTgt = attackTgt;
             }
 
-            //maximize damage done
-            if ( AnomalyType.CHARGE.sagePercentage * unitHP >= RobotType.SAGE.getDamage(1)
-                    && rc.canEnvision(AnomalyType.CHARGE)) {
-                rc.envision(AnomalyType.CHARGE);
-            } else if ((AnomalyType.FURY.sagePercentage * buildingHP >= 60)
-                    && rc.canEnvision(AnomalyType.FURY)) {
-                rc.envision(AnomalyType.FURY);
-            } else if (attackTgt != null && rc.canAttack(attackTgt.location)) {
-                MapLocation toAttack = attackTgt.location;
-                rc.attack(toAttack);
-            }
         }
 
         //if you can see the scout target sector mdpt, randomize and go to somewhere else
@@ -145,29 +139,82 @@ public class Sage extends RobotPlayer{
             scoutTgt = sectorMdpts[rng.nextInt(49)];
         }
 
+        //if we reach full health then we are repaired
+        if (rc.getHealth() == RobotType.SAGE.getMaxHealth(rc.getLevel())) {
+            notRepaired = false;
+        }
+
         //Movement Code
         Direction dir = null;
-        if (rc.getHealth() < RobotType.SAGE.getMaxHealth(rc.getLevel()) / 5 && home != null) {
+        if (notRepaired || rc.getHealth() < RobotType.SAGE.getMaxHealth(rc.getLevel()) / 5 && home != null) {
             // If low health run home (for now its go suicide)
             dir = Pathfinder.getMoveDir(rc, home);
-        } else if (inVisionTgt != null && isHostile(inVisionTgt) && !rc.isActionReady()) {
-            //if cant attack and see enemies run away
-            Direction opposite = src.directionTo(inVisionTgt.location).opposite();
-            MapLocation runawayTgt = src.add(opposite).add(opposite);
-            runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1),
-                    Math.min(Math.max(0, runawayTgt.y), rc.getMapHeight() - 1));
-            dir = Pathfinder.getMoveDir(rc, runawayTgt);
-        } else if (inVisionTgt != null){
-            //far, follow if we have cd up
-            if (src.distanceSquaredTo(inVisionTgt.location) > 14) {
+            notRepaired = true;
+        } else if (inVisionTgt != null && attackTgt != null && !rc.isActionReady()) {
+            //enemy is in action radius, but no cooldown to attack
+            if(isHostile(inVisionTgt) || rc.getActionCooldownTurns() > 20){
+                //if we see hostile enemies or our action cooldown is high, run
+                Direction opposite = src.directionTo(inVisionTgt.location).opposite();
+                MapLocation runawayTgt = src.add(opposite).add(opposite);
+                runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1),
+                        Math.min(Math.max(0, runawayTgt.y), rc.getMapHeight() - 1));
+                dir = Pathfinder.getMoveDir(rc, runawayTgt);
+            }
+            else {
+                //not hostile and we have low action cooldown, so stay but find good rubble
+                dir = stallOnGoodRubble(rc);
+            }
+        } else if (inVisionTgt != null && attackTgt != null && rc.isActionReady()) {
+            //enemy is in action radius, and we do have cooldown to attack
+
+            if(!sageOrWTSeen && src.distanceSquaredTo(attackTgt.location) > 15){
+                dir = stallOnGoodRubble(rc);
+            }
+            else{
+                //maximize damage done
+                if ( AnomalyType.CHARGE.sagePercentage * unitHP >= RobotType.SAGE.getDamage(1)
+                        && rc.canEnvision(AnomalyType.CHARGE)) {
+                    rc.envision(AnomalyType.CHARGE);
+                } else if ((AnomalyType.FURY.sagePercentage * buildingHP >= 60)
+                        && rc.canEnvision(AnomalyType.FURY)) {
+                    rc.envision(AnomalyType.FURY);
+                } else if (attackTgt != null && rc.canAttack(attackTgt.location)) {
+                    MapLocation toAttack = attackTgt.location;
+                    rc.attack(toAttack);
+                }
+
+                //run!
+                Direction opposite = src.directionTo(inVisionTgt.location).opposite();
+                MapLocation runawayTgt = src.add(opposite).add(opposite);
+                runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1),
+                        Math.min(Math.max(0, runawayTgt.y), rc.getMapHeight() - 1));
+                dir = Pathfinder.getMoveDir(rc, runawayTgt);
+            }
+
+        } else if (inVisionTgt != null && attackTgt == null && rc.getActionCooldownTurns() <= 20){
+            //enemy is only in vision radius, and can attack by next turn, find good rubble
+
+            if(!sageOrWTSeen){
                 dir = Pathfinder.getMoveDir(rc, inVisionTgt.location);
                 int chaseSpotRubble = rc.senseRubble(src.add(dir));
                 if (chaseSpotRubble > rubbleThreshold && isHostile(inVisionTgt)) {
                     dir = stallOnGoodRubble(rc);
                 }
             }
+            else{
+                dir = stallOnGoodRubble(rc);
+            }
+
+        } else if(inVisionTgt != null && attackTgt == null && rc.getActionCooldownTurns() > 20){
+            //enemy is only in vision radius, and we cant attack by next turn, run!
+            Direction opposite = src.directionTo(inVisionTgt.location).opposite();
+            MapLocation runawayTgt = src.add(opposite).add(opposite);
+            runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1),
+                    Math.min(Math.max(0, runawayTgt.y), rc.getMapHeight() - 1));
+            dir = Pathfinder.getMoveDir(rc, runawayTgt);
+
         } else {
-            //inVisionTgt is null
+            //nothing in vision, inVisionTgt == null
             MapLocation closestEnemies = null;
             MapLocation closestEnemyArchon = null;
             int archonDistance = 9999;
@@ -186,7 +233,7 @@ public class Sage extends RobotPlayer{
               if (homeArchon == 1 && sectorMdpts[i].distanceSquaredTo(src) < archonDistance) {
                 archonDistance = sectorMdpts[i].distanceSquaredTo(src);
                 closestHomeArchon = sectorMdpts[i];
-                home = closestEnemyArchon;
+                home = closestHomeArchon;
               }
             }
             if (closestEnemies != null) {
@@ -207,6 +254,16 @@ public class Sage extends RobotPlayer{
                 dir = Pathfinder.getMoveDir(rc, scoutTgt);
             }
           }
+
+        if (inVisionTgt != null && isHostile(inVisionTgt)) {
+            turnsSinceSeenHostile = 0;
+        } else{
+            turnsSinceSeenHostile++;
+        }
+
+        if(turnsSinceSeenHostile < 3 && rc.senseRubble(src.add(dir)) > 75){
+            dir = stallOnGoodRubble(rc);
+        }
 
         if (dir != null && rc.canMove(dir)) {
             rc.move(dir);

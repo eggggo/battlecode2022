@@ -104,7 +104,8 @@ public class Sage extends RobotPlayer{
                         attackTgt = enemy;
                     }
 
-                    if (enemy.getType() == RobotType.ARCHON || enemy.getType() == RobotType.WATCHTOWER || enemy.getType() == RobotType.LABORATORY) {
+                    if ((enemy.getType() == RobotType.ARCHON || enemy.getType() == RobotType.WATCHTOWER || enemy.getType() == RobotType.LABORATORY) 
+                        && enemy.getMode() == RobotMode.TURRET) {
                         buildingHP += enemy.getType().getMaxHealth(enemy.getLevel());
                     } else {
                         unitHP += enemy.getType().getMaxHealth(1);

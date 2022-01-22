@@ -140,7 +140,7 @@ public class Sage extends RobotPlayer{
         }
 
         //if we reach full health then we are repaired
-        if (rc.getHealth() == RobotType.SAGE.getMaxHealth(rc.getLevel())/2) {
+        if (rc.getHealth() >= RobotType.SAGE.getMaxHealth(rc.getLevel())/2) {
             notRepaired = false;
         }
 

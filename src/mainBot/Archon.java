@@ -155,6 +155,11 @@ public class Archon extends RobotPlayer {
         rc.writeSharedArray(55, rc.readSharedArray(55) | 0b1000000);
     }
 
+    static boolean isHostile(RobotInfo enemy) {
+        return (enemy.getType() == RobotType.SOLDIER || enemy.getType() == RobotType.SAGE 
+        || enemy.getType() == RobotType.WATCHTOWER);
+    }
+
     /**
      * Run a single turn for an Archon.
      * This code is wrapped inside the infinite loop in run(), so it is called once per turn.
@@ -475,13 +480,17 @@ public class Archon extends RobotPlayer {
         for (int i = alliedUnits.length - 1; i >= 0; i--) {
             RobotInfo unit = alliedUnits[i];
             int unitHealth = unit.getHealth();
-            if (unitHealth < unit.getType().getMaxHealth(1) && (woundedWarrior == null || unitHealth < woundedWarrior.getHealth())) {
-                if (unit.getType() == RobotType.SAGE) {
+            if (unitHealth < unit.getType().getMaxHealth(1)) {
+                if (woundedWarrior == null) {
                     woundedWarrior = unit;
-                } else if (unit.getType() == RobotType.SOLDIER && (woundedWarrior == null || woundedWarrior.getType() != RobotType.SAGE)) {
-                    woundedWarrior = unit;
-                } else if (woundedWarrior == null || (woundedWarrior.getType() != RobotType.SOLDIER && woundedWarrior.getType() != RobotType.SAGE)) {
-                    woundedWarrior = unit;
+                } else if (isHostile(woundedWarrior))  {
+                    if (isHostile(unit) && unit.getHealth() < woundedWarrior.health) {
+                        woundedWarrior = unit;
+                    }
+                } else {
+                    if (isHostile(unit) || unit.getHealth() < woundedWarrior.health) {
+                        woundedWarrior = unit;
+                    }
                 }
             }
         }

@@ -113,7 +113,7 @@ public class Builder extends RobotPlayer {
                 int homeArchon = Comms.readSectorInfo(rc, i, 0);
                 MapLocation mdpt = sectorMdpts[i];
                 if (enemyArchon > 0 || enemyScore > 0) {
-                    double currentScore = (50.0*enemyArchon + enemyScore)/Math.sqrt(src.distanceSquaredTo(mdpt));
+                    double currentScore = (10.0*enemyArchon + enemyScore)/(src.distanceSquaredTo(mdpt));
                     if (currentScore > highScore) {
                         bestTgtSector = mdpt;
                     }

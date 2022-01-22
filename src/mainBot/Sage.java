@@ -104,9 +104,10 @@ public class Sage extends RobotPlayer{
                         attackTgt = enemy;
                     }
 
-                    if ((enemy.getType() == RobotType.ARCHON || enemy.getType() == RobotType.WATCHTOWER || enemy.getType() == RobotType.LABORATORY) 
-                        && enemy.getMode() == RobotMode.TURRET) {
-                        buildingHP += enemy.getType().getMaxHealth(enemy.getLevel());
+                    if ((enemy.getType() == RobotType.ARCHON || enemy.getType() == RobotType.WATCHTOWER || enemy.getType() == RobotType.LABORATORY)) {
+                        if (enemy.getMode() == RobotMode.TURRET) {
+                            buildingHP += enemy.getType().getMaxHealth(enemy.getLevel());
+                        }
                     } else {
                         unitHP += enemy.getType().getMaxHealth(1);
                     }
@@ -165,7 +166,7 @@ public class Sage extends RobotPlayer{
                     closestFriendlyArchon = sectorMdpts[i];
                 }
                 if (enemyArchon == 1 || enemyInSector > 0) {
-                    double currentScore = (10.0*enemyArchon + enemyInSector)/Math.sqrt(src.distanceSquaredTo(sectorMdpts[i]));
+                    double currentScore = (10.0*enemyArchon + enemyInSector)/src.distanceSquaredTo(sectorMdpts[i]);
                     if (currentScore > highScore) {
                         bestTgtSector = sectorMdpts[i];
                         highScore = currentScore;
@@ -175,7 +176,7 @@ public class Sage extends RobotPlayer{
         }
 
         //if we reach full health then we are repaired
-        if (rc.getHealth() == RobotType.SOLDIER.getMaxHealth(rc.getLevel())/2) {
+        if (rc.getHealth() >= RobotType.SAGE.getMaxHealth(rc.getLevel())/2) {
             notRepaired = false;
         }
 
@@ -185,12 +186,12 @@ public class Sage extends RobotPlayer{
         }
 
         Direction dir = null;
-        int repairThresh = (int)(15 + (-1.0*(Math.abs(src.x - closestFriendlyArchon.x) + Math.abs(src.y - closestFriendlyArchon.y)))/12);
-        if ((notRepaired || rc.getHealth() <= repairThresh) && src.distanceSquaredTo(closestFriendlyArchon) >= 3) {
+        //int repairThresh = (int)(15 + (-1.0*(Math.abs(src.x - closestFriendlyArchon.x) + Math.abs(src.y - closestFriendlyArchon.y)))/12);
+        if ((notRepaired || rc.getHealth() <= 22) && src.distanceSquaredTo(closestFriendlyArchon) >= 3) {
             dir = Pathfinder.getMoveDir(rc, closestFriendlyArchon, prev5Spots);
             notRepaired = true;
         //if mid hp comparatively or no cd, shuffle
-        } else if (inVisionTgt != null && ((frontline && rc.getHealth() < averageHealth && rc.getHealth() < 45 + repairThresh) 
+        } else if (inVisionTgt != null && ((frontline && rc.getHealth() < averageHealth && rc.getHealth() <= 45) 
                 || !rc.isActionReady())) {
             Direction opposite = src.directionTo(inVisionTgt.location).opposite();
             MapLocation runawayTgt = src.add(opposite).add(opposite);
@@ -223,6 +224,47 @@ public class Sage extends RobotPlayer{
             rc.move(dir);
             prev5Spots[currentOverrideIndex] = rc.getLocation();
             currentOverrideIndex  = (currentOverrideIndex + 1) % 5;
+        }
+
+        //post move attack if available
+        if (rc.isActionReady()) {
+            attackTgt = null;
+            enemies = rc.senseNearbyRobots(senseRadius, opponent);
+            lowestHPTgt = 9999;
+            if (enemies.length > 0) {
+            for (int i = enemies.length - 1; i >= 0; i --) {
+                RobotInfo enemy = enemies[i];
+                if (enemy.getLocation().distanceSquaredTo(src) <= radius) {
+                    if (attackTgt == null ||
+                            isHostile(enemy) && !isHostile(attackTgt) ||
+                            isHostile(enemy) == isHostile(attackTgt) && enemy.getHealth() < lowestHPTgt) {
+                        //note: && has higher precedence than ||
+
+                        lowestHPTgt = enemy.getHealth();
+                        attackTgt = enemy;
+                    }
+
+                    if ((enemy.getType() == RobotType.ARCHON || enemy.getType() == RobotType.WATCHTOWER || enemy.getType() == RobotType.LABORATORY)) {
+                        if (enemy.getMode() == RobotMode.TURRET) {
+                            buildingHP += enemy.getType().getMaxHealth(enemy.getLevel());
+                        }
+                    } else {
+                        unitHP += enemy.getType().getMaxHealth(1);
+                    }
+                }
+            }
+            //maximize damage done
+            if ( AnomalyType.CHARGE.sagePercentage * unitHP >= RobotType.SAGE.getDamage(1)
+                    && rc.canEnvision(AnomalyType.CHARGE)) {
+                rc.envision(AnomalyType.CHARGE);
+            } else if ((AnomalyType.FURY.sagePercentage * buildingHP >= 60)
+                    && rc.canEnvision(AnomalyType.FURY)) {
+                rc.envision(AnomalyType.FURY);
+            } else if (attackTgt != null && rc.canAttack(attackTgt.location)) {
+                MapLocation toAttack = attackTgt.location;
+                rc.attack(toAttack);
+            }
+            }
         }
 
         Comms.updateSector(rc);

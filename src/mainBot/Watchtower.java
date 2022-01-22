@@ -158,7 +158,7 @@ public class Watchtower extends RobotPlayer {
                   int enemyArchon = Comms.readSectorInfo(rc, i, 1);
                   int enemyInSector = Comms.readSectorInfo(rc, i, 3);
                   MapLocation loc = sectorMdpts[i];
-                  double sectorScore = (enemyInSector + 50*enemyArchon)/Math.sqrt(src.distanceSquaredTo(loc));
+                  double sectorScore = (enemyInSector + 10.0*enemyArchon)/(src.distanceSquaredTo(loc));
                   if ((enemyArchon > 0 || enemyInSector > 0) && (bestTgtSector == null || sectorScore > bestTgtSectorScore)) {
                       bestTgtSector = loc;
                       bestTgtSectorScore = sectorScore;

@@ -140,13 +140,13 @@ public class Sage extends RobotPlayer{
         }
 
         //if we reach full health then we are repaired
-        if (rc.getHealth() == RobotType.SAGE.getMaxHealth(rc.getLevel())) {
+        if (rc.getHealth() == RobotType.SAGE.getMaxHealth(rc.getLevel())/2) {
             notRepaired = false;
         }
 
         //Movement Code
         Direction dir = null;
-        if (notRepaired || rc.getHealth() < RobotType.SAGE.getMaxHealth(rc.getLevel()) / 5 && home != null) {
+        if (notRepaired || rc.getHealth() < RobotType.SAGE.getMaxHealth(rc.getLevel()) / 100 && home != null) {
             // If low health run home (for now its go suicide)
             dir = Pathfinder.getMoveDir(rc, home);
             notRepaired = true;

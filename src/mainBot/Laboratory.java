@@ -12,12 +12,12 @@ public class Laboratory extends RobotPlayer {
             sageCount = rc.readSharedArray(53);
         }
 
-        double minMiners = sageCount * .5;
+        int minMiners = sageCount/2;
         int mapArea = rc.getMapHeight() * rc.getMapWidth();
         double thresh = Math.sqrt(mapArea);
 
         //If you can make gold, make it
-        if (rc.canTransmute() && minerCount >= minMiners && (rc.getRoundNum() > thresh * 1.5)) {
+        if (rc.canTransmute() && minerCount >= minMiners) {
             rc.setIndicatorString("1");
             rc.transmute();
         }

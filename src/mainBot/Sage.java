@@ -165,7 +165,7 @@ public class Sage extends RobotPlayer{
                     closestFriendlyArchon = sectorMdpts[i];
                 }
                 if (enemyArchon == 1 || enemyInSector > 0) {
-                    double currentScore = (10.0*enemyArchon + enemyInSector)/Math.sqrt(src.distanceSquaredTo(sectorMdpts[i]));
+                    double currentScore = (10.0*enemyArchon + enemyInSector)/(src.distanceSquaredTo(sectorMdpts[i]));
                     if (currentScore > highScore) {
                         bestTgtSector = sectorMdpts[i];
                         highScore = currentScore;

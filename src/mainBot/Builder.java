@@ -153,9 +153,10 @@ public class Builder extends RobotPlayer {
             }
         }
 
-        boolean buildLab = (minerCount / 10 + initLabCount > labCount)
-                || (rc.getTeamLeadAmount(rc.getTeam()) >= 180 && !(sageCount > 3 * rc.getArchonCount()));
-        boolean buildWt = (sageCount > 15) && (watchtowersBuilt < 3);
+        boolean buildLab = laboratoriesBuilt == 0 && ((minerCount / 10 + initLabCount > labCount)
+                || (rc.getTeamLeadAmount(rc.getTeam()) >= 180 && !(sageCount > (15 * Math.max(1, wtCount)))));
+        boolean buildWt = (sageCount > (15 * (wtCount+1))) && (watchtowersBuilt < 3);
+        buildWt = false;
 
         //movement flow
         //if unfinished building nearby finish it
@@ -206,50 +207,46 @@ public class Builder extends RobotPlayer {
         if (rc.isActionReady() && (nearestPrototype != null) && (rc.canRepair(nearestPrototype.location))) {
             rc.repair(nearestPrototype.location);
         }
+
+        //mutate/repair a watchtower
+        if (nearestWt != null && rc.canRepair(nearestWt.location) && nearestWt.getHealth() < RobotType.WATCHTOWER.getMaxHealth(nearestWt.level)) {
+            rc.repair(nearestWt.location);
+        }
+        //mutate/repair a lab
+        else if (nearestLab != null && rc.canRepair(nearestLab.location)
+                && nearestLab.getHealth() < RobotType.LABORATORY.getMaxHealth(nearestLab.level)) {
+                rc.repair(nearestLab.location);
+        }
+        //mutate/repair an archon
+        else if (nearestArchon != null && rc.canRepair(nearestArchon.location)
+                && nearestArchon.getHealth() < RobotType.ARCHON.getMaxHealth(nearestArchon.level)) {
+                rc.repair(nearestArchon.location);
+        }
+        else if (nearestWt != null && rc.canMutate(nearestWt.location)) { //TODO: conditions for should mutate
+            rc.mutate(nearestWt.location);
+            rc.writeSharedArray(55, (rc.readSharedArray(55) & 0b1111111));
+        }
+        else if (buildWt) {
+            if (rc.canBuildRobot(RobotType.WATCHTOWER, builddir)) {
+                rc.buildRobot(RobotType.WATCHTOWER, builddir);
+                watchtowersBuilt++;
+            }
+        }
         //build a lab
-        if (rc.isActionReady() && buildLab) {
+        else if (buildLab) {
             if (rc.canBuildRobot(RobotType.LABORATORY, builddir)) {
                 rc.buildRobot(RobotType.LABORATORY, builddir);
                 laboratoriesBuilt++;
                 rc.writeSharedArray(55, (rc.readSharedArray(55) & 0b1111111));
             }
         }
-        //build a wt
-        if (rc.isActionReady() && buildWt) {
-            if (rc.canBuildRobot(RobotType.WATCHTOWER, builddir)) {
-                rc.buildRobot(RobotType.WATCHTOWER, builddir);
-                watchtowersBuilt++;
-            }
+        else if (nearestLab != null && rc.canMutate(nearestLab.location) && labCount > (rc.getArchonCount() + 1)) { //TODO: conditions for should mutate
+            rc.mutate(nearestLab.location);
+            rc.writeSharedArray(55, (rc.readSharedArray(55) & 0b1111111));
         }
-        //mutate/repair an archon
-        if (rc.isActionReady() && nearestArchon != null) {
-            if (rc.canMutate(nearestArchon.location)) { //TODO: conditions for should mutate
-                rc.mutate(nearestArchon.location);
-                rc.writeSharedArray(55, (rc.readSharedArray(55) & 0b1111111));
-            } else if (rc.canRepair(nearestArchon.location) 
-            && nearestArchon.getHealth() < RobotType.ARCHON.getMaxHealth(nearestArchon.level)) {
-                rc.repair(nearestArchon.location);
-            }
-        }
-        //mutate/repair a watchtower
-        if (rc.isActionReady() && nearestWt != null) {
-            if (rc.canMutate(nearestWt.location)) { //TODO: conditions for should mutate
-                rc.mutate(nearestWt.location);
-                rc.writeSharedArray(55, (rc.readSharedArray(55) & 0b1111111));
-            } else if (rc.canRepair(nearestWt.location)
-            && nearestWt.getHealth() < RobotType.WATCHTOWER.getMaxHealth(nearestWt.level)) {
-                rc.repair(nearestWt.location);
-            }
-        }
-        //mutate/repair a lab
-        if (rc.isActionReady() && nearestLab != null) {
-            if (rc.canMutate(nearestLab.location)) { //TODO: conditions for should mutate
-                rc.mutate(nearestLab.location);
-                rc.writeSharedArray(55, (rc.readSharedArray(55) & 0b1111111));
-            } else if (rc.canRepair(nearestLab.location)
-            && nearestLab.getHealth() < RobotType.LABORATORY.getMaxHealth(nearestLab.level)) {
-                rc.repair(nearestLab.location);
-            }
+        else if (nearestArchon != null && rc.canMutate(nearestArchon.location)) { //TODO: conditions for should mutate
+            rc.mutate(nearestArchon.location);
+            rc.writeSharedArray(55, (rc.readSharedArray(55) & 0b1111111));
         }
 
         if (dir != null && rc.canMove(dir)) {

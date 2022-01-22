@@ -12,6 +12,8 @@ public class Miner extends RobotPlayer {
     static Random rng = new Random();
     static MapLocation nearestFriendlyArchon = null;
     static MapLocation bestOOVResource = null;
+    static MapLocation[] prev5Spots = new MapLocation[5];
+    static int currentOverrideIndex = 0;
 
     /**
      * Run a single turn for a Miner.
@@ -214,10 +216,12 @@ public class Miner extends RobotPlayer {
         MapLocation vectorTgt = src.translate(4*xVector, 4*yVector);
         MapLocation inBounds = new MapLocation(Math.min(Math.max(0, vectorTgt.x), rc.getMapWidth() - 1), 
             Math.min(Math.max(0, vectorTgt.y), rc.getMapHeight() - 1));
-        dir = Pathfinder.getMoveDir(rc, inBounds);
-        
+        dir = Pathfinder.getMoveDir(rc, inBounds, prev5Spots);
+
         if (rc.canMove(dir)) {
             rc.move(dir);
+            prev5Spots[currentOverrideIndex] = rc.getLocation();
+            currentOverrideIndex  = (currentOverrideIndex + 1) % 5;
         }
 
         //Comms stuff

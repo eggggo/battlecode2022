@@ -5,7 +5,18 @@ import mainBot.betterJavaUtil.*;
 
 public class Pathfinder {
 
-    static Direction getMoveDir(RobotController rc, MapLocation tgt) throws GameActionException {
+    static boolean arrayContains(MapLocation[] arr, MapLocation loc) {
+        for (int i = arr.length - 1; i >= 0; i --) {
+            if (arr[i] == null) {
+                continue;
+            } else if (arr[i].equals(loc)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    static Direction getMoveDir(RobotController rc, MapLocation tgt, MapLocation[] prev5Locs) throws GameActionException {
         MapLocation src = rc.getLocation();
         int range = 8;
         //rc.setIndicatorString("tgt: " + tgt);
@@ -14,15 +25,15 @@ public class Pathfinder {
         MapLocation immTgt;
         if (src.equals(tgt)) {
             return Direction.CENTER;
-        } if (Clock.getBytecodesLeft() < 5500) {
+        } else {
             Direction optimalDir = Direction.CENTER;
             double optimalCost = 9999;
             for (Direction dir : Direction.allDirections()) {
                 MapLocation loc = src.add(dir);
-                if (!rc.onTheMap(loc) || rc.isLocationOccupied(loc)) {
+                if (!rc.onTheMap(loc) || rc.isLocationOccupied(loc) || arrayContains(prev5Locs, loc)) {
                     continue;
                 }
-                double currCost = Math.sqrt(loc.distanceSquaredTo(tgt))*20 + (rc.senseRubble(loc));
+                double currCost = loc.distanceSquaredTo(tgt) + (rc.senseRubble(loc));
                 if (currCost < optimalCost) {
                     optimalDir = dir;
                     optimalCost = currCost;
@@ -31,7 +42,8 @@ public class Pathfinder {
             return optimalDir;
 
             //sweep relaxing edges from immediate tgt to src
-        } else {
+        } /*
+        else {
             if (tgt.isWithinDistanceSquared(src, range)) {
                 immTgt = tgt;
             } else {
@@ -135,35 +147,6 @@ public class Pathfinder {
                 moveTo = src.add(optimalDir);
             }
             return src.directionTo(moveTo);
-        }
-    }
-
-    //return direction away from a location
-    //will try to find a way to maximize distance even if it's not directly away
-    static Direction getAwayDir(RobotController rc, MapLocation loc) throws GameActionException {
-        MapLocation src = rc.getLocation();
-
-        Direction opposite = src.directionTo(loc).opposite();
-
-        MapLocation runawayTgt = src.add(opposite).add(opposite);
-        runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1),
-                Math.min(Math.max(0, runawayTgt.y), rc.getMapHeight() - 1));
-        Direction toReturn = Pathfinder.getMoveDir(rc, runawayTgt);
-
-        if(rc.canMove(toReturn)){
-            return toReturn;
-        }
-        else if(rc.canMove(toReturn.rotateRight() )){
-            return toReturn.rotateRight();
-        }
-        else if(rc.canMove(toReturn.rotateLeft() )){
-            return toReturn.rotateLeft();
-        }
-        else if(rc.canMove(toReturn.rotateLeft().rotateLeft() )){
-            return toReturn.rotateLeft().rotateLeft();
-        }
-        else{
-            return toReturn.rotateRight().rotateRight();
-        }
+        } */
     }
 }

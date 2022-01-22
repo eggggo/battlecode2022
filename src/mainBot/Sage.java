@@ -16,6 +16,8 @@ public class Sage extends RobotPlayer{
     static boolean notRepaired = false;
     static MapLocation bestTgtSector = null;
     static MapLocation closestFriendlyArchon = null;
+    static MapLocation[] prev5Spots = new MapLocation[5];
+    static int currentOverrideIndex = 0;
 
     //set upon initialization
     static int senseRadius;
@@ -172,7 +174,7 @@ public class Sage extends RobotPlayer{
         int repairThresh = (int)(15 + (-1.0*(Math.abs(src.x - closestFriendlyArchon.x) + Math.abs(src.y - closestFriendlyArchon.y)))/12);
         if ((notRepaired || rc.getHealth() < repairThresh && closestFriendlyArchon != null)) {
             // If low health run home (for now its go suicide)
-            dir = Pathfinder.getMoveDir(rc, closestFriendlyArchon);
+            dir = Pathfinder.getMoveDir(rc, closestFriendlyArchon, prev5Spots);
             notRepaired = true;
         } else if (inVisionTgt != null && attackTgt != null && !rc.isActionReady()) {
             //enemy is in action radius, but no cooldown to attack
@@ -182,11 +184,11 @@ public class Sage extends RobotPlayer{
                 MapLocation runawayTgt = src.add(opposite).add(opposite);
                 runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1),
                         Math.min(Math.max(0, runawayTgt.y), rc.getMapHeight() - 1));
-                dir = Pathfinder.getMoveDir(rc, runawayTgt);
+                dir = Pathfinder.getMoveDir(rc, runawayTgt, prev5Spots);
             }
             else {
                 //not hostile and we have low action cooldown, so chase
-                dir = Pathfinder.getMoveDir(rc, inVisionTgt.location);
+                dir = Pathfinder.getMoveDir(rc, inVisionTgt.location, prev5Spots);
                 int chaseSpotRubble = rc.senseRubble(src.add(dir));
                 if (chaseSpotRubble > rubbleThreshold && isHostile(inVisionTgt)) {
                     dir = stallOnGoodRubble(rc);
@@ -216,14 +218,14 @@ public class Sage extends RobotPlayer{
                 MapLocation runawayTgt = src.add(opposite).add(opposite);
                 runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1),
                         Math.min(Math.max(0, runawayTgt.y), rc.getMapHeight() - 1));
-                dir = Pathfinder.getMoveDir(rc, runawayTgt);
+                dir = Pathfinder.getMoveDir(rc, runawayTgt, prev5Spots);
             }
 
         } else if (inVisionTgt != null && attackTgt == null && rc.getActionCooldownTurns() <= 20){
             //enemy is only in vision radius, and can attack by next turn, find good rubble
 
             if(!sageOrWTSeen){
-                dir = Pathfinder.getMoveDir(rc, inVisionTgt.location);
+                dir = Pathfinder.getMoveDir(rc, inVisionTgt.location, prev5Spots);
                 int chaseSpotRubble = rc.senseRubble(src.add(dir));
                 if (chaseSpotRubble > rubbleThreshold && isHostile(inVisionTgt)) {
                     dir = stallOnGoodRubble(rc);
@@ -239,13 +241,13 @@ public class Sage extends RobotPlayer{
             MapLocation runawayTgt = src.add(opposite).add(opposite);
             runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1),
                     Math.min(Math.max(0, runawayTgt.y), rc.getMapHeight() - 1));
-            dir = Pathfinder.getMoveDir(rc, runawayTgt);
+            dir = Pathfinder.getMoveDir(rc, runawayTgt, prev5Spots);
 
         } else if (bestTgtSector != null) {
-            dir = Pathfinder.getMoveDir(rc, bestTgtSector);
+            dir = Pathfinder.getMoveDir(rc, bestTgtSector, prev5Spots);
           //otherwise scout same as miner
         } else {
-            dir = Pathfinder.getMoveDir(rc, scoutTgt);
+            dir = Pathfinder.getMoveDir(rc, scoutTgt, prev5Spots);
         }
 
         if (inVisionTgt != null && isHostile(inVisionTgt)) {
@@ -260,6 +262,8 @@ public class Sage extends RobotPlayer{
 
         if (dir != null && rc.canMove(dir)) {
             rc.move(dir);
+            prev5Spots[currentOverrideIndex] = rc.getLocation();
+            currentOverrideIndex  = (currentOverrideIndex + 1) % 5;
         }
 
         Comms.updateSector(rc);

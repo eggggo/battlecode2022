@@ -17,6 +17,8 @@ public class Builder extends RobotPlayer {
     static int currentIncome = 0;
     static MapLocation bestTgtSector = null;
     static MapLocation nearestFriendlyArchon = null;
+    static MapLocation[] prev5Spots = new MapLocation[5];
+    static int currentOverrideIndex = 0;
 
     static Direction stallOnGoodRubble(RobotController rc) throws GameActionException {
         MapLocation src = rc.getLocation();
@@ -172,24 +174,24 @@ public class Builder extends RobotPlayer {
         //if unfinished building nearby finish it
         if (nearestPrototype != null) {
             if (!(src.distanceSquaredTo(nearestPrototype.location) <= 5 && stallDir == Direction.CENTER)) {
-                dir = Pathfinder.getMoveDir(rc, nearestPrototype.location);
+                dir = Pathfinder.getMoveDir(rc, nearestPrototype.location, prev5Spots);
             } else {
                 dir = stallDir;
             }
         //if watchtower nearby follow it to battle
         } else if (nearestWt != null && src.distanceSquaredTo(nearestWt.location) > 5) {
-            dir = Pathfinder.getMoveDir(rc, nearestWt.location);
+            dir = Pathfinder.getMoveDir(rc, nearestWt.location, prev5Spots);
         //if enemies nearby run
         } else if (closestAttacker != null) {
             Direction opposite = src.directionTo(closestAttacker).opposite();
             MapLocation runawayTgt = src.add(opposite).add(opposite);
             runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1), 
             Math.min(Math.max(0, runawayTgt.y), rc.getMapHeight() - 1));
-            dir = Pathfinder.getMoveDir(rc, runawayTgt);
+            dir = Pathfinder.getMoveDir(rc, runawayTgt, prev5Spots);
         //if archon nearby low go heal it(TODO: add mutating conditions here as well)
         } else if (nearestArchon != null && nearestArchon.getHealth() < nearestArchon.getType().getMaxHealth(nearestArchon.level)) {
             if (!(src.distanceSquaredTo(nearestArchon.location) <= 5 && stallDir == Direction.CENTER)) {
-                dir = Pathfinder.getMoveDir(rc, nearestArchon.location);
+                dir = Pathfinder.getMoveDir(rc, nearestArchon.location, prev5Spots);
             } else {
                 dir = stallDir;
             }
@@ -203,14 +205,14 @@ public class Builder extends RobotPlayer {
             }
             MapLocation inBounds = new MapLocation(Math.min(Math.max(0, tgt.x), rc.getMapWidth() - 1), 
                 Math.min(Math.max(0, tgt.y), rc.getMapHeight() - 1));
-            dir = Pathfinder.getMoveDir(rc, inBounds);
+            dir = Pathfinder.getMoveDir(rc, inBounds, prev5Spots);
         //if we want to build a wt run towards enemies
         } else if (buildWt && bestTgtSector != null) {
             rc.setIndicatorString("build wt");
             if (src.distanceSquaredTo(bestTgtSector) < 150) {
                 dir = stallDir;
             } else {
-                dir = Pathfinder.getMoveDir(rc, bestTgtSector);
+                dir = Pathfinder.getMoveDir(rc, bestTgtSector, prev5Spots);
             }
         //else, default behavior, currently same as running from civilization to build labs
         } else {
@@ -225,7 +227,7 @@ public class Builder extends RobotPlayer {
             if (inBounds.equals(src)) {
                 dir = Direction.values()[rng.nextInt(9)];
             } else {
-                dir = Pathfinder.getMoveDir(rc, inBounds);
+                dir = Pathfinder.getMoveDir(rc, inBounds, prev5Spots);
             }
         }
 
@@ -280,6 +282,8 @@ public class Builder extends RobotPlayer {
 
         if (dir != null && rc.canMove(dir)) {
             rc.move(dir);
+            prev5Spots[currentOverrideIndex] = rc.getLocation();
+            currentOverrideIndex  = (currentOverrideIndex + 1) % 5;
         }
 
         //Comms stuff

@@ -14,6 +14,8 @@ public class Watchtower extends RobotPlayer {
   static MapLocation[] sectorMdpts = new MapLocation[49];
   static int turnsHaveBeenTwo = 0;
   static MapLocation bestTgtSector = null;
+  static MapLocation[] prev5Spots = new MapLocation[5];
+  static int currentOverrideIndex = 0;
 
   static int getQuadrant(RobotController rc, int x, int y) {
     int quad = 0;
@@ -164,16 +166,20 @@ public class Watchtower extends RobotPlayer {
               }
             }
             if (bestTgtSector != null && !(nearestBuilder != null && nearestBuilder.location.distanceSquaredTo(src) > 10)) {
-                dir = Pathfinder.getMoveDir(rc, bestTgtSector);
+                dir = Pathfinder.getMoveDir(rc, bestTgtSector, prev5Spots);
             }
         }
         if (dir != null && rc.canMove(dir) && rc.getLevel() > 1) {
             if (rc.getArchonCount()==4) {
                 if (turnsHaveBeenTwo > 0) { //tweaking this value to see if not moving for a certain amount of turns when having 4 archons to incentivize defense helps .
                     rc.move(dir);
+                    prev5Spots[currentOverrideIndex] = rc.getLocation();
+                    currentOverrideIndex  = (currentOverrideIndex + 1) % 5;
                 }
             } else {
                 rc.move(dir);
+                prev5Spots[currentOverrideIndex] = rc.getLocation();
+                currentOverrideIndex  = (currentOverrideIndex + 1) % 5;
             }
 
         }

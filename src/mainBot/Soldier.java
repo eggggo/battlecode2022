@@ -10,6 +10,8 @@ public class Soldier extends RobotPlayer {
   static MapLocation bestTgtSector = null;
   static MapLocation closestFriendlyArchon = null;
   static MapLocation scoutTgt = null;
+  static MapLocation[] prev5Spots = new MapLocation[5];
+  static int currentOverrideIndex = 0;
 
   static Direction stallOnGoodRubble(RobotController rc) throws GameActionException {
     MapLocation src = rc.getLocation();
@@ -149,6 +151,7 @@ public class Soldier extends RobotPlayer {
     //comms access every 3rd turn for bytecode reduction
     if (turnCount % 3 == 0 || turnsAlive == 0) {
         bestTgtSector = null;
+        closestFriendlyArchon = null;
         double highScore = 0;
         for (int i = 48; i >= 0; i --) {
             int homeArchon = Comms.readSectorInfo(rc, i, 0);
@@ -162,6 +165,7 @@ public class Soldier extends RobotPlayer {
                 double currentScore = (50.0*enemyArchon + enemyInSector)/Math.sqrt(src.distanceSquaredTo(sectorMdpts[i]));
                 if (currentScore > highScore) {
                     bestTgtSector = sectorMdpts[i];
+                    highScore = currentScore;
                 }
             }
         }
@@ -176,7 +180,7 @@ public class Soldier extends RobotPlayer {
     //main movement loop
     //if low enough hp run back to heal
     if ((notRepaired || rc.getHealth() <= repairThresh) && src.distanceSquaredTo(closestFriendlyArchon) >= 3) {
-      dir = Pathfinder.getMoveDir(rc, closestFriendlyArchon);
+      dir = Pathfinder.getMoveDir(rc, closestFriendlyArchon, prev5Spots);
       notRepaired = true;
     //if mid hp comparatively or no cd, shuffle
     } else if (attackTgt != null && ((frontline && rc.getHealth() < averageHealth && rc.getHealth() < 15 + repairThresh) 
@@ -185,29 +189,31 @@ public class Soldier extends RobotPlayer {
       MapLocation runawayTgt = src.add(opposite).add(opposite);
       runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1), 
       Math.min(Math.max(0, runawayTgt.y), rc.getMapHeight() - 1));
-      dir = Pathfinder.getMoveDir(rc, runawayTgt);
+      dir = Pathfinder.getMoveDir(rc, runawayTgt, prev5Spots);
       MapLocation kitingTgt = src.add(dir);
       if (rc.senseRubble(kitingTgt) > rubbleThreshold) {
           dir = stallOnGoodRubble(rc);
       }
     //if enough soldiers nearby advance to make space
     } else if (nearbyDamage > 4 && attackTgt != null) {
-      dir = Pathfinder.getMoveDir(rc, attackTgt.location);
+      dir = Pathfinder.getMoveDir(rc, attackTgt.location, prev5Spots);
       MapLocation kitingTgt = src.add(dir);
       if (rc.senseRubble(kitingTgt) > rubbleThreshold) {
         dir = stallOnGoodRubble(rc);
       }
     //otherwise if there is an enemy sector go to best scored one
     } else if (bestTgtSector != null) {
-      dir = Pathfinder.getMoveDir(rc, bestTgtSector);
+      dir = Pathfinder.getMoveDir(rc, bestTgtSector, prev5Spots);
     //otherwise scout same as miner
     } else {
-      dir = Pathfinder.getMoveDir(rc, scoutTgt);
+      dir = Pathfinder.getMoveDir(rc, scoutTgt, prev5Spots);
     }
 
     //move
     if (dir != null && rc.canMove(dir)) {
       rc.move(dir);
+      prev5Spots[currentOverrideIndex] = rc.getLocation();
+      currentOverrideIndex  = (currentOverrideIndex + 1) % 5;
     }
 
     //post move attack if available

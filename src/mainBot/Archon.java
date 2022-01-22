@@ -25,6 +25,8 @@ public class Archon extends RobotPlayer {
     static int turnsPortable = 0;
     static int previousSector = 50;
     static boolean builtBuilderRecently = false;
+    static MapLocation[] prev5Spots = new MapLocation[5];
+    static int currentOverrideIndex = 0;
 
     static Direction stallOnGoodRubble(RobotController rc) throws GameActionException {
         MapLocation src = rc.getLocation();
@@ -258,7 +260,7 @@ public class Archon extends RobotPlayer {
 
         Direction moveDir = null;
         if (rc.getMode() == RobotMode.PORTABLE && nearestFriendlyArchon != 50) {
-            moveDir = Pathfinder.getMoveDir(rc, Comms.sectorMidpt(rc, nearestFriendlyArchon));
+            moveDir = Pathfinder.getMoveDir(rc, Comms.sectorMidpt(rc, nearestFriendlyArchon), prev5Spots);
         }
 
         //Find the closest enemy to any friendlySector
@@ -622,6 +624,8 @@ public class Archon extends RobotPlayer {
         }
         if (moveDir != null && rc.canMove(moveDir)) {
             rc.move(moveDir);
+            prev5Spots[currentOverrideIndex] = rc.getLocation();
+            currentOverrideIndex  = (currentOverrideIndex + 1) % 5;
         }
 
         if (previousSector != 50 && Comms.locationToSector(rc, src) != previousSector) {

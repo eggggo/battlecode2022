@@ -289,7 +289,7 @@ public class Archon extends RobotPlayer {
                     closestFriendlyArchon = sectorMdpts[i];
                 }
                 if (enemyArchon == 1 || enemyInSector > 0) {
-                    double currentScore = (10.0*enemyArchon + enemyInSector)/Math.sqrt(src.distanceSquaredTo(sectorMdpts[i]));
+                    double currentScore = (10.0*enemyArchon + enemyInSector)/(src.distanceSquaredTo(sectorMdpts[i]));
                     if (currentScore > highScore) {
                         bestTgtSector = sectorMdpts[i];
                         highScore = currentScore;
@@ -298,6 +298,7 @@ public class Archon extends RobotPlayer {
             }
         }
 
+        //System.out.println(bestTgtSector);
         //Initialize firstEnemySeen as true if enemyCount > 0
         if (enemyCount > 0) {
             firstEnemySeen = true;

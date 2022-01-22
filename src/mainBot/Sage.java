@@ -166,7 +166,7 @@ public class Sage extends RobotPlayer{
                     closestFriendlyArchon = sectorMdpts[i];
                 }
                 if (enemyArchon == 1 || enemyInSector > 0) {
-                    double currentScore = (10.0*enemyArchon + enemyInSector)/src.distanceSquaredTo(sectorMdpts[i]);
+                    double currentScore = (10.0*enemyArchon + enemyInSector)/(src.distanceSquaredTo(sectorMdpts[i]));
                     if (currentScore > highScore) {
                         bestTgtSector = sectorMdpts[i];
                         highScore = currentScore;
@@ -191,12 +191,13 @@ public class Sage extends RobotPlayer{
             dir = Pathfinder.getMoveDir(rc, closestFriendlyArchon, prev5Spots);
             notRepaired = true;
         //if mid hp comparatively or no cd, shuffle
-        } else if (inVisionTgt != null && ((frontline && rc.getHealth() < averageHealth && rc.getHealth() <= 45) 
+        } else if (inVisionTgt != null && isHostile(inVisionTgt) && ((frontline && rc.getHealth() < averageHealth && rc.getHealth() <= 45) 
                 || !rc.isActionReady())) {
-            Direction opposite = src.directionTo(inVisionTgt.location).opposite();
-            MapLocation runawayTgt = src.add(opposite).add(opposite);
-            runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1), 
-            Math.min(Math.max(0, runawayTgt.y), rc.getMapHeight() - 1));
+            int dx = inVisionTgt.location.x - src.x;
+            int dy = inVisionTgt.location.y - src.y;
+            MapLocation runawayTgt = new MapLocation(Math.min(Math.max(0, src.x - dx), rc.getMapWidth() - 1), 
+            Math.min(Math.max(0, src.y - dy), rc.getMapHeight() - 1));
+            prev5Spots = new MapLocation[5];
             dir = Pathfinder.getMoveDir(rc, runawayTgt, prev5Spots);
             MapLocation kitingTgt = src.add(dir);
             if (rc.senseRubble(kitingTgt) > rubbleThreshold) {

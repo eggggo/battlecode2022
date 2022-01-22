@@ -209,6 +209,7 @@ public class Miner extends RobotPlayer {
         //adding away from attacker vector
         if (closestAttacker != null) {
             Direction awayAttacker = src.directionTo(closestAttacker).opposite();
+            prev5Spots = new MapLocation[5];
             xVector += 2*awayAttacker.dx;
             yVector += 2*awayAttacker.dy;
         }

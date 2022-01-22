@@ -183,10 +183,11 @@ public class Builder extends RobotPlayer {
             dir = Pathfinder.getMoveDir(rc, nearestWt.location, prev5Spots);
         //if enemies nearby run
         } else if (closestAttacker != null) {
-            Direction opposite = src.directionTo(closestAttacker).opposite();
-            MapLocation runawayTgt = src.add(opposite).add(opposite);
-            runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1), 
-            Math.min(Math.max(0, runawayTgt.y), rc.getMapHeight() - 1));
+            int dx = closestAttacker.x - src.x;
+            int dy = closestAttacker.y - src.y;
+            MapLocation runawayTgt = new MapLocation(Math.min(Math.max(0, src.x - dx), rc.getMapWidth() - 1), 
+            Math.min(Math.max(0, src.y - dy), rc.getMapHeight() - 1));
+            prev5Spots = new MapLocation[5];
             dir = Pathfinder.getMoveDir(rc, runawayTgt, prev5Spots);
         //if archon nearby low go heal it(TODO: add mutating conditions here as well)
         } else if (nearestArchon != null && nearestArchon.getHealth() < nearestArchon.getType().getMaxHealth(nearestArchon.level)) {

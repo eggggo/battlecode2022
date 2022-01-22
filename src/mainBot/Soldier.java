@@ -162,7 +162,7 @@ public class Soldier extends RobotPlayer {
                 closestFriendlyArchon = sectorMdpts[i];
             }
             if (enemyArchon == 1 || enemyInSector > 0) {
-                double currentScore = (10.0*enemyArchon + enemyInSector)/(src.distanceSquaredTo(sectorMdpts[i]));
+                double currentScore = (10.0*enemyArchon + enemyInSector)/src.distanceSquaredTo(sectorMdpts[i]);
                 if (currentScore > highScore) {
                     bestTgtSector = sectorMdpts[i];
                     highScore = currentScore;
@@ -185,15 +185,16 @@ public class Soldier extends RobotPlayer {
     //if mid hp comparatively or no cd, shuffle
     } else if (attackTgt != null && ((frontline && rc.getHealth() < averageHealth && rc.getHealth() < 15 + repairThresh) 
               || !rc.isActionReady())) {
-      Direction opposite = src.directionTo(attackTgt.location).opposite();
-      MapLocation runawayTgt = src.add(opposite).add(opposite);
-      runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1), 
-      Math.min(Math.max(0, runawayTgt.y), rc.getMapHeight() - 1));
-      dir = Pathfinder.getMoveDir(rc, runawayTgt, prev5Spots);
-      MapLocation kitingTgt = src.add(dir);
-      if (rc.senseRubble(kitingTgt) > rubbleThreshold) {
-          dir = stallOnGoodRubble(rc);
-      }
+        int dx = inVisionTgt.location.x - src.x;
+        int dy = inVisionTgt.location.y - src.y;
+        MapLocation runawayTgt = new MapLocation(Math.min(Math.max(0, src.x - dx), rc.getMapWidth() - 1), 
+        Math.min(Math.max(0, src.y - dy), rc.getMapHeight() - 1));
+        prev5Spots = new MapLocation[5];
+        dir = Pathfinder.getMoveDir(rc, runawayTgt, prev5Spots);
+        MapLocation kitingTgt = src.add(dir);
+        if (rc.senseRubble(kitingTgt) > rubbleThreshold) {
+            dir = stallOnGoodRubble(rc);
+        }
     //if enough soldiers nearby advance to make space
     } else if (nearbyDamage >= 4 && inVisionTgt != null) {
       dir = Pathfinder.getMoveDir(rc, inVisionTgt.location, prev5Spots);

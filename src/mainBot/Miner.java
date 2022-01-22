@@ -95,13 +95,14 @@ public class Miner extends RobotPlayer {
             for (int i = 48; i >= 0; i --) {
                 int homeArchon = Comms.readSectorInfo(rc, i, 0);
                 int resourceInSector = Comms.readSectorInfo(rc, i, 2);
+                int enemiesInSector = Comms.readSectorInfo(rc, i, 3);
                 MapLocation sectorMdpt = sectorMdpts[i];
                 if (homeArchon == 1 && (nearestFriendlyArchon == null 
                 || sectorMdpt.distanceSquaredTo(src) < nearestFriendlyArchon.distanceSquaredTo(src))) {
                     nearestFriendlyArchon = sectorMdpt;
                 }
                 if (resourceInSector > 0) {
-                    double score = resourceInSector/Math.max(1, Math.sqrt(src.distanceSquaredTo(sectorMdpt)));
+                    double score = (resourceInSector - enemiesInSector)/Math.max(1, Math.sqrt(src.distanceSquaredTo(sectorMdpt)));
                     if (score > bestResource && score >= 0.6) {
                         bestResource = score;
                         bestOOVResource = sectorMdpt;

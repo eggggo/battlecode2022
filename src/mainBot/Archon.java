@@ -2,6 +2,8 @@ package mainBot;
 
 import battlecode.common.*;
 
+import java.util.Arrays;
+
 public class Archon extends RobotPlayer {
 
     static int minersBuilt = 0;
@@ -25,6 +27,9 @@ public class Archon extends RobotPlayer {
     static int turnsPortable = 0;
     static int previousSector = 50;
     static boolean builtBuilderRecently = false;
+    static MapLocation bestTgtSector = null;
+    static MapLocation closestFriendlyArchon = null;
+    static MapLocation[] sectorMdpts = new MapLocation[49];
     static MapLocation[] prev5Spots = new MapLocation[5];
     static int currentOverrideIndex = 0;
 
@@ -197,12 +202,17 @@ public class Archon extends RobotPlayer {
 
         if (turnsAlive == 0) {
             startNumArchons = rc.getArchonCount();
+            for (int i = 48; i >= 0; i --) {
+                sectorMdpts[i] = Comms.sectorMidpt(rc, i);
+            }
         }
+
         if (startNumArchons == 1) {
             mapThres = 0;
         } else {
             mapThres = 900;
         }
+
         //Initialize combat sector.  If we see an enemy, enemyCount++
         if (combatSector == -1) {
             combatSector = 50;
@@ -233,34 +243,6 @@ public class Archon extends RobotPlayer {
                 }
                 leadNearArchons += Comms.readSectorInfo(rc, i, 2);
             }
-        }
-
-        int nearestFriendlyArchon = 50;
-        int distMax = Integer.MAX_VALUE;
-        for (int i = friendlyArchonSectors.length-1; i>=0; i--) {
-            MapLocation loc = Comms.sectorMidpt(rc, friendlyArchonSectors[i]);
-            if (src.distanceSquaredTo(loc) < distMax && Comms.sectorMidpt(rc, Comms.locationToSector(rc, src)).distanceSquaredTo(loc) != 0) {
-                distMax = src.distanceSquaredTo(loc);
-                nearestFriendlyArchon = friendlyArchonSectors[i];
-            }
-        }
-
-        if (RobotMode.PORTABLE == rc.getMode()) {
-            turnsPortable++;
-        } else {
-            turnsPortable = 0;
-        }
-        Direction stallDir = stallOnGoodRubble(rc);
-//        if (rc.readSharedArray(55) >> 7 == 1 && rc.getMode() == RobotMode.TURRET && rc.canTransform()) {
-//            rc.transform();
-//        } else if (rc.readSharedArray(55) >> 7 == 0 && rc.getMode() == RobotMode.PORTABLE && rc.canTransform() && turnsPortable > 10 && rc.getMode() == RobotMode.PORTABLE && rc.canTransform()
-//                && stallDir == Direction.CENTER && rc.senseRubble(src) <= rubbleThreshold) {
-//            rc.transform();
-//        }
-
-        Direction moveDir = null;
-        if (rc.getMode() == RobotMode.PORTABLE && nearestFriendlyArchon != 50) {
-            moveDir = Pathfinder.getMoveDir(rc, Comms.sectorMidpt(rc, nearestFriendlyArchon), prev5Spots);
         }
 
         //Find the closest enemy to any friendlySector
@@ -295,10 +277,33 @@ public class Archon extends RobotPlayer {
             }
         }
 
+        if (turnCount % 3 == 0 || turnsAlive == 0) {
+            bestTgtSector = null;
+            double highScore = 0;
+            for (int i = 48; i >= 0; i --) {
+                int homeArchon = Comms.readSectorInfo(rc, i, 0);
+                int enemyArchon = Comms.readSectorInfo(rc, i, 1);
+                int enemyInSector = Comms.readSectorInfo(rc, i, 3);
+                if (homeArchon == 1 && (closestFriendlyArchon == null
+                        || sectorMdpts[i].distanceSquaredTo(src) < closestFriendlyArchon.distanceSquaredTo(src))) {
+                    closestFriendlyArchon = sectorMdpts[i];
+                }
+                if (enemyArchon == 1 || enemyInSector > 0) {
+                    double currentScore = (10.0*enemyArchon + enemyInSector)/Math.sqrt(src.distanceSquaredTo(sectorMdpts[i]));
+                    if (currentScore > highScore) {
+                        bestTgtSector = sectorMdpts[i];
+                        highScore = currentScore;
+                    }
+                }
+            }
+        }
+
         //Initialize firstEnemySeen as true if enemyCount > 0
         if (enemyCount > 0) {
             firstEnemySeen = true;
         }
+
+        Direction stallDir = stallOnGoodRubble(rc);
 
         // Setting the building direction dir
         Direction center = rc.getLocation().directionTo(new MapLocation(rc.getMapWidth()/2, rc.getMapHeight()/2));
@@ -557,7 +562,25 @@ public class Archon extends RobotPlayer {
             rc.writeSharedArray(55, (rc.readSharedArray(55) | 0b10000000));
         }
 
-        if (firstEnemySeen && rc.canBuildRobot(RobotType.SAGE, dir)) {
+        System.out.println(bestTgtSector);
+        if (firstEnemySeen && rc.readSharedArray(58) == 0 && rc.getMode() == RobotMode.TURRET && bestTgtSector != null &&
+                rc.getLocation().distanceSquaredTo(bestTgtSector) >= 200 && rc.getTeamLeadAmount(rc.getTeam()) < 350 && shouldBuildLab) {
+            if (rc.canTransform()) {
+                rc.setIndicatorString("Turret to Port");
+                rc.transform();
+                rc.writeSharedArray(58, 1);
+            }
+        }
+        else if (rc.getMode() == RobotMode.PORTABLE && rc.canTransform() &&
+                (rc.getLocation().distanceSquaredTo(bestTgtSector) < 200 || rc.getTeamLeadAmount(rc.getTeam()) >=350)
+                && stallDir == Direction.CENTER && rc.senseRubble(src) <= rubbleThreshold) {
+            if (rc.canTransform()) {
+                rc.setIndicatorString("Port to Turrent");
+                rc.transform();
+                rc.writeSharedArray(58, 0);
+            }
+        }
+        else if (rc.canBuildRobot(RobotType.SAGE, dir)) {
             rc.setIndicatorString("2");
             if (shouldBuildSage) {
                 rc.buildRobot(RobotType.SAGE, dir);
@@ -568,21 +591,11 @@ public class Archon extends RobotPlayer {
         }
 
         else if (rc.readSharedArray(55) >> 7 == 0) {
-//            if  (rc.getRoundNum() < 2 * thresh && minerCount > 2 * rc.getArchonCount() && ((sageCount + minerCount + soldierCount) % 2 == 0)) {
-//                rc.setIndicatorString("soldier?");
-//                    if (rc.canBuildRobot(RobotType.SOLDIER, dir) && shouldBuildSoldier) {
-//                        rc.buildRobot(RobotType.SOLDIER, dir);
-//                        soldiersBuilt++;
-//                        rc.writeSharedArray(51, rc.readSharedArray(51) + 1);
-//                        unitsAfterEnemySeen++;
-//                    }
-//            }
-            if (minersBuilt < initialMiners && rc.canBuildRobot(RobotType.MINER, dir)) {
+            if (minerCount < initialMiners && rc.canBuildRobot(RobotType.MINER, dir) && minersBuilt < (5/rc.getArchonCount())) {
                 if (shouldBuildMinerOrd) {
                     rc.setIndicatorString("3");
                     rc.buildRobot(RobotType.MINER, dir);
                     minersBuilt++;
-                    unitsAfterEnemySeen++;
                 }
             }
             else if ((builderCount == 0) || (minerCount / 10 + initLabCount > builderCount &&
@@ -599,7 +612,24 @@ public class Archon extends RobotPlayer {
                         rc.writeSharedArray(55, (rc.readSharedArray(55) | 0b10000000));
                     }
                 }
-            } else if (rc.canBuildRobot(RobotType.MINER, dir)) {
+            }
+//            else if (!firstEnemySeen) {
+//                if (shouldBuildSoldier && rc.canBuildRobot(RobotType.SOLDIER, dir)) {
+//                    rc.setIndicatorString("3");
+//                    rc.buildRobot(RobotType.SOLDIER, dir);
+//                    soldiersBuilt++;
+//                }
+//            }
+//            else if ((unitsAfterEnemySeen) % 3 < 2) {
+//                rc.setIndicatorString("soldier?");
+//                if (rc.canBuildRobot(RobotType.SOLDIER, dir) && shouldBuildSoldier) {
+//                    rc.buildRobot(RobotType.SOLDIER, dir);
+//                    soldiersBuilt++;
+//                    rc.writeSharedArray(51, rc.readSharedArray(51) + 1);
+//                    unitsAfterEnemySeen++;
+//                }
+//            }
+            else if (rc.canBuildRobot(RobotType.MINER, dir)) {
                 rc.setIndicatorString("5");
                     rc.buildRobot(RobotType.MINER, dir);
                     minersBuilt++;
@@ -621,6 +651,10 @@ public class Archon extends RobotPlayer {
         }
         if (rc.isActionReady()) {
             turnsNotActioning++;
+        }
+        Direction moveDir = null;
+        if (rc.getMode() == RobotMode.PORTABLE && bestTgtSector != null) {
+            moveDir = Pathfinder.getMoveDir(rc, bestTgtSector, prev5Spots);
         }
         if (moveDir != null && rc.canMove(moveDir)) {
             rc.move(moveDir);

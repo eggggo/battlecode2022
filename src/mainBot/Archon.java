@@ -562,7 +562,7 @@ public class Archon extends RobotPlayer {
             rc.writeSharedArray(55, (rc.readSharedArray(55) | 0b10000000));
         }
 
-        System.out.println(bestTgtSector);
+        //System.out.println(bestTgtSector);
         if (firstEnemySeen && rc.readSharedArray(58) == 0 && rc.getMode() == RobotMode.TURRET && bestTgtSector != null &&
                 rc.getLocation().distanceSquaredTo(bestTgtSector) >= 200 && rc.getTeamLeadAmount(rc.getTeam()) < 350 && shouldBuildLab) {
             if (rc.canTransform()) {
@@ -613,22 +613,22 @@ public class Archon extends RobotPlayer {
                     }
                 }
             }
-//            else if (!firstEnemySeen) {
-//                if (shouldBuildSoldier && rc.canBuildRobot(RobotType.SOLDIER, dir)) {
-//                    rc.setIndicatorString("3");
-//                    rc.buildRobot(RobotType.SOLDIER, dir);
-//                    soldiersBuilt++;
-//                }
-//            }
-//            else if ((unitsAfterEnemySeen) % 3 < 2) {
-//                rc.setIndicatorString("soldier?");
-//                if (rc.canBuildRobot(RobotType.SOLDIER, dir) && shouldBuildSoldier) {
-//                    rc.buildRobot(RobotType.SOLDIER, dir);
-//                    soldiersBuilt++;
-//                    rc.writeSharedArray(51, rc.readSharedArray(51) + 1);
-//                    unitsAfterEnemySeen++;
-//                }
-//            }
+        //    else if (!firstEnemySeen) {
+        //        if (shouldBuildSoldier && rc.canBuildRobot(RobotType.SOLDIER, dir)) {
+        //            rc.setIndicatorString("3");
+        //            rc.buildRobot(RobotType.SOLDIER, dir);
+        //            soldiersBuilt++;
+        //        }
+        //    }
+        //    else if ((unitsAfterEnemySeen) % 3 < 2) {
+        //        rc.setIndicatorString("soldier?");
+        //        if (rc.canBuildRobot(RobotType.SOLDIER, dir) && shouldBuildSoldier) {
+        //            rc.buildRobot(RobotType.SOLDIER, dir);
+        //            soldiersBuilt++;
+        //            rc.writeSharedArray(51, rc.readSharedArray(51) + 1);
+        //            unitsAfterEnemySeen++;
+        //        }
+        //    }
             else if (rc.canBuildRobot(RobotType.MINER, dir)) {
                 rc.setIndicatorString("5");
                     rc.buildRobot(RobotType.MINER, dir);

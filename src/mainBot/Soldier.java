@@ -185,7 +185,7 @@ public class Soldier extends RobotPlayer {
     //if mid hp comparatively or no cd, shuffle
     } else if (attackTgt != null && ((frontline && rc.getHealth() < averageHealth && rc.getHealth() < 15 + repairThresh) 
               || !rc.isActionReady())) {
-      Direction opposite = src.directionTo(inVisionTgt.location).opposite();
+      Direction opposite = src.directionTo(attackTgt.location).opposite();
       MapLocation runawayTgt = src.add(opposite).add(opposite);
       runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1), 
       Math.min(Math.max(0, runawayTgt.y), rc.getMapHeight() - 1));
@@ -195,8 +195,8 @@ public class Soldier extends RobotPlayer {
           dir = stallOnGoodRubble(rc);
       }
     //if enough soldiers nearby advance to make space
-    } else if (nearbyDamage > 4 && attackTgt != null) {
-      dir = Pathfinder.getMoveDir(rc, attackTgt.location, prev5Spots);
+    } else if (nearbyDamage >= 4 && inVisionTgt != null) {
+      dir = Pathfinder.getMoveDir(rc, inVisionTgt.location, prev5Spots);
       MapLocation kitingTgt = src.add(dir);
       if (rc.senseRubble(kitingTgt) > rubbleThreshold) {
         dir = stallOnGoodRubble(rc);

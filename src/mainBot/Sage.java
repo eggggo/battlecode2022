@@ -6,30 +6,17 @@ import battlecode.common.*;
 public class Sage extends RobotPlayer{
     static int turnsAlive = 0;
     static int attackOffset = 0;
-    static MapLocation home = null;
     static MapLocation[] enemyArchons = null;
     static int attackLocation = 0;
     //Role: 2 for defense, 1 for attack, 0 for scout
     static int role;
     static MapLocation[] sectorMdpts = new MapLocation[49];
+    static MapLocation bestTgtSector = null;
+    static MapLocation closestFriendlyArchon = null;
+    static MapLocation scoutTgt = null;
+    static boolean notRepaired = false;
     static MapLocation[] prev5Spots = new MapLocation[5];
     static int currentOverrideIndex = 0;
-
-    static int getQuadrant(RobotController rc, int x, int y) {
-        int quad = 0;
-        if (x >= rc.getMapWidth() / 2 && y >= rc.getMapHeight() / 2) {
-            quad = 1;
-        } else if (x >= rc.getMapWidth() / 2 && y < rc.getMapHeight() / 2) {
-            quad = 4;
-        } else if (x < rc.getMapWidth() / 2 && y >= rc.getMapHeight() / 2) {
-            quad = 2;
-        } else if (x < rc.getMapWidth() / 2 && y < rc.getMapHeight() / 2) {
-            quad = 3;
-        } else {
-            System.out.println("Error: not in a quadrant");
-        }
-        return quad;
-    }
 
     static Direction stallOnGoodRubble(RobotController rc) throws GameActionException {
         MapLocation src = rc.getLocation();
@@ -63,17 +50,43 @@ public class Sage extends RobotPlayer{
         Team friendly = rc.getTeam();
         Team opponent = rc.getTeam().opponent();
         RobotInfo[] enemies = rc.senseNearbyRobots(senseRadius, opponent);
+        RobotInfo[] friendlies = rc.senseNearbyRobots(senseRadius, friendly);
         RobotInfo attackTgt = null;
         RobotInfo inVisionTgt = null;
         int unitHP = 0;
         int buildingHP = 0;
         int rubbleThreshold = rc.senseRubble(rc.getLocation()) + 20;
+        boolean frontline = true;
+        int nearbyDamage = 0;
+        int nearbyDamageHealth = 0;
 
         if (turnsAlive == 0) {
-            RobotInfo[] nearbyRobots = rc.senseNearbyRobots(senseRadius, friendly);
             for (int i = 48; i >= 0; i --) {
                 sectorMdpts[i] = Comms.sectorMidpt(rc, i);
             }
+            int scoutPattern = rc.readSharedArray(50) % 2;
+            if (scoutPattern == 0) {
+              scoutTgt = sectorMdpts[rng.nextInt(49)];
+            } else {
+              int designatedLoc = rng.nextInt(5);
+              switch (designatedLoc) {
+                  case 0:
+                      scoutTgt = new MapLocation(0, 0);
+                      break;
+                  case 1:
+                      scoutTgt = new MapLocation(rc.getMapWidth() - 1, 0);
+                      break;
+                  case 2:
+                      scoutTgt = new MapLocation(0, rc.getMapHeight() - 1);
+                      break;
+                  case 3:
+                      scoutTgt = new MapLocation(rc.getMapWidth() - 1, rc.getMapHeight() - 1);
+                      break;
+                  case 4:
+                      scoutTgt = new MapLocation(rc.getMapWidth()/2, rc.getMapHeight()/2);
+                      break;
+                  }
+              }
         }
 
         int lowestHPTgt = 9999;
@@ -123,63 +136,86 @@ public class Sage extends RobotPlayer{
             }
         }
 
+        //assess teammates
+        for (int i = friendlies.length - 1; i >= 0; i --) {
+            RobotInfo friend = friendlies[i];
+            if (isHostile(friend)) {
+                nearbyDamage ++;
+                nearbyDamageHealth += friend.getHealth();
+                if (frontline && attackTgt != null 
+                && friend.location.distanceSquaredTo(attackTgt.location) < src.distanceSquaredTo(attackTgt.location)) {
+                    frontline = false;
+                }
+            }
+        }
+        double averageHealth = (double)nearbyDamageHealth/nearbyDamage;
+
+            //comms access every 3rd turn for bytecode reduction
+        if (turnCount % 3 == 0 || turnsAlive == 0) {
+            bestTgtSector = null;
+            closestFriendlyArchon = null;
+            double highScore = 0;
+            for (int i = 48; i >= 0; i --) {
+                int homeArchon = Comms.readSectorInfo(rc, i, 0);
+                int enemyArchon = Comms.readSectorInfo(rc, i, 1);
+                int enemyInSector = Comms.readSectorInfo(rc, i, 3);
+                if (homeArchon == 1 && (closestFriendlyArchon == null 
+                || sectorMdpts[i].distanceSquaredTo(src) < closestFriendlyArchon.distanceSquaredTo(src))) {
+                    closestFriendlyArchon = sectorMdpts[i];
+                }
+                if (enemyArchon == 1 || enemyInSector > 0) {
+                    double currentScore = (10.0*enemyArchon + enemyInSector)/Math.sqrt(src.distanceSquaredTo(sectorMdpts[i]));
+                    if (currentScore > highScore) {
+                        bestTgtSector = sectorMdpts[i];
+                        highScore = currentScore;
+                    }
+                }
+            }
+        }
+
+        //if we reach full health then we are repaired
+        if (rc.getHealth() == RobotType.SOLDIER.getMaxHealth(rc.getLevel())/2) {
+            notRepaired = false;
+        }
+
+        //if you can see the scout target sector mdpt, randomize and go to somewhere else
+        if (src.distanceSquaredTo(scoutTgt) <= senseRadius) {
+            scoutTgt = sectorMdpts[rng.nextInt(49)];
+        }
 
         Direction dir = null;
-        if (rc.getHealth() < RobotType.SAGE.getMaxHealth(rc.getLevel()) / 5 && home != null) {
-            // If low health run home
-            dir = Pathfinder.getMoveDir(rc, home, prev5Spots);
-        } else if (inVisionTgt != null && isHostile(inVisionTgt) && !rc.isActionReady()) {
-            //if cant attack and see enemies run away
+        int repairThresh = (int)(15 + (-1.0*(Math.abs(src.x - closestFriendlyArchon.x) + Math.abs(src.y - closestFriendlyArchon.y)))/12);
+        if ((notRepaired || rc.getHealth() <= repairThresh) && src.distanceSquaredTo(closestFriendlyArchon) >= 3) {
+            dir = Pathfinder.getMoveDir(rc, closestFriendlyArchon, prev5Spots);
+            notRepaired = true;
+        //if mid hp comparatively or no cd, shuffle
+        } else if (inVisionTgt != null && ((frontline && rc.getHealth() < averageHealth && rc.getHealth() < 45 + repairThresh) 
+                || !rc.isActionReady())) {
             Direction opposite = src.directionTo(inVisionTgt.location).opposite();
             MapLocation runawayTgt = src.add(opposite).add(opposite);
-            runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1),
-                    Math.min(Math.max(0, runawayTgt.y), rc.getMapHeight() - 1));
+            runawayTgt = new MapLocation(Math.min(Math.max(0, runawayTgt.x), rc.getMapWidth() - 1), 
+            Math.min(Math.max(0, runawayTgt.y), rc.getMapHeight() - 1));
             dir = Pathfinder.getMoveDir(rc, runawayTgt, prev5Spots);
-        } else if (inVisionTgt != null){
-            //far, follow if we have cd up
-            if (src.distanceSquaredTo(inVisionTgt.location) > 14) {
-                dir = Pathfinder.getMoveDir(rc, inVisionTgt.location, prev5Spots);
-                int chaseSpotRubble = rc.senseRubble(src.add(dir));
-                if (chaseSpotRubble > rubbleThreshold && isHostile(inVisionTgt)) {
-                    dir = stallOnGoodRubble(rc);
-                }
-            } else {
+            MapLocation kitingTgt = src.add(dir);
+            if (rc.senseRubble(kitingTgt) > rubbleThreshold) {
                 dir = stallOnGoodRubble(rc);
             }
+        //if enough soldiers nearby advance to make space
+        } else if (inVisionTgt != null && (nearbyDamage >= 4 || src.distanceSquaredTo(inVisionTgt.location) > 14)) {
+            dir = Pathfinder.getMoveDir(rc, inVisionTgt.location, prev5Spots);
+            MapLocation kitingTgt = src.add(dir);
+            if (rc.senseRubble(kitingTgt) > rubbleThreshold) {
+                dir = stallOnGoodRubble(rc);
+            }
+        //otherwise if there is an enemy sector go to best scored one
+        } else if (bestTgtSector != null) {
+            dir = Pathfinder.getMoveDir(rc, bestTgtSector, prev5Spots);
+            if (src.distanceSquaredTo(bestTgtSector) < 50 && rc.senseRubble(src.add(dir)) > rubbleThreshold) {
+                dir = stallOnGoodRubble(rc);
+            }
+          //otherwise scout same as miner
         } else {
-            MapLocation closestEnemies = null;
-            MapLocation closestEnemyArchon = null;
-            int archonDistance = 9999;
-            MapLocation closestHomeArchon = null;
-            for (int i = 48; i >= 0; i--) {
-                MapLocation loc = sectorMdpts[i];
-                if (Comms.readSectorInfo(rc, i, 3) > 0 && (closestEnemies == null || closestEnemies.distanceSquaredTo(src) > src.distanceSquaredTo(loc))) {
-                    closestEnemies = loc;
-                }
-                if (Comms.readSectorInfo(rc, i, 1) == 1 && (closestEnemyArchon == null || closestEnemyArchon.distanceSquaredTo(src) > src.distanceSquaredTo(loc))) {
-                    closestEnemyArchon = loc;
-                }
-                if (Comms.readSectorInfo(rc, i, 0) == 1 && sectorMdpts[i].distanceSquaredTo(src) < archonDistance) {
-                    archonDistance = sectorMdpts[i].distanceSquaredTo(src);
-                    closestHomeArchon = sectorMdpts[i];
-                    home = closestEnemyArchon;
-                }
-            }
-            if (closestEnemies != null) {
-                dir = Pathfinder.getMoveDir(rc, closestEnemies, prev5Spots);
-                MapLocation togo = src.add(dir);
-                int rubble = rc.senseRubble(togo);
-                if (closestEnemies.distanceSquaredTo(src) < 100 && rubble > rubbleThreshold) {
-                    dir = stallOnGoodRubble(rc);
-                }
-            } else if (closestEnemyArchon != null) {
-                dir = Pathfinder.getMoveDir(rc, closestEnemyArchon, prev5Spots);
-                MapLocation togo = src.add(dir);
-                int rubble = rc.senseRubble(togo);
-                if (closestEnemyArchon.distanceSquaredTo(src) < 100 && rubble > rubbleThreshold) {
-                    dir = stallOnGoodRubble(rc);
-                }
-            }
+            dir = Pathfinder.getMoveDir(rc, scoutTgt, prev5Spots);
         }
 
         if (dir != null && rc.canMove(dir)) {

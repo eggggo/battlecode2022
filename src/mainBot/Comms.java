@@ -103,17 +103,16 @@ public class Comms {
                 break;
             }
             RobotInfo r = enemies[i];
-            if (r.location.x >= lowerX && r.location.x < lowerX + xSize && r.location.y >= lowerY && r.location.y < lowerY + ySize) {
-                if (r.getType() == RobotType.ARCHON) {
-                    enemyArchon = 1;
-                }
-                enemyCount ++;
-                if ((r.getType() == RobotType.SOLDIER || r.getType() == RobotType.WATCHTOWER)) {
-                            enemyCount += 4;
-                } else if (r.getType() == RobotType.SAGE) {
-                    enemyCount += 9;
-                }
+            if (r.getType() == RobotType.ARCHON) {
+                enemyArchon = 1;
             }
+            enemyCount ++;
+            if ((r.getType() == RobotType.SOLDIER || r.getType() == RobotType.WATCHTOWER)) {
+                enemyCount += 4;
+            } else if (r.getType() == RobotType.SAGE) {
+                enemyCount += 9;
+            }
+            
         }
         enemyCount = Math.min(31, enemyCount);
 

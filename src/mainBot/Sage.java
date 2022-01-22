@@ -14,6 +14,8 @@ public class Sage extends RobotPlayer{
     static MapLocation scoutTgt = null;
     static int turnsSinceSeenHostile = 0;
     static boolean notRepaired = false;
+    static MapLocation bestTgtSector = null;
+    static MapLocation closestFriendlyArchon = null;
 
     //set upon initialization
     static int senseRadius;
@@ -134,6 +136,27 @@ public class Sage extends RobotPlayer{
 
         }
 
+        //comms access every 3rd turn for bytecode reduction
+        if (turnCount % 3 == 0 || turnsAlive == 0) {
+            bestTgtSector = null;
+            double highScore = 0;
+            for (int i = 48; i >= 0; i --) {
+                int homeArchon = Comms.readSectorInfo(rc, i, 0);
+                int enemyArchon = Comms.readSectorInfo(rc, i, 1);
+                int enemyInSector = Comms.readSectorInfo(rc, i, 3);
+                if (homeArchon == 1 && (closestFriendlyArchon == null 
+                || sectorMdpts[i].distanceSquaredTo(src) < closestFriendlyArchon.distanceSquaredTo(src))) {
+                    closestFriendlyArchon = sectorMdpts[i];
+                }
+                if (enemyArchon == 1 || enemyInSector > 0) {
+                    double currentScore = (50.0*enemyArchon + enemyInSector)/Math.sqrt(src.distanceSquaredTo(sectorMdpts[i]));
+                    if (currentScore > highScore) {
+                        bestTgtSector = sectorMdpts[i];
+                    }
+                }
+            }
+        }
+
         //if you can see the scout target sector mdpt, randomize and go to somewhere else
         if (src.distanceSquaredTo(scoutTgt) <= senseRadius) {
             scoutTgt = sectorMdpts[rng.nextInt(49)];
@@ -146,9 +169,10 @@ public class Sage extends RobotPlayer{
 
         //Movement Code
         Direction dir = null;
-        if (notRepaired || rc.getHealth() < RobotType.SAGE.getMaxHealth(rc.getLevel()) / 5 && home != null) {
+        int repairThresh = (int)(15 + (-1.0*(Math.abs(src.x - closestFriendlyArchon.x) + Math.abs(src.y - closestFriendlyArchon.y)))/12);
+        if ((notRepaired || rc.getHealth() < repairThresh && closestFriendlyArchon != null)) {
             // If low health run home (for now its go suicide)
-            dir = Pathfinder.getMoveDir(rc, home);
+            dir = Pathfinder.getMoveDir(rc, closestFriendlyArchon);
             notRepaired = true;
         } else if (inVisionTgt != null && attackTgt != null && !rc.isActionReady()) {
             //enemy is in action radius, but no cooldown to attack
@@ -217,47 +241,12 @@ public class Sage extends RobotPlayer{
                     Math.min(Math.max(0, runawayTgt.y), rc.getMapHeight() - 1));
             dir = Pathfinder.getMoveDir(rc, runawayTgt);
 
+        } else if (bestTgtSector != null) {
+            dir = Pathfinder.getMoveDir(rc, bestTgtSector);
+          //otherwise scout same as miner
         } else {
-            //nothing in vision, inVisionTgt == null
-            MapLocation closestEnemies = null;
-            MapLocation closestEnemyArchon = null;
-            int archonDistance = 9999;
-            MapLocation closestHomeArchon = null;
-            for (int i = 48; i >= 0; i--) {
-              int homeArchon = Comms.readSectorInfo(rc, i, 0);
-              int enemyArchon = Comms.readSectorInfo(rc, i, 1);
-              int enemiesInSector = Comms.readSectorInfo(rc, i, 3);
-              MapLocation loc = sectorMdpts[i];
-              if (enemiesInSector > 0 && (closestEnemies == null || closestEnemies.distanceSquaredTo(src) > src.distanceSquaredTo(loc))) {
-                closestEnemies = loc;
-              }
-              if (enemyArchon == 1 && (closestEnemyArchon == null || closestEnemyArchon.distanceSquaredTo(src) > src.distanceSquaredTo(loc))) {
-                closestEnemyArchon = loc;
-              }
-              if (homeArchon == 1 && sectorMdpts[i].distanceSquaredTo(src) < archonDistance) {
-                archonDistance = sectorMdpts[i].distanceSquaredTo(src);
-                closestHomeArchon = sectorMdpts[i];
-                home = closestHomeArchon;
-              }
-            }
-            if (closestEnemies != null) {
-              dir = Pathfinder.getMoveDir(rc, closestEnemies);
-              MapLocation togo = src.add(dir);
-              int rubble = rc.senseRubble(togo);
-              if (closestEnemies.distanceSquaredTo(src) < 100 && rubble > rubbleThreshold) {
-                dir = stallOnGoodRubble(rc);
-              }
-            } else if (closestEnemyArchon != null) {
-              dir = Pathfinder.getMoveDir(rc, closestEnemyArchon);
-              MapLocation togo = src.add(dir);
-              int rubble = rc.senseRubble(togo);
-              if (closestEnemyArchon.distanceSquaredTo(src) < 100 && rubble > rubbleThreshold) {
-                dir = stallOnGoodRubble(rc);
-              }
-            } else {
-                dir = Pathfinder.getMoveDir(rc, scoutTgt);
-            }
-          }
+            dir = Pathfinder.getMoveDir(rc, scoutTgt);
+        }
 
         if (inVisionTgt != null && isHostile(inVisionTgt)) {
             turnsSinceSeenHostile = 0;

@@ -108,10 +108,10 @@ public class Comms {
                     enemyArchon = 1;
                 }
                 enemyCount ++;
-                if ((r.getType() == RobotType.SOLDIER
-                        || r.getType() == RobotType.SAGE
-                        || r.getType() == RobotType.WATCHTOWER)) {
+                if ((r.getType() == RobotType.SOLDIER || r.getType() == RobotType.WATCHTOWER)) {
                             enemyCount += 4;
+                } else if (r.getType() == RobotType.SAGE) {
+                    enemyCount += 9;
                 }
             }
         }

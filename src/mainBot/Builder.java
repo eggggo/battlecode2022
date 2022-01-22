@@ -129,19 +129,19 @@ public class Builder extends RobotPlayer {
         for (int i = nearbyRobots.length - 1; i >= 0; i--) {
             RobotInfo unit = nearbyRobots[i];
             if (unit.getMode() == RobotMode.PROTOTYPE && (nearestPrototype == null 
-            || nearestPrototype.location.distanceSquaredTo(src) > unit.location.distanceSquaredTo(src))) {
+            || nearestPrototype.getHealth() > unit.getHealth())) {
                 nearestPrototype = unit;
             } else if (unit.getType() == RobotType.WATCHTOWER 
-            && (nearestWt == null || rc.getLocation().distanceSquaredTo(unit.getLocation()) < nearestWt.location.distanceSquaredTo(src))) {
+            && (nearestWt == null || unit.getHealth() < nearestWt.getHealth())) {
                 nearestWt = unit;
             } else if (unit.getType() == RobotType.LABORATORY) { 
-                if (nearestLab == null || rc.getLocation().distanceSquaredTo(unit.getLocation()) < nearestLab.location.distanceSquaredTo(src)) {
+                if (nearestLab == null || unit.getHealth() < nearestLab.getHealth()) {
                     nearestLab = unit;
                 }
                 awayFromLabX += src.directionTo(unit.location).opposite().dx;
                 awayFromLabY += src.directionTo(unit.location).opposite().dy;
             } else if (unit.getType() == RobotType.ARCHON && (nearestArchon == null 
-            || nearestArchon.location.distanceSquaredTo(src) > unit.location.distanceSquaredTo(src))) {
+            || nearestArchon.getHealth() > unit.getHealth())) {
                 nearestArchon = unit;
             }
         }
@@ -206,6 +206,7 @@ public class Builder extends RobotPlayer {
             dir = Pathfinder.getMoveDir(rc, inBounds);
         //if we want to build a wt run towards enemies
         } else if (buildWt && bestTgtSector != null) {
+            rc.setIndicatorString("build wt");
             if (src.distanceSquaredTo(bestTgtSector) < 150) {
                 dir = stallDir;
             } else {
@@ -213,8 +214,18 @@ public class Builder extends RobotPlayer {
             }
         //else, default behavior, currently same as running from civilization to build labs
         } else {
-            if (src.distanceSquaredTo(nearestFriendlyArchon) > 5) {
-                dir = Pathfinder.getMoveDir(rc, nearestFriendlyArchon);
+            MapLocation tgt = null;
+            if (awayFromLabX == 0 && awayFromLabY == 0) {
+                tgt = src.translate(3*awayFromEnemies.dx, 3*awayFromEnemies.dy);
+            } else {
+                tgt = src.translate(3*awayFromLabX, 3*awayFromLabY);
+            }
+            MapLocation inBounds = new MapLocation(Math.min(Math.max(0, tgt.x), rc.getMapWidth() - 1), 
+                Math.min(Math.max(0, tgt.y), rc.getMapHeight() - 1));
+            if (inBounds.equals(src)) {
+                dir = Direction.values()[rng.nextInt(9)];
+            } else {
+                dir = Pathfinder.getMoveDir(rc, inBounds);
             }
         }
 

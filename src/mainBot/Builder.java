@@ -16,6 +16,7 @@ public class Builder extends RobotPlayer {
     static int labCount = 0;
     static int currentIncome = 0;
     static MapLocation bestTgtSector = null;
+    static MapLocation nearestFriendlyArchon = null;
 
     static Direction stallOnGoodRubble(RobotController rc) throws GameActionException {
         MapLocation src = rc.getLocation();
@@ -102,14 +103,23 @@ public class Builder extends RobotPlayer {
         //comms access every other turn for bytecode reduction
         if (turnCount % 3 == 0 || turnsAlive == 0) {
             bestTgtSector = null;
+            nearestFriendlyArchon = null;
             double highScore = 0;
             for (int i = 48; i >= 0; i --) {
                 int enemyArchon = Comms.readSectorInfo(rc, i, 1);
                 int enemyScore = Comms.readSectorInfo(rc, i, 3);
+                int homeArchon = Comms.readSectorInfo(rc, i, 0);
+                MapLocation mdpt = sectorMdpts[i];
                 if (enemyArchon > 0 || enemyScore > 0) {
-                    double currentScore = (50.0*enemyArchon + enemyScore)/Math.sqrt(src.distanceSquaredTo(sectorMdpts[i]));
+                    double currentScore = (50.0*enemyArchon + enemyScore)/Math.sqrt(src.distanceSquaredTo(mdpt));
                     if (currentScore > highScore) {
-                        bestTgtSector = sectorMdpts[i];
+                        bestTgtSector = mdpt;
+                    }
+                }
+                if (homeArchon > 0) {
+                    if (nearestFriendlyArchon == null || 
+                    mdpt.distanceSquaredTo(src) < src.distanceSquaredTo(nearestFriendlyArchon)) {
+                        nearestFriendlyArchon = mdpt;
                     }
                 }
             }
@@ -128,8 +138,8 @@ public class Builder extends RobotPlayer {
                 if (nearestLab == null || rc.getLocation().distanceSquaredTo(unit.getLocation()) < nearestLab.location.distanceSquaredTo(src)) {
                     nearestLab = unit;
                 }
-                awayFromLabX += 2*src.directionTo(unit.location).opposite().dx;
-                awayFromLabY += 2*src.directionTo(unit.location).opposite().dy;
+                awayFromLabX += src.directionTo(unit.location).opposite().dx;
+                awayFromLabY += src.directionTo(unit.location).opposite().dy;
             } else if (unit.getType() == RobotType.ARCHON && (nearestArchon == null 
             || nearestArchon.location.distanceSquaredTo(src) > unit.location.distanceSquaredTo(src))) {
                 nearestArchon = unit;
@@ -162,6 +172,8 @@ public class Builder extends RobotPlayer {
         if (nearestPrototype != null) {
             if (!(src.distanceSquaredTo(nearestPrototype.location) <= 5 && stallDir == Direction.CENTER)) {
                 dir = Pathfinder.getMoveDir(rc, nearestPrototype.location);
+            } else {
+                dir = stallDir;
             }
         //if watchtower nearby follow it to battle
         } else if (nearestWt != null && src.distanceSquaredTo(nearestWt.location) > 5) {
@@ -177,10 +189,17 @@ public class Builder extends RobotPlayer {
         } else if (nearestArchon != null && nearestArchon.getHealth() < nearestArchon.getType().getMaxHealth(nearestArchon.level)) {
             if (!(src.distanceSquaredTo(nearestArchon.location) <= 5 && stallDir == Direction.CENTER)) {
                 dir = Pathfinder.getMoveDir(rc, nearestArchon.location);
+            } else {
+                dir = stallDir;
             }
         //if we want to build a lab run away from civilization
         } else if (buildLab) {
-            MapLocation tgt = src.translate(awayFromLabX + 2*awayFromEnemies.dx, awayFromLabY + 2*awayFromEnemies.dy);
+            MapLocation tgt = null;
+            if (awayFromLabX == 0 && awayFromLabY == 0) {
+                tgt = src.translate(3*awayFromEnemies.dx, 3*awayFromEnemies.dy);
+            } else {
+                tgt = src.translate(3*awayFromLabX, 3*awayFromLabY);
+            }
             MapLocation inBounds = new MapLocation(Math.min(Math.max(0, tgt.x), rc.getMapWidth() - 1), 
                 Math.min(Math.max(0, tgt.y), rc.getMapHeight() - 1));
             dir = Pathfinder.getMoveDir(rc, inBounds);
@@ -193,10 +212,9 @@ public class Builder extends RobotPlayer {
             }
         //else, default behavior, currently same as running from civilization to build labs
         } else {
-            MapLocation tgt = src.translate(awayFromLabX, awayFromLabY);
-            MapLocation inBounds = new MapLocation(Math.min(Math.max(0, tgt.x), rc.getMapWidth() - 1), 
-                Math.min(Math.max(0, tgt.y), rc.getMapHeight() - 1));
-            dir = Pathfinder.getMoveDir(rc, inBounds);
+            if (src.distanceSquaredTo(nearestFriendlyArchon) > 5) {
+                dir = Pathfinder.getMoveDir(rc, nearestFriendlyArchon);
+            }
         }
 
 

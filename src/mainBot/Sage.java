@@ -140,7 +140,7 @@ public class Sage extends RobotPlayer{
         }
 
         //if we reach full health then we are repaired
-        if (rc.getHealth() == RobotType.SAGE.getMaxHealth(rc.getLevel())/2) {
+        if (rc.getHealth() >= RobotType.SAGE.getMaxHealth(rc.getLevel()) * 0.75) {
             notRepaired = false;
         }
 
@@ -161,8 +161,12 @@ public class Sage extends RobotPlayer{
                 dir = Pathfinder.getMoveDir(rc, runawayTgt);
             }
             else {
-                //not hostile and we have low action cooldown, so stay but find good rubble
-                dir = stallOnGoodRubble(rc);
+                //not hostile and we have low action cooldown, so chase
+                dir = Pathfinder.getMoveDir(rc, inVisionTgt.location);
+                int chaseSpotRubble = rc.senseRubble(src.add(dir));
+                if (chaseSpotRubble > rubbleThreshold && isHostile(inVisionTgt)) {
+                    dir = stallOnGoodRubble(rc);
+                }
             }
         } else if (inVisionTgt != null && attackTgt != null && rc.isActionReady()) {
             //enemy is in action radius, and we do have cooldown to attack
@@ -261,7 +265,7 @@ public class Sage extends RobotPlayer{
             turnsSinceSeenHostile++;
         }
 
-        if(turnsSinceSeenHostile < 3 && rc.senseRubble(src.add(dir)) > 75){
+        if(turnsSinceSeenHostile < 2 && rc.senseRubble(src.add(dir)) > 75){
             dir = stallOnGoodRubble(rc);
         }
 

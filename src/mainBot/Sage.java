@@ -230,6 +230,7 @@ public class Sage extends RobotPlayer{
         //post move attack if available
         if (rc.isActionReady()) {
             attackTgt = null;
+            src = rc.getLocation();
             enemies = rc.senseNearbyRobots(senseRadius, opponent);
             lowestHPTgt = 9999;
             buildingHP = 0;

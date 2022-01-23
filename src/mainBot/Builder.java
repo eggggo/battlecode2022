@@ -215,16 +215,21 @@ public class Builder extends RobotPlayer {
             } else {
                 dir = Pathfinder.getMoveDir(rc, bestTgtSector, prev5Spots);
             }
+        }
+        //If you've built your lab, start following the nearest friendly archon
+        else if (nearestFriendlyArchon != null && src.distanceSquaredTo(nearestFriendlyArchon) > 15 && laboratoriesBuilt > 0) {
+            dir = Pathfinder.getMoveDir(rc, nearestFriendlyArchon, prev5Spots);
+        }
         //else, default behavior, currently same as running from civilization to build labs
-        } else {
+        else {
             MapLocation tgt = null;
             if (awayFromLabX == 0 && awayFromLabY == 0) {
                 tgt = src.translate(3*awayFromEnemies.dx, 3*awayFromEnemies.dy);
             } else {
                 tgt = src.translate(3*awayFromLabX, 3*awayFromLabY);
             }
-            MapLocation inBounds = new MapLocation(Math.min(Math.max(0, tgt.x), rc.getMapWidth() - 1), 
-                Math.min(Math.max(0, tgt.y), rc.getMapHeight() - 1));
+            MapLocation inBounds = new MapLocation(Math.min(Math.max(0, tgt.x), rc.getMapWidth() - 1),
+                    Math.min(Math.max(0, tgt.y), rc.getMapHeight() - 1));
             if (inBounds.equals(src)) {
                 dir = Direction.values()[rng.nextInt(9)];
             } else {

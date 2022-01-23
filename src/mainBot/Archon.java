@@ -302,22 +302,24 @@ public class Archon extends RobotPlayer {
             }
         }
 
-        if (nearestPatch != null) {
-            Direction[] possDirections = new Direction[3];
-            possDirections[2] = rc.getLocation().directionTo(nearestPatch);
-            possDirections[1] = possDirections[2].rotateLeft();
-            possDirections[0] = possDirections[2].rotateRight();
-            int minRubble = Integer.MAX_VALUE;
-            for (int i = possDirections.length - 1; i>= 0; i--) {
-                MapLocation tempLoc = src.add(possDirections[i]);
-                int rubbleAtDir = rc.senseRubble(tempLoc);
-                if (rc.onTheMap(tempLoc) && rc.senseRobotAtLocation(tempLoc) == null && rubbleAtDir < minRubble) {
-                    minRubble = rubbleAtDir;
-                    dir = possDirections[i];
-                }
-            }
+//        if (nearestPatch != null) {
+//            Direction[] possDirections = new Direction[3];
+//            possDirections[2] = rc.getLocation().directionTo(nearestPatch);
+//            possDirections[1] = possDirections[2].rotateLeft();
+//            possDirections[0] = possDirections[2].rotateRight();
+//            int minRubble = Integer.MAX_VALUE;
+//            for (int i = possDirections.length - 1; i>= 0; i--) {
+//                MapLocation tempLoc = src.add(possDirections[i]);
+//                int rubbleAtDir = rc.senseRubble(tempLoc);
+//                if (rc.onTheMap(tempLoc) && rc.senseRobotAtLocation(tempLoc) == null && rubbleAtDir < minRubble) {
+//                    minRubble = rubbleAtDir;
+//                    dir = possDirections[i];
+//                }
+//            }
+//        }
+        if (nearestPatch != null && rc.onTheMap(nearestPatch) && rc.senseRobotAtLocation(nearestPatch) == null) {
+            dir = rc.getLocation().directionTo(nearestPatch);
         }
-
 
         //Initiallizing shouldBuildSoldier as false.  The following code ensures that the closest archon to combat
         // produces soldiers.  The exception is that every 4 soldiers, the farthest archon to combat creates a soldier

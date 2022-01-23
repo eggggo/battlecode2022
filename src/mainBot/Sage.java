@@ -221,6 +221,7 @@ public class Sage extends RobotPlayer{
             dir = Pathfinder.getMoveDir(rc, scoutTgt, prev5Spots);
         }
 
+        //determine whether to attack here or after moving
         if (dir != null && rc.canMove(dir)) {
             rc.move(dir);
             prev5Spots[currentOverrideIndex] = rc.getLocation();
@@ -228,7 +229,7 @@ public class Sage extends RobotPlayer{
         }
 
         //post move attack if available
-        if (rc.isActionReady()) {
+        if (rc.isActionReady() ) { //&& rc.senseRubble(rc.getLocation()) < rubbleThreshold) {
             attackTgt = null;
             src = rc.getLocation();
             enemies = rc.senseNearbyRobots(senseRadius, opponent);

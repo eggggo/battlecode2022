@@ -232,6 +232,8 @@ public class Sage extends RobotPlayer{
             attackTgt = null;
             enemies = rc.senseNearbyRobots(senseRadius, opponent);
             lowestHPTgt = 9999;
+            buildingHP = 0;
+            unitHP = 0;
             if (enemies.length > 0) {
             for (int i = enemies.length - 1; i >= 0; i --) {
                 RobotInfo enemy = enemies[i];

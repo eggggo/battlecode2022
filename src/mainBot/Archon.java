@@ -496,6 +496,7 @@ public class Archon extends RobotPlayer {
                 if (woundedWarrior == null) {
                     woundedWarrior = unit;
                 } else if (isHostile(woundedWarrior))  {
+                    //note: woundedWarrior could be a watchtower which would be a bug if we built watchtowers
                     if (isHostile(unit) && unit.getHealth() < woundedWarrior.health) {
                         woundedWarrior = unit;
                     }

@@ -17,7 +17,7 @@ public class Laboratory extends RobotPlayer {
         double thresh = Math.sqrt(mapArea);
 
         //If you can make gold, make it
-        if (rc.canTransmute() && minerCount >= minMiners) {
+        if (rc.canTransmute() && (minerCount >= minMiners || minerCount >= 90)) {
             rc.setIndicatorString("1");
             rc.transmute();
         }

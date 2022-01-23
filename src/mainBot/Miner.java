@@ -217,7 +217,11 @@ public class Miner extends RobotPlayer {
         MapLocation vectorTgt = src.translate(4*xVector, 4*yVector);
         MapLocation inBounds = new MapLocation(Math.min(Math.max(0, vectorTgt.x), rc.getMapWidth() - 1), 
             Math.min(Math.max(0, vectorTgt.y), rc.getMapHeight() - 1));
-        dir = Pathfinder.getMoveDir(rc, inBounds, prev5Spots);
+        if (resources != null && src.distanceSquaredTo(resources) <= 8) {
+            dir = src.directionTo(resources);
+        } else {
+            dir = Pathfinder.getMoveDir(rc, inBounds, prev5Spots);
+        }
 
         if (rc.canMove(dir)) {
             rc.move(dir);

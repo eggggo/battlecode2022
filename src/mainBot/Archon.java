@@ -565,7 +565,7 @@ public class Archon extends RobotPlayer {
 
         //System.out.println(bestTgtSector);
         if (firstEnemySeen && rc.readSharedArray(58) == 0 && rc.getMode() == RobotMode.TURRET && bestTgtSector != null &&
-                rc.getLocation().distanceSquaredTo(bestTgtSector) >= 200 && rc.getTeamLeadAmount(rc.getTeam()) < 350 && shouldBuildLab) {
+                rc.getLocation().distanceSquaredTo(bestTgtSector) >= 100 && rc.getTeamLeadAmount(rc.getTeam()) < 350 && shouldBuildLab) {
             if (rc.canTransform()) {
                 rc.setIndicatorString("Turret to Port");
                 rc.transform();
@@ -573,7 +573,7 @@ public class Archon extends RobotPlayer {
             }
         }
         else if (rc.getMode() == RobotMode.PORTABLE && rc.canTransform() &&
-                (rc.getLocation().distanceSquaredTo(bestTgtSector) < 200 || rc.getTeamLeadAmount(rc.getTeam()) >=350)
+                (rc.getLocation().distanceSquaredTo(bestTgtSector) < 100 || rc.getTeamLeadAmount(rc.getTeam()) >=350)
                 && stallDir == Direction.CENTER && rc.senseRubble(src) <= rubbleThreshold) {
             if (rc.canTransform()) {
                 rc.setIndicatorString("Port to Turrent");

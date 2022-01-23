@@ -124,7 +124,7 @@ public class Comms {
             }
             MapLocation loc = nearbyGold[i];
             if (loc.x >= lowerX && loc.x < lowerX + xSize && loc.y >= lowerY && loc.y < lowerY + ySize) {
-                resourceCount += 5*rc.senseGold(loc);
+                resourceCount += 10;
             }
         }
         for (int i = nearbyLead.length - 1; i >= 0; i --) {

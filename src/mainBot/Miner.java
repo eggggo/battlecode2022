@@ -14,6 +14,8 @@ public class Miner extends RobotPlayer {
     static MapLocation bestOOVResource = null;
     static MapLocation[] prev5Spots = new MapLocation[5];
     static int currentOverrideIndex = 0;
+    static MapLocation checkpointLoc = null;
+    static int moveNum = 0;
 
     /**
      * Run a single turn for a Miner.
@@ -104,8 +106,8 @@ public class Miner extends RobotPlayer {
                     nearestFriendlyArchon = sectorMdpt;
                 }
                 if (resourceInSector > 0) {
-                    double score = (resourceInSector - enemiesInSector)/Math.max(1, Math.sqrt(src.distanceSquaredTo(sectorMdpt)));
-                    if (score > bestResource && score >= 0.6) {
+                    double score = (resourceInSector - enemiesInSector)/Math.max(1, src.distanceSquaredTo(sectorMdpt));
+                    if (score > bestResource && score >= 0.03) {
                         bestResource = score;
                         bestOOVResource = sectorMdpt;
                     }
@@ -187,46 +189,56 @@ public class Miner extends RobotPlayer {
             scoutTgt = sectorMdpts[rng.nextInt(49)];
         }
 
-        //movement action loop, vectors for avoiding enemies
-        int xVector = 0;
-        int yVector = 0;
-        //if good nearby resources go there
-        if (resources != null) {
-            dir = src.directionTo(resources);
-            rc.setIndicatorString("res: " + resources);
-        //if good comms nearby resources go there
-        } else if (bestOOVResource != null) {
-            dir = src.directionTo(bestOOVResource);
-            rc.setIndicatorString("oovres: " + bestOOVResource);
-        //else, go to scout location
-        } else {
-            dir = src.directionTo(scoutTgt);
-            rc.setIndicatorString("scout: " + scoutTgt);
-        }
-        xVector += dir.dx;
-        yVector += dir.dy;
-        
-        //adding away from attacker vector
-        if (closestAttacker != null) {
-            Direction awayAttacker = src.directionTo(closestAttacker).opposite();
-            prev5Spots = new MapLocation[5];
-            xVector += 2*awayAttacker.dx;
-            yVector += 2*awayAttacker.dy;
-        }
+        if (rc.isMovementReady()) {
+            //movement action loop, vectors for avoiding enemies
+            int xVector = 0;
+            int yVector = 0;
+            //if good nearby resources go there
+            if (resources != null) {
+                dir = src.directionTo(resources);
+                rc.setIndicatorString("res: " + resources);
+            //if good comms nearby resources go there
+            } else if (bestOOVResource != null) {
+                dir = src.directionTo(bestOOVResource);
+                rc.setIndicatorString("oovres: " + bestOOVResource);
+            //else, go to scout location
+            } else {
+                dir = src.directionTo(scoutTgt);
+                rc.setIndicatorString("scout: " + scoutTgt);
+            }
+            xVector += dir.dx;
+            yVector += dir.dy;
+            
+            //adding away from attacker vector
+            if (closestAttacker != null) {
+                Direction awayAttacker = src.directionTo(closestAttacker).opposite();
+                prev5Spots = new MapLocation[5];
+                xVector += 2*awayAttacker.dx;
+                yVector += 2*awayAttacker.dy;
+            }
 
-        MapLocation vectorTgt = src.translate(4*xVector, 4*yVector);
-        MapLocation inBounds = new MapLocation(Math.min(Math.max(0, vectorTgt.x), rc.getMapWidth() - 1), 
-            Math.min(Math.max(0, vectorTgt.y), rc.getMapHeight() - 1));
-        if (resources != null && src.distanceSquaredTo(resources) <= 8) {
-            dir = src.directionTo(resources);
-        } else {
-            dir = Pathfinder.getMoveDir(rc, inBounds, prev5Spots);
-        }
+            MapLocation vectorTgt = src.translate(4*xVector, 4*yVector);
+            MapLocation inBounds = new MapLocation(Math.min(Math.max(0, vectorTgt.x), rc.getMapWidth() - 1), 
+                Math.min(Math.max(0, vectorTgt.y), rc.getMapHeight() - 1));
 
-        if (rc.canMove(dir)) {
-            rc.move(dir);
-            prev5Spots[currentOverrideIndex] = rc.getLocation();
-            currentOverrideIndex  = (currentOverrideIndex + 1) % 5;
+            if ((checkpointLoc != null && src.distanceSquaredTo(checkpointLoc) <= 8 && moveNum % 10 == 0) 
+                || (resources != null && src.distanceSquaredTo(resources) <= 8)) {
+                rc.setIndicatorString("direct to: " + inBounds);
+                dir = src.directionTo(inBounds);
+            } else {
+                dir = Pathfinder.getMoveDir(rc, inBounds, prev5Spots);
+            }
+
+            if (moveNum % 10 == 0) {
+                checkpointLoc = rc.getLocation();
+            }
+
+            if (rc.canMove(dir)) {
+                rc.move(dir);
+                moveNum ++;
+                prev5Spots[currentOverrideIndex] = rc.getLocation();
+                currentOverrideIndex  = (currentOverrideIndex + 1) % 5;
+            }
         }
 
         //Comms stuff

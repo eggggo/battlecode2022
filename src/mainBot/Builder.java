@@ -8,7 +8,6 @@ public class Builder extends RobotPlayer {
     static int watchtowersBuilt = 0;
     static int turnsAlive = 0;
     static MapLocation[] sectorMdpts = new MapLocation[49];
-    static boolean firstEnemySeen = false;
     static Direction awayFromEnemies = null;
     static int sageCount = 0;
     static int wtCount = 0;
@@ -58,15 +57,6 @@ public class Builder extends RobotPlayer {
         RobotInfo nearestPrototype = null;
         int awayFromLabX = 0;
         int awayFromLabY = 0;
-
-        if (!firstEnemySeen) {
-            for (int i = 48; i >= 0; i--) {
-                if (Comms.readSectorInfo(rc, i, 3) > 0) {
-                    firstEnemySeen = true;
-                    break;
-                }
-            }
-        }
 
         int initLabCount = 1;
 
@@ -166,7 +156,7 @@ public class Builder extends RobotPlayer {
         }
 
         boolean buildLab = laboratoriesBuilt == 0 && ((minerCount / 10 + initLabCount > labCount)
-                || (rc.getTeamLeadAmount(rc.getTeam()) >= 180 && !(sageCount > (15 * Math.max(1, wtCount)))));
+                || (rc.getTeamLeadAmount(rc.getTeam()) >= 180));
         boolean buildWt = (sageCount > (15 * (wtCount+1))) && (watchtowersBuilt < 3);
         buildWt = false;
 

@@ -39,7 +39,7 @@ public class Soldier extends RobotPlayer {
   }
 
   static boolean chaseable(RobotInfo unit) {
-    return !(unit.getType() == RobotType.SOLDIER || unit.getType() == RobotType.WATCHTOWER);
+    return !(unit.getType() == RobotType.SOLDIER || unit.getType() == RobotType.WATCHTOWER || unit.getType() == RobotType.SAGE);
   }
 
   /**

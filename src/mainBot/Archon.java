@@ -29,6 +29,7 @@ public class Archon extends RobotPlayer {
     static MapLocation[] prev5Spots = new MapLocation[5];
     static int currentOverrideIndex = 0;
     static int turnsOutOfRange = 31;
+    static int transitionTurn = 0;
 
     static Direction stallOnGoodRubble(RobotController rc) throws GameActionException {
         MapLocation src = rc.getLocation();
@@ -516,8 +517,17 @@ public class Archon extends RobotPlayer {
             rc.writeSharedArray(55, (rc.readSharedArray(55) & 0b1111111));
         }
 
-        if (mapArea < 1225) {
-            initialMiners = 6;
+        if (rc.getMapHeight() * 2.5 <= rc.getMapWidth() || rc.getMapWidth() * 2.5 <= rc.getMapHeight()) {
+            transitionTurn = 375;
+            if (soldierCount > 2 * rc.getArchonCount()) {
+                transitionTurn = 0;
+            }
+        } else if (mapArea < 1225 && rc.getArchonCount() < 3) {
+            transitionTurn = 375;
+        }
+
+        if (turnCount < transitionTurn) {
+            int initialSoldiers = rc.getArchonCount() * 2;
             if (firstEnemySeen && rc.readSharedArray(58) == 0 && rc.getMode() == RobotMode.TURRET && bestTgtSector != null &&
                     rc.getLocation().distanceSquaredTo(bestTgtSector) >= distAwayFromEnemy && rc.getTeamLeadAmount(rc.getTeam()) < 350 && shouldBuildLab && turnsOutOfRange > 30) {
                 if (rc.canTransform()) {
@@ -548,7 +558,7 @@ public class Archon extends RobotPlayer {
                         rc.buildRobot(RobotType.MINER, dir);
                         minersBuilt++;
                     }
-                } else if (soldierCount < 4) {
+                } else if (soldierCount < initialSoldiers) {
                     rc.setIndicatorString("soldier");
                     if (shouldBuildSoldier && rc.canBuildRobot(RobotType.SOLDIER, dir)) {
                         rc.setIndicatorString("1");

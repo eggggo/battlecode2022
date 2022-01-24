@@ -142,7 +142,7 @@ public class Sage extends RobotPlayer{
                     frontline = false;
                 }
             }
-            if (isBuilding(friend)) {
+            if (src.distanceSquaredTo(friend.getLocation()) <= RobotType.SAGE.actionRadiusSquared && isBuilding(friend)) {
                 buildingHP -= friend.getType().getMaxHealth(friend.level);
             }
         }
@@ -216,6 +216,41 @@ public class Sage extends RobotPlayer{
         } else {
             dir = Pathfinder.getMoveDir(rc, scoutTgt, prev5Spots);
         }
+
+
+        //move-attack or attack-move decision making calculations
+        if(rc.isActionReady()) {
+            MapLocation togo = src.add(dir);
+            RobotInfo[] enemies2 = rc.senseNearbyRobots(togo, senseRadius, opponent);
+            int buildingHP2 = 0;
+            int unitHP2 = 0;
+            if (enemies2.length > 0) {
+                for (int i = enemies2.length - 1; i >= 0; i--) {
+                    RobotInfo enemy = enemies2[i];
+                    if (enemy.getLocation().distanceSquaredTo(togo) <= radius) {
+                        if ((enemy.getType() == RobotType.ARCHON || enemy.getType() == RobotType.WATCHTOWER || enemy.getType() == RobotType.LABORATORY)) {
+                            if (enemy.getMode() == RobotMode.TURRET) {
+                                buildingHP2 += enemy.getType().getMaxHealth(enemy.getLevel());
+                            }
+                        } else {
+                            unitHP2 += enemy.getType().getMaxHealth(1);
+                        }
+                    }
+                }
+            }
+
+            if (rc.senseRubble(src) < rc.senseRubble(togo) && unitHP > unitHP2) {
+                if (AnomalyType.CHARGE.sagePercentage * unitHP >= RobotType.SAGE.getDamage(1)
+                        && rc.canEnvision(AnomalyType.CHARGE)) {
+                    rc.envision(AnomalyType.CHARGE);
+                }
+            }
+            else if (rc.senseRubble(src) < rc.senseRubble(togo) && buildingHP > buildingHP2){
+
+            }
+        }
+
+
 
         //maximize damage done
         if ( AnomalyType.CHARGE.sagePercentage * unitHP >= RobotType.SAGE.getDamage(1)

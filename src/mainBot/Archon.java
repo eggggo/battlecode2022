@@ -504,6 +504,7 @@ public class Archon extends RobotPlayer {
         }
 
         int distAwayFromEnemy = 100;
+        int minerLabRatio = 10;
 
         if (bestTgtSector != null && rc.getLocation().distanceSquaredTo(bestTgtSector) >= distAwayFromEnemy) {
             turnsOutOfRange++;
@@ -517,7 +518,7 @@ public class Archon extends RobotPlayer {
             rc.writeSharedArray(55, (rc.readSharedArray(55) & 0b1111111));
         }
 
-        if (rc.getMapHeight() * 1.5 <= rc.getMapWidth() || rc.getMapWidth() * 1.5 <= rc.getMapHeight()) {
+        if (rc.getMapHeight() * 1.75 <= rc.getMapWidth() || rc.getMapWidth() * 1.75 <= rc.getMapHeight()) {
             transitionTurn = 375;
             if (soldierCount > 2 * rc.getArchonCount()) {
                 transitionTurn = 0;
@@ -526,6 +527,7 @@ public class Archon extends RobotPlayer {
             transitionTurn = 375;
         }
 
+        System.out.println(transitionTurn);
         if (turnCount < transitionTurn) {
             int initialSoldiers = rc.getArchonCount() * 2;
             if (firstEnemySeen && rc.readSharedArray(58) == 0 && rc.getMode() == RobotMode.TURRET && bestTgtSector != null &&
@@ -565,7 +567,7 @@ public class Archon extends RobotPlayer {
                         rc.buildRobot(RobotType.SOLDIER, dir);
                         soldiersBuilt++;
                     }
-                } else if ((builderCount == 0 || (minerCount / 10 + initLabCount > builderCount &&
+                } else if ((builderCount == 0 || (minerCount / minerLabRatio + initLabCount > builderCount &&
                         (minerCount / minerBuilderRatio > builderCount && rc.getTeamGoldAmount(rc.getTeam()) > 0)) ||
                         rc.getTeamLeadAmount(rc.getTeam()) >= 350) && shouldBuildLab) {
                     rc.setIndicatorString("4");
@@ -576,7 +578,7 @@ public class Archon extends RobotPlayer {
                         minersBuiltInARow = 0;
                         buildersBuiltInARow++;
                         builtBuilderRecently = true;
-                        if ((minerCount / 10 + initLabCount > builderCount || builderCount == 0)) {
+                        if ((minerCount / minerLabRatio + initLabCount > builderCount || builderCount == 0)) {
                             rc.writeSharedArray(55, (rc.readSharedArray(55) | 0b10000000));
                         }
                     }
@@ -649,7 +651,7 @@ public class Archon extends RobotPlayer {
                         rc.buildRobot(RobotType.MINER, dir);
                         minersBuilt++;
                     }
-                } else if ((builderCount == 0 || (minerCount / 10 + initLabCount > builderCount &&
+                } else if ((builderCount == 0 || (minerCount / minerLabRatio + initLabCount > builderCount &&
                         (minerCount / minerBuilderRatio > builderCount && rc.getTeamGoldAmount(rc.getTeam()) > 0)) ||
                         rc.getTeamLeadAmount(rc.getTeam()) >= 350) && shouldBuildLab) {
                     rc.setIndicatorString("4");
@@ -660,7 +662,7 @@ public class Archon extends RobotPlayer {
                         minersBuiltInARow = 0;
                         buildersBuiltInARow++;
                         builtBuilderRecently = true;
-                        if ((minerCount / 10 + initLabCount > builderCount || builderCount == 0)) {
+                        if ((minerCount / minerLabRatio + initLabCount > builderCount || builderCount == 0)) {
                             rc.writeSharedArray(55, (rc.readSharedArray(55) | 0b10000000));
                         }
                     }

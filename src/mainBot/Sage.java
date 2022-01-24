@@ -260,22 +260,18 @@ public class Sage extends RobotPlayer{
         //maximize damage done
         if ((AnomalyType.CHARGE.sagePercentage * unitHP >= RobotType.SAGE.getDamage(1) || unitsKilled > 1)
                 && rc.canEnvision(AnomalyType.CHARGE)) {
-            if((unitHP2 >= unitHP && unitsKilled2 >= unitsKilled) && rc.senseRubble(src) >= rc.senseRubble(togo)){
-            }
-            else{
+            if (rc.senseRubble(togo) > rc.senseRubble(src) || (unitsKilled > unitsKilled2
+             || (unitsKilled == unitsKilled2 && unitHP > unitHP2))) {
                 rc.envision(AnomalyType.CHARGE);
             }
         } else if ((AnomalyType.FURY.sagePercentage * buildingHP >= 60 || buildingsKilled > 0)
                 && rc.canEnvision(AnomalyType.FURY)) {
-            if((buildingHP2 >= buildingHP && buildingsKilled2 >= buildingsKilled) && rc.senseRubble(src) >= rc.senseRubble(togo)){
-            }
-            else{
+            if (rc.senseRubble(togo) > rc.senseRubble(src) || (buildingsKilled > buildingsKilled2
+            || (buildingsKilled == buildingsKilled2 && buildingHP > buildingHP2))) {
                 rc.envision(AnomalyType.FURY);
             }
         } else if (attackTgt != null && rc.canAttack(attackTgt.location)) {
-            if(rc.senseRubble(src) >= rc.senseRubble(togo) && togo.distanceSquaredTo(attackTgt.location) <= radius){
-            }
-            else{
+            if(rc.senseRubble(src) < rc.senseRubble(togo) || togo.distanceSquaredTo(attackTgt.location) > radius){
                 MapLocation toAttack = attackTgt.location;
                 rc.attack(toAttack);
             }

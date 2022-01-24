@@ -257,13 +257,10 @@ public class Sage extends RobotPlayer{
             }
         }
 
-
-        boolean chargeLater = false, furyLater = false, attackLater = false;
         //maximize damage done
         if ((AnomalyType.CHARGE.sagePercentage * unitHP >= RobotType.SAGE.getDamage(1) || unitsKilled > 1)
                 && rc.canEnvision(AnomalyType.CHARGE)) {
             if((unitHP2 >= unitHP && unitsKilled2 >= unitsKilled) && rc.senseRubble(src) >= rc.senseRubble(togo)){
-                chargeLater = true;
             }
             else{
                 rc.envision(AnomalyType.CHARGE);
@@ -271,14 +268,12 @@ public class Sage extends RobotPlayer{
         } else if ((AnomalyType.FURY.sagePercentage * buildingHP >= 60 || buildingsKilled > 0)
                 && rc.canEnvision(AnomalyType.FURY)) {
             if((buildingHP2 >= buildingHP && buildingsKilled2 >= buildingsKilled) && rc.senseRubble(src) >= rc.senseRubble(togo)){
-                furyLater = true;
             }
             else{
                 rc.envision(AnomalyType.FURY);
             }
         } else if (attackTgt != null && rc.canAttack(attackTgt.location)) {
             if(rc.senseRubble(src) >= rc.senseRubble(togo) && togo.distanceSquaredTo(attackTgt.location) <= radius){
-                attackLater = true;
             }
             else{
                 MapLocation toAttack = attackTgt.location;
@@ -332,10 +327,10 @@ public class Sage extends RobotPlayer{
                     }
                 }
                 //maximize damage done
-                if (chargeLater || (AnomalyType.CHARGE.sagePercentage * unitHP >= RobotType.SAGE.getDamage(1) || unitsKilled > 1)
+                if ((AnomalyType.CHARGE.sagePercentage * unitHP >= RobotType.SAGE.getDamage(1) || unitsKilled > 1)
                         && rc.canEnvision(AnomalyType.CHARGE)) {
                     rc.envision(AnomalyType.CHARGE);
-                } else if (furyLater || (AnomalyType.FURY.sagePercentage * buildingHP >= 60) || buildingsKilled > 0
+                } else if ((AnomalyType.FURY.sagePercentage * buildingHP >= 60) || buildingsKilled > 0
                         && rc.canEnvision(AnomalyType.FURY)) {
                     rc.envision(AnomalyType.FURY);
                 } else if (attackTgt != null && rc.canAttack(attackTgt.location)) {

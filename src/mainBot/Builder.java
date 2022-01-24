@@ -55,6 +55,7 @@ public class Builder extends RobotPlayer {
         RobotInfo nearestLab = null;
         RobotInfo nearestArchon = null;
         RobotInfo nearestPrototype = null;
+        int mapArea = rc.getMapHeight() * rc.getMapWidth();
         int awayFromLabX = 0;
         int awayFromLabY = 0;
 
@@ -156,6 +157,10 @@ public class Builder extends RobotPlayer {
         }
 
         int minerLabRatio = 10;
+//        if (mapArea > 2500) {
+//            minerLabRatio = 7;
+//        }
+
         boolean buildLab = laboratoriesBuilt == 0 && ((minerCount / minerLabRatio + initLabCount > labCount)
                 || (rc.getTeamLeadAmount(rc.getTeam()) >= 180));
         boolean buildWt = (sageCount > (15 * (wtCount+1))) && (watchtowersBuilt < 3);

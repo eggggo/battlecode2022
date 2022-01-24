@@ -518,12 +518,12 @@ public class Archon extends RobotPlayer {
             rc.writeSharedArray(55, (rc.readSharedArray(55) & 0b1111111));
         }
 
-        if (rc.getMapHeight() * 1.75 <= rc.getMapWidth() || rc.getMapWidth() * 1.75 <= rc.getMapHeight()) {
+        if (false && (rc.getMapHeight() * 1.75 <= rc.getMapWidth() || rc.getMapWidth() * 1.75 <= rc.getMapHeight())) {
             transitionTurn = 375;
             if (soldierCount > 2 * rc.getArchonCount()) {
                 transitionTurn = 0;
             }
-        } else if (mapArea < 1225 && rc.getArchonCount() < 3) {
+        } else if (mapArea < 1156 && rc.getArchonCount() < 3) {
             transitionTurn = 375;
         }
 

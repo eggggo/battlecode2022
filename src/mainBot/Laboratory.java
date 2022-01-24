@@ -13,6 +13,9 @@ public class Laboratory extends RobotPlayer {
         }
 
         int minMiners = sageCount/2;
+//        if (sageCount > 35) {
+//            minMiners = (sageCount * 3) / 4;
+//        }
         int mapArea = rc.getMapHeight() * rc.getMapWidth();
         double thresh = Math.sqrt(mapArea);
 

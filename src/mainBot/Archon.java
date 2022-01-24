@@ -174,6 +174,7 @@ public class Archon extends RobotPlayer {
         int wtCount = rc.readSharedArray(52);
         int sageCount = rc.readSharedArray(53);
         int combatSector = (rc.readSharedArray(55) & 0b111111)-1;
+        int labCount = rc.readSharedArray(56);
         int mapArea = rc.getMapHeight() * rc.getMapWidth();
         MapLocation[] nearbyLead = rc.senseNearbyLocationsWithLead(RobotType.ARCHON.visionRadiusSquared);
         int rubbleThreshold = rc.senseRubble(rc.getLocation()) + 20;
@@ -505,6 +506,9 @@ public class Archon extends RobotPlayer {
 
         int distAwayFromEnemy = 100;
         int minerLabRatio = 10;
+//        if (mapArea > 2500) {
+//            minerLabRatio = 7;
+//        }
 
         if (bestTgtSector != null && rc.getLocation().distanceSquaredTo(bestTgtSector) >= distAwayFromEnemy) {
             turnsOutOfRange++;
@@ -518,13 +522,16 @@ public class Archon extends RobotPlayer {
             rc.writeSharedArray(55, (rc.readSharedArray(55) & 0b1111111));
         }
 
-        if (false && (rc.getMapHeight() * 1.75 <= rc.getMapWidth() || rc.getMapWidth() * 1.75 <= rc.getMapHeight())) {
+        if ((rc.getMapHeight() * 1.75 <= rc.getMapWidth() || rc.getMapWidth() * 1.75 <= rc.getMapHeight())) {
             transitionTurn = 375;
-            if (soldierCount > 2 * rc.getArchonCount()) {
+            if (labCount > 0) {
                 transitionTurn = 0;
             }
         } else if (mapArea < 1156 && rc.getArchonCount() < 3) {
             transitionTurn = 375;
+            if (labCount > 0) {
+                transitionTurn = 0;
+            }
         }
 
         System.out.println(transitionTurn);

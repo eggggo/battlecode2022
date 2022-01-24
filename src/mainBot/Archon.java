@@ -492,6 +492,8 @@ public class Archon extends RobotPlayer {
         int initialMiners = 3;
         if (mapArea <= mapThres) {
             initialMiners = 2;
+        } else if (mapArea >= 1600) {
+            initialMiners = 2 * rc.getArchonCount() - 1;
         }
 
         int minerBuilderRatio = 3;
@@ -534,7 +536,6 @@ public class Archon extends RobotPlayer {
             }
         }
 
-        System.out.println(transitionTurn);
         if (turnCount < transitionTurn) {
             int initialSoldiers = rc.getArchonCount() * 2;
             if (firstEnemySeen && rc.readSharedArray(58) == 0 && rc.getMode() == RobotMode.TURRET && bestTgtSector != null &&
@@ -561,9 +562,9 @@ public class Archon extends RobotPlayer {
                 sagesBuilt++;
             }
             else if (rc.readSharedArray(55) >> 7 == 0) {
-                if (minerCount < initialMiners && rc.canBuildRobot(RobotType.MINER, dir)) {
+                if (minerCount < initialMiners) {
                     rc.setIndicatorString("3");
-                    if (shouldBuildMinerOrd) {
+                    if (shouldBuildMinerOrd && rc.canBuildRobot(RobotType.MINER, dir)) {
                         rc.buildRobot(RobotType.MINER, dir);
                         minersBuilt++;
                     }
@@ -652,9 +653,9 @@ public class Archon extends RobotPlayer {
 //                                soldiersBuilt++;
 //                            }
 //            }
-                if (minerCount < initialMiners && rc.canBuildRobot(RobotType.MINER, dir) && minersBuilt < (5 / rc.getArchonCount())) {
+                if (minerCount < initialMiners) {
                     rc.setIndicatorString("3");
-                    if (shouldBuildMinerOrd) {
+                    if (shouldBuildMinerOrd && rc.canBuildRobot(RobotType.MINER, dir)) {
                         rc.buildRobot(RobotType.MINER, dir);
                         minersBuilt++;
                     }

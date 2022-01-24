@@ -107,7 +107,7 @@ public class Miner extends RobotPlayer {
                 }
                 if (resourceInSector > 0) {
                     double score = (resourceInSector - enemiesInSector)/Math.max(1, src.distanceSquaredTo(sectorMdpt));
-                    if (score > bestResource && score >= 0.03) {
+                    if (score > bestResource && score >= 0.01) {
                         bestResource = score;
                         bestOOVResource = sectorMdpt;
                     }
@@ -216,14 +216,13 @@ public class Miner extends RobotPlayer {
                 xVector += 2*awayAttacker.dx;
                 yVector += 2*awayAttacker.dy;
             }
-
             MapLocation vectorTgt = src.translate(4*xVector, 4*yVector);
             MapLocation inBounds = new MapLocation(Math.min(Math.max(0, vectorTgt.x), rc.getMapWidth() - 1), 
                 Math.min(Math.max(0, vectorTgt.y), rc.getMapHeight() - 1));
 
             if ((checkpointLoc != null && src.distanceSquaredTo(checkpointLoc) <= 8 && moveNum % 6 == 0)) {
                 rc.setIndicatorString("direct to: " + inBounds);
-                dir = src.directionTo(inBounds);
+                dir = Pathfinder.getMoveDirBFS(rc, inBounds);
             } else {
                 dir = Pathfinder.getMoveDir(rc, inBounds, prev5Spots);
             }
@@ -235,8 +234,10 @@ public class Miner extends RobotPlayer {
             if (rc.canMove(dir)) {
                 rc.move(dir);
                 moveNum ++;
-                prev5Spots[currentOverrideIndex] = rc.getLocation();
-                currentOverrideIndex  = (currentOverrideIndex + 1) % 5;
+                if (!rc.getLocation().equals(resources)) {
+                    prev5Spots[currentOverrideIndex] = rc.getLocation();
+                    currentOverrideIndex  = (currentOverrideIndex + 1) % 5;
+                }
             }
         }
 

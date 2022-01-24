@@ -221,15 +221,14 @@ public class Miner extends RobotPlayer {
             MapLocation inBounds = new MapLocation(Math.min(Math.max(0, vectorTgt.x), rc.getMapWidth() - 1), 
                 Math.min(Math.max(0, vectorTgt.y), rc.getMapHeight() - 1));
 
-            if ((checkpointLoc != null && src.distanceSquaredTo(checkpointLoc) <= 8 && moveNum % 10 == 0) 
-                || (resources != null && src.distanceSquaredTo(resources) <= 8)) {
+            if ((checkpointLoc != null && src.distanceSquaredTo(checkpointLoc) <= 8 && moveNum % 6 == 0)) {
                 rc.setIndicatorString("direct to: " + inBounds);
                 dir = src.directionTo(inBounds);
             } else {
                 dir = Pathfinder.getMoveDir(rc, inBounds, prev5Spots);
             }
 
-            if (moveNum % 10 == 0) {
+            if (moveNum % 6 == 0) {
                 checkpointLoc = rc.getLocation();
             }
 

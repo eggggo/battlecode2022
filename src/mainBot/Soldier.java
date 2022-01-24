@@ -38,6 +38,10 @@ public class Soldier extends RobotPlayer {
     || unit.getType() == RobotType.WATCHTOWER);
   }
 
+  static boolean chaseable(RobotInfo unit) {
+    return !(unit.getType() == RobotType.SOLDIER || unit.getType() == RobotType.WATCHTOWER);
+  }
+
   /**
    * Run a single turn for a Soldier.
    * This code is wrapped inside the infinite loop in run(), so it is called once per turn.
@@ -178,7 +182,8 @@ public class Soldier extends RobotPlayer {
 
     //main movement loop
     //if low enough hp run back to heal
-    if ((notRepaired || rc.getHealth() <= 5) && src.distanceSquaredTo(closestFriendlyArchon) >= 3) {
+    if ((notRepaired || rc.getHealth() <= 5) && src.distanceSquaredTo(closestFriendlyArchon) >= 3
+        && !(inVisionTgt != null && chaseable(inVisionTgt))) {
       dir = Pathfinder.getMoveDir(rc, closestFriendlyArchon, prev5Spots);
       notRepaired = true;
     //if mid hp comparatively or no cd, shuffle
@@ -195,7 +200,8 @@ public class Soldier extends RobotPlayer {
             dir = stallOnGoodRubble(rc);
         }
     //if enough soldiers nearby advance to make space
-    } else if (inVisionTgt != null && (nearbyDamage >= 4 || src.distanceSquaredTo(inVisionTgt.location) > 13 || !isHostile(inVisionTgt))) {
+    } else if (inVisionTgt != null && (nearbyDamage >= 4 || src.distanceSquaredTo(inVisionTgt.location) > 13 
+    || !(inVisionTgt.getType() == RobotType.SOLDIER || inVisionTgt.getType() == RobotType.WATCHTOWER))) {
       dir = Pathfinder.getMoveDir(rc, inVisionTgt.location, prev5Spots);
       MapLocation kitingTgt = src.add(dir);
       if (rc.senseRubble(kitingTgt) > rubbleThreshold) {

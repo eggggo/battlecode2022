@@ -26,6 +26,7 @@ public class Archon extends RobotPlayer {
     static MapLocation[] sectorMdpts = new MapLocation[49];
     static MapLocation[] prev5Spots = new MapLocation[5];
     static int currentOverrideIndex = 0;
+    static int turnsOutOfRange = 31;
 
     static Direction stallOnGoodRubble(RobotController rc) throws GameActionException {
         MapLocation src = rc.getLocation();
@@ -460,7 +461,6 @@ public class Archon extends RobotPlayer {
         if (roundStartLead >= (rc.getArchonCount() - minerDiff) * 50) {
             spreadCooldown = 0;
         }
-
         //UNIT BUILDING:
 
         int initialMiners = 3;
@@ -477,15 +477,23 @@ public class Archon extends RobotPlayer {
         if (firstEnemySeen) {
             initLabCount = 1;
         }
+
+        int distAwayFromEnemy = 100;
+
+        if (bestTgtSector != null && rc.getLocation().distanceSquaredTo(bestTgtSector) >= distAwayFromEnemy) {
+            turnsOutOfRange++;
+        } else if (bestTgtSector != null && rc.getLocation().distanceSquaredTo(bestTgtSector) < distAwayFromEnemy) {
+            turnsOutOfRange = 0;
+        }
+
         //If there is no enemyArchonNearby and the first enemy hasn't been seen or there is nearby lead between 50 and 100, build a miner
         //If our minerCount is less than the target or our miner count is greater than our attacker count times a ratio and we shouldn't build a builder or theres an enemyArchonNearby, build a soldier.
         if (rc.readSharedArray(55) >> 7 == 1 && (rc.getTeamLeadAmount(rc.getTeam()) >= 350)) {
             rc.writeSharedArray(55, (rc.readSharedArray(55) & 0b1111111));
         }
 
-        int distAwayFromEnemy = 100;
         if (firstEnemySeen && rc.readSharedArray(58) == 0 && rc.getMode() == RobotMode.TURRET && bestTgtSector != null &&
-                rc.getLocation().distanceSquaredTo(bestTgtSector) >= distAwayFromEnemy && rc.getTeamLeadAmount(rc.getTeam()) < 350 && shouldBuildLab) {
+                rc.getLocation().distanceSquaredTo(bestTgtSector) >= distAwayFromEnemy && rc.getTeamLeadAmount(rc.getTeam()) < 350 && shouldBuildLab && turnsOutOfRange > 30) {
             if (rc.canTransform()) {
                 rc.setIndicatorString("Turret to Port");
                 rc.transform();

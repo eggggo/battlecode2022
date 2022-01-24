@@ -43,6 +43,10 @@ public class Sage extends RobotPlayer{
                 || enemy.getType() == RobotType.WATCHTOWER);
     }
 
+    static boolean isBuilding(RobotInfo unit) {
+        return (unit.getType() == RobotType.WATCHTOWER || unit.getType() == RobotType.LABORATORY || unit.getType() == RobotType.ARCHON);
+    }
+
     public static void runSage(RobotController rc) throws GameActionException {
         MapLocation src = rc.getLocation();
         int senseRadius = rc.getType().visionRadiusSquared;
@@ -125,17 +129,6 @@ public class Sage extends RobotPlayer{
                 inVisionTgt = attackTgt;
             }
 
-            //maximize damage done
-            if ( AnomalyType.CHARGE.sagePercentage * unitHP >= RobotType.SAGE.getDamage(1)
-                    && rc.canEnvision(AnomalyType.CHARGE)) {
-                rc.envision(AnomalyType.CHARGE);
-            } else if ((AnomalyType.FURY.sagePercentage * buildingHP >= 60)
-                    && rc.canEnvision(AnomalyType.FURY)) {
-                rc.envision(AnomalyType.FURY);
-            } else if (attackTgt != null && rc.canAttack(attackTgt.location)) {
-                MapLocation toAttack = attackTgt.location;
-                rc.attack(toAttack);
-            }
         }
 
         //assess teammates
@@ -148,6 +141,9 @@ public class Sage extends RobotPlayer{
                 && friend.location.distanceSquaredTo(attackTgt.location) < src.distanceSquaredTo(attackTgt.location)) {
                     frontline = false;
                 }
+            }
+            if (isBuilding(friend)) {
+                buildingHP -= friend.getType().getMaxHealth(friend.level);
             }
         }
         double averageHealth = (double)nearbyDamageHealth/nearbyDamage;
@@ -219,6 +215,18 @@ public class Sage extends RobotPlayer{
           //otherwise scout same as miner
         } else {
             dir = Pathfinder.getMoveDir(rc, scoutTgt, prev5Spots);
+        }
+
+        //maximize damage done
+        if ( AnomalyType.CHARGE.sagePercentage * unitHP >= RobotType.SAGE.getDamage(1)
+          && rc.canEnvision(AnomalyType.CHARGE)) {
+            rc.envision(AnomalyType.CHARGE);
+        } else if ((AnomalyType.FURY.sagePercentage * buildingHP >= 60)
+          && rc.canEnvision(AnomalyType.FURY)) {
+            rc.envision(AnomalyType.FURY);
+        } else if (attackTgt != null && rc.canAttack(attackTgt.location)) {
+            MapLocation toAttack = attackTgt.location;
+            rc.attack(toAttack);
         }
 
         //determine whether to attack here or after moving

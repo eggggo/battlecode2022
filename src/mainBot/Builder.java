@@ -8,7 +8,6 @@ public class Builder extends RobotPlayer {
     static int watchtowersBuilt = 0;
     static int turnsAlive = 0;
     static MapLocation[] sectorMdpts = new MapLocation[49];
-    static boolean firstEnemySeen = false;
     static Direction awayFromEnemies = null;
     static int sageCount = 0;
     static int wtCount = 0;
@@ -58,15 +57,6 @@ public class Builder extends RobotPlayer {
         RobotInfo nearestPrototype = null;
         int awayFromLabX = 0;
         int awayFromLabY = 0;
-
-        if (!firstEnemySeen) {
-            for (int i = 48; i >= 0; i--) {
-                if (Comms.readSectorInfo(rc, i, 3) > 0) {
-                    firstEnemySeen = true;
-                    break;
-                }
-            }
-        }
 
         int initLabCount = 1;
 

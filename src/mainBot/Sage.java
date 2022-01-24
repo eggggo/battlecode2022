@@ -59,6 +59,7 @@ public class Sage extends RobotPlayer{
         RobotInfo inVisionTgt = null;
         int unitHP = 0;
         int buildingHP = 0;
+        int enemiesKilled = 0;
         int rubbleThreshold = rc.senseRubble(rc.getLocation()) + 20;
         boolean frontline = true;
         int nearbyDamage = 0;
@@ -114,6 +115,9 @@ public class Sage extends RobotPlayer{
                         }
                     } else {
                         unitHP += enemy.getType().getMaxHealth(1);
+                        if (enemy.getHealth() <= enemy.getType().getMaxHealth(1)/10) {
+                            enemiesKilled ++;
+                        }
                     }
                 } else {
                     if (inVisionTgt == null ||
@@ -218,7 +222,7 @@ public class Sage extends RobotPlayer{
         }
 
         //maximize damage done
-        if ( AnomalyType.CHARGE.sagePercentage * unitHP >= RobotType.SAGE.getDamage(1)
+        if ( (AnomalyType.CHARGE.sagePercentage * unitHP >= RobotType.SAGE.getDamage(1) || enemiesKilled > 1)
           && rc.canEnvision(AnomalyType.CHARGE)) {
             rc.envision(AnomalyType.CHARGE);
         } else if ((AnomalyType.FURY.sagePercentage * buildingHP >= 60)

@@ -115,7 +115,7 @@ public class Sage extends RobotPlayer{
                         }
                     } else {
                         unitHP += enemy.getType().getMaxHealth(1);
-                        if (enemy.getHealth() <= enemy.getType().getMaxHealth(1)/10) {
+                        if (enemy.getHealth() <= enemy.getType().getMaxHealth(1)*0.22) {
                             enemiesKilled ++;
                         }
                     }
@@ -146,7 +146,7 @@ public class Sage extends RobotPlayer{
                     frontline = false;
                 }
             }
-            if (isBuilding(friend)) {
+            if (src.distanceSquaredTo(friend.getLocation()) <= RobotType.SAGE.actionRadiusSquared && isBuilding(friend)) {
                 buildingHP -= friend.getType().getMaxHealth(friend.level);
             }
         }
@@ -248,6 +248,7 @@ public class Sage extends RobotPlayer{
             lowestHPTgt = 9999;
             buildingHP = 0;
             unitHP = 0;
+            enemiesKilled = 0;
             if (enemies.length > 0) {
             for (int i = enemies.length - 1; i >= 0; i --) {
                 RobotInfo enemy = enemies[i];
@@ -267,11 +268,14 @@ public class Sage extends RobotPlayer{
                         }
                     } else {
                         unitHP += enemy.getType().getMaxHealth(1);
+                        if (enemy.getHealth() <= enemy.getType().getMaxHealth(1)*0.22) {
+                            enemiesKilled ++;
+                        }
                     }
                 }
             }
             //maximize damage done
-            if ( AnomalyType.CHARGE.sagePercentage * unitHP >= RobotType.SAGE.getDamage(1)
+            if ( (AnomalyType.CHARGE.sagePercentage * unitHP >= RobotType.SAGE.getDamage(1) || enemiesKilled > 1)
                     && rc.canEnvision(AnomalyType.CHARGE)) {
                 rc.envision(AnomalyType.CHARGE);
             } else if ((AnomalyType.FURY.sagePercentage * buildingHP >= 60)

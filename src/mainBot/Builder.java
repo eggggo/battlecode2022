@@ -156,7 +156,7 @@ public class Builder extends RobotPlayer {
         }
 
         boolean buildLab = laboratoriesBuilt == 0 && ((minerCount / 10 + initLabCount > labCount)
-                || (rc.getTeamLeadAmount(rc.getTeam()) >= 180 && !(sageCount > (15 * Math.max(1, wtCount)))));
+                || (rc.getTeamLeadAmount(rc.getTeam()) >= 180));
         boolean buildWt = (sageCount > (15 * (wtCount+1))) && (watchtowersBuilt < 3);
         buildWt = false;
 

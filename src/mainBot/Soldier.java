@@ -39,7 +39,7 @@ public class Soldier extends RobotPlayer {
   }
 
   static boolean chaseable(RobotInfo unit) {
-    return !(unit.getType() == RobotType.SOLDIER || unit.getType() == RobotType.WATCHTOWER);
+    return !(unit.getType() == RobotType.SOLDIER || unit.getType() == RobotType.WATCHTOWER || unit.getType() == RobotType.SAGE);
   }
 
   /**
@@ -131,11 +131,6 @@ public class Soldier extends RobotPlayer {
       if (attackTgt != null && inVisionTgt == null) {
         inVisionTgt = attackTgt;
       }
-
-      if (attackTgt != null && rc.canAttack(attackTgt.location)) {
-        MapLocation toAttack = attackTgt.location;
-        rc.attack(toAttack);
-      }
     }
 
     //assess teammates
@@ -213,6 +208,13 @@ public class Soldier extends RobotPlayer {
     //otherwise scout same as miner
     } else {
       dir = Pathfinder.getMoveDir(rc, scoutTgt, prev5Spots);
+    }
+    
+    MapLocation togo = src.add(dir);
+    if (attackTgt != null && rc.canAttack(attackTgt.location) && (rc.senseRubble(src) < rc.senseRubble(togo) 
+    || togo.distanceSquaredTo(attackTgt.location) > radius)) {
+      MapLocation toAttack = attackTgt.location;
+      rc.attack(toAttack);
     }
 
     //move

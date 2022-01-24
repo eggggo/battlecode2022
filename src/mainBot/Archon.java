@@ -2,6 +2,8 @@ package mainBot;
 
 import battlecode.common.*;
 
+import java.awt.*;
+
 public class Archon extends RobotPlayer {
 
     static int minersBuilt = 0;
@@ -27,6 +29,7 @@ public class Archon extends RobotPlayer {
     static MapLocation[] prev5Spots = new MapLocation[5];
     static int currentOverrideIndex = 0;
     static int turnsOutOfRange = 31;
+    static int transitionTurn = 0;
 
     static Direction stallOnGoodRubble(RobotController rc) throws GameActionException {
         MapLocation src = rc.getLocation();
@@ -328,6 +331,7 @@ public class Archon extends RobotPlayer {
         boolean shouldBuildLab = false;
         boolean shouldBuildSage = false;
         boolean shouldBuildMinerOrd = false;
+        boolean shouldBuildSoldier = false;
 
         //initialize friendlyArchonSectorsDists which is the distance of each of the archons to the closest enemy
         // sector.
@@ -394,6 +398,27 @@ public class Archon extends RobotPlayer {
         int sagesCanBuild = rc.getTeamGoldAmount(rc.getTeam()) / 20;
         if (sagesCanBuild > rc.getArchonCount()) {
             sagesCanBuild = rc.getArchonCount();
+        }
+
+        int soldiersCanBuild = rc.getTeamLeadAmount(rc.getTeam()) / 75;
+        if (soldiersCanBuild > rc.getArchonCount()) {
+            soldiersCanBuild = rc.getArchonCount();
+        }
+
+        if (soldiersCanBuild > 0) {
+            if (((sageCount + soldierCount) % 2 < 1 || Comms.sectorMidpt(rc, Comms.locationToSector(rc, rc.getLocation())).distanceSquaredTo(combatMdpt) == 0)) {
+                for (int i = soldiersCanBuild - 1; i >= 0; i--) {
+                    if (friendlyArchonSectorsDists[(soldiersCanBuild - 1) - i] == Comms.sectorMidpt(rc, Comms.locationToSector(rc, rc.getLocation())).distanceSquaredTo(combatMdpt)) {
+                        shouldBuildSoldier = true;
+                    }
+                }
+            } else { //potentially look at using numUniqueArchonSectors hers instead of rc.getArchon count as sometimes not all archons will have unique sectors
+                for (int i = soldiersCanBuild - 1; i >= 0; i--) {
+                    if (friendlyArchonSectorsDists[rc.getArchonCount() - 1 - i] == Comms.sectorMidpt(rc, Comms.locationToSector(rc, rc.getLocation())).distanceSquaredTo(combatMdpt)) {
+                        shouldBuildSoldier = true;
+                    }
+                }
+            }
         }
 
         if (sagesCanBuild > 0) {
@@ -479,6 +504,7 @@ public class Archon extends RobotPlayer {
         }
 
         int distAwayFromEnemy = 100;
+        int minerLabRatio = 10;
 
         if (bestTgtSector != null && rc.getLocation().distanceSquaredTo(bestTgtSector) >= distAwayFromEnemy) {
             turnsOutOfRange++;
@@ -492,30 +518,112 @@ public class Archon extends RobotPlayer {
             rc.writeSharedArray(55, (rc.readSharedArray(55) & 0b1111111));
         }
 
-        if (firstEnemySeen && rc.readSharedArray(58) == 0 && rc.getMode() == RobotMode.TURRET && bestTgtSector != null &&
-                rc.getLocation().distanceSquaredTo(bestTgtSector) >= distAwayFromEnemy && rc.getTeamLeadAmount(rc.getTeam()) < 350 && shouldBuildLab && turnsOutOfRange > 30) {
-            if (rc.canTransform()) {
-                rc.setIndicatorString("Turret to Port");
-                rc.transform();
-                rc.writeSharedArray(58, 1);
+        if (false && (rc.getMapHeight() * 1.75 <= rc.getMapWidth() || rc.getMapWidth() * 1.75 <= rc.getMapHeight())) {
+            transitionTurn = 375;
+            if (soldierCount > 2 * rc.getArchonCount()) {
+                transitionTurn = 0;
             }
+        } else if (mapArea < 1156 && rc.getArchonCount() < 3) {
+            transitionTurn = 375;
         }
-        else if (rc.getMode() == RobotMode.PORTABLE && rc.canTransform() &&
-                (rc.getLocation().distanceSquaredTo(bestTgtSector) < distAwayFromEnemy || rc.getTeamLeadAmount(rc.getTeam()) >= 350)
-                && stallDir == Direction.CENTER && rc.senseRubble(src) <= rubbleThreshold) {
-            if (rc.canTransform()) {
-                rc.setIndicatorString("Port to Turrent");
-                rc.transform();
-                rc.writeSharedArray(58, 0);
+
+        System.out.println(transitionTurn);
+        if (turnCount < transitionTurn) {
+            int initialSoldiers = rc.getArchonCount() * 2;
+            if (firstEnemySeen && rc.readSharedArray(58) == 0 && rc.getMode() == RobotMode.TURRET && bestTgtSector != null &&
+                    rc.getLocation().distanceSquaredTo(bestTgtSector) >= distAwayFromEnemy && rc.getTeamLeadAmount(rc.getTeam()) < 350 && shouldBuildLab && turnsOutOfRange > 30) {
+                if (rc.canTransform()) {
+                    rc.setIndicatorString("Turret to Port");
+                    rc.transform();
+                    rc.writeSharedArray(58, 1);
+                }
+            } else if (rc.getMode() == RobotMode.PORTABLE && rc.canTransform() &&
+                    (rc.getLocation().distanceSquaredTo(bestTgtSector) < distAwayFromEnemy || rc.getTeamLeadAmount(rc.getTeam()) >= 350)
+                    && stallDir == Direction.CENTER && rc.senseRubble(src) <= rubbleThreshold) {
+                if (rc.canTransform()) {
+                    rc.setIndicatorString("Port to Turrent");
+                    rc.transform();
+                    rc.writeSharedArray(58, 0);
+                }
             }
-        }
-        else if (rc.canBuildRobot(RobotType.SAGE, dir) && shouldBuildSage) {
-            rc.setIndicatorString("2");
-            rc.buildRobot(RobotType.SAGE, dir);
-            minersBuiltInARow = 0;
-            buildersBuiltInARow = 0;
-            sagesBuilt++;
-        }
+            else if (rc.canBuildRobot(RobotType.SAGE, dir) && shouldBuildSage) {
+                rc.setIndicatorString("2");
+                rc.buildRobot(RobotType.SAGE, dir);
+                minersBuiltInARow = 0;
+                buildersBuiltInARow = 0;
+                sagesBuilt++;
+            }
+            else if (rc.readSharedArray(55) >> 7 == 0) {
+                if (minerCount < initialMiners && rc.canBuildRobot(RobotType.MINER, dir)) {
+                    rc.setIndicatorString("3");
+                    if (shouldBuildMinerOrd) {
+                        rc.buildRobot(RobotType.MINER, dir);
+                        minersBuilt++;
+                    }
+                } else if (soldierCount < initialSoldiers) {
+                    rc.setIndicatorString("soldier");
+                    if (shouldBuildSoldier && rc.canBuildRobot(RobotType.SOLDIER, dir)) {
+                        rc.setIndicatorString("1");
+                        rc.buildRobot(RobotType.SOLDIER, dir);
+                        soldiersBuilt++;
+                    }
+                } else if ((builderCount == 0 || (minerCount / minerLabRatio + initLabCount > builderCount &&
+                        (minerCount / minerBuilderRatio > builderCount && rc.getTeamGoldAmount(rc.getTeam()) > 0)) ||
+                        rc.getTeamLeadAmount(rc.getTeam()) >= 350) && shouldBuildLab) {
+                    rc.setIndicatorString("4");
+                    if (rc.canBuildRobot(RobotType.BUILDER, dir) && !builtBuilderRecently) {
+                        rc.buildRobot(RobotType.BUILDER, dir);
+                        buildersBuilt++;
+                        soldiersBuiltInARow = 0;
+                        minersBuiltInARow = 0;
+                        buildersBuiltInARow++;
+                        builtBuilderRecently = true;
+                        if ((minerCount / minerLabRatio + initLabCount > builderCount || builderCount == 0)) {
+                            rc.writeSharedArray(55, (rc.readSharedArray(55) | 0b10000000));
+                        }
+                    }
+                } else if (soldierCount <= minerCount) {
+                    rc.setIndicatorString("soldier over miner");
+                    if (shouldBuildSoldier && rc.canBuildRobot(RobotType.SOLDIER, dir)) {
+                        rc.setIndicatorString("1");
+                        rc.buildRobot(RobotType.SOLDIER, dir);
+                        soldiersBuilt++;
+                    }
+                } else if (rc.canBuildRobot(RobotType.MINER, dir)) {
+                    rc.setIndicatorString("5");
+                    rc.buildRobot(RobotType.MINER, dir);
+                    minersBuilt++;
+                    unitsAfterEnemySeen++;
+                }
+                else {
+                    rc.setIndicatorString("afk");
+                }
+            } else {
+                rc.setIndicatorString("saving");
+            }
+        } else {
+            if (firstEnemySeen && rc.readSharedArray(58) == 0 && rc.getMode() == RobotMode.TURRET && bestTgtSector != null &&
+                    rc.getLocation().distanceSquaredTo(bestTgtSector) >= distAwayFromEnemy && rc.getTeamLeadAmount(rc.getTeam()) < 350 && shouldBuildLab && turnsOutOfRange > 30) {
+                if (rc.canTransform()) {
+                    rc.setIndicatorString("Turret to Port");
+                    rc.transform();
+                    rc.writeSharedArray(58, 1);
+                }
+            } else if (rc.getMode() == RobotMode.PORTABLE && rc.canTransform() &&
+                    (rc.getLocation().distanceSquaredTo(bestTgtSector) < distAwayFromEnemy || rc.getTeamLeadAmount(rc.getTeam()) >= 350)
+                    && stallDir == Direction.CENTER && rc.senseRubble(src) <= rubbleThreshold) {
+                if (rc.canTransform()) {
+                    rc.setIndicatorString("Port to Turrent");
+                    rc.transform();
+                    rc.writeSharedArray(58, 0);
+                }
+            } else if (rc.canBuildRobot(RobotType.SAGE, dir) && shouldBuildSage) {
+                rc.setIndicatorString("2");
+                rc.buildRobot(RobotType.SAGE, dir);
+                minersBuiltInARow = 0;
+                buildersBuiltInARow = 0;
+                sagesBuilt++;
+            }
 //        else if (rc.getHealth() < rc.getType().getMaxHealth(rc.getLevel())/3.0 && nearbyBuilders < 1) {
 //            if (rc.canBuildRobot(RobotType.BUILDER, dir)) {
 //                rc.setIndicatorString("8");
@@ -527,8 +635,8 @@ public class Archon extends RobotPlayer {
 //                builtBuilderRecently = true;
 //            }
 //        }
-        else if (rc.readSharedArray(55) >> 7 == 0) {
-            rc.setIndicatorString("not saving");
+            else if (rc.readSharedArray(55) >> 7 == 0) {
+                rc.setIndicatorString("not saving");
 //            if (sageCount > 15 && 2 * sageCount < minerCount) {
 //                rc.setIndicatorString("soldier");
 //                if (shouldBuildSage && rc.canBuildRobot(RobotType.SOLDIER, dir)) {
@@ -537,58 +645,57 @@ public class Archon extends RobotPlayer {
 //                                soldiersBuilt++;
 //                            }
 //            }
-            if (minerCount < initialMiners && rc.canBuildRobot(RobotType.MINER, dir) && minersBuilt < (5/rc.getArchonCount())) {
-                rc.setIndicatorString("3");
-                if (shouldBuildMinerOrd) {
-                    rc.buildRobot(RobotType.MINER, dir);
-                    minersBuilt++;
-                }
-            }
-            else if ((builderCount == 0 || (minerCount / 10 + initLabCount > builderCount &&
-                    (minerCount /minerBuilderRatio > builderCount && rc.getTeamGoldAmount(rc.getTeam()) > 0)) ||
-                    rc.getTeamLeadAmount(rc.getTeam()) >= 350) && shouldBuildLab) {
-                rc.setIndicatorString("4");
-                if (rc.canBuildRobot(RobotType.BUILDER, dir) && !builtBuilderRecently) {
-                    rc.buildRobot(RobotType.BUILDER, dir);
-                    buildersBuilt++;
-                    soldiersBuiltInARow = 0;
-                    minersBuiltInARow = 0;
-                    buildersBuiltInARow++;
-                    builtBuilderRecently = true;
-                    if ((minerCount / 10 + initLabCount > builderCount || builderCount == 0)) {
-                        rc.writeSharedArray(55, (rc.readSharedArray(55) | 0b10000000));
+                if (minerCount < initialMiners && rc.canBuildRobot(RobotType.MINER, dir) && minersBuilt < (5 / rc.getArchonCount())) {
+                    rc.setIndicatorString("3");
+                    if (shouldBuildMinerOrd) {
+                        rc.buildRobot(RobotType.MINER, dir);
+                        minersBuilt++;
+                    }
+                } else if ((builderCount == 0 || (minerCount / minerLabRatio + initLabCount > builderCount &&
+                        (minerCount / minerBuilderRatio > builderCount && rc.getTeamGoldAmount(rc.getTeam()) > 0)) ||
+                        rc.getTeamLeadAmount(rc.getTeam()) >= 350) && shouldBuildLab) {
+                    rc.setIndicatorString("4");
+                    if (rc.canBuildRobot(RobotType.BUILDER, dir) && !builtBuilderRecently) {
+                        rc.buildRobot(RobotType.BUILDER, dir);
+                        buildersBuilt++;
+                        soldiersBuiltInARow = 0;
+                        minersBuiltInARow = 0;
+                        buildersBuiltInARow++;
+                        builtBuilderRecently = true;
+                        if ((minerCount / minerLabRatio + initLabCount > builderCount || builderCount == 0)) {
+                            rc.writeSharedArray(55, (rc.readSharedArray(55) | 0b10000000));
+                        }
                     }
                 }
-            }
-        //    else if (!firstEnemySeen) {
-        //        if (shouldBuildSoldier && rc.canBuildRobot(RobotType.SOLDIER, dir)) {
-        //            rc.setIndicatorString("3");
-        //            rc.buildRobot(RobotType.SOLDIER, dir);
-        //            soldiersBuilt++;
-        //        }
-        //    }
-        //    else if ((unitsAfterEnemySeen) % 3 < 2) {
-        //        rc.setIndicatorString("soldier?");
-        //        if (rc.canBuildRobot(RobotType.SOLDIER, dir) && shouldBuildSoldier) {
-        //            rc.buildRobot(RobotType.SOLDIER, dir);
-        //            soldiersBuilt++;
-        //            rc.writeSharedArray(51, rc.readSharedArray(51) + 1);
-        //            unitsAfterEnemySeen++;
-        //        }
-        //    }
-            else if (rc.canBuildRobot(RobotType.MINER, dir)) {
-                rc.setIndicatorString("5");
-                rc.buildRobot(RobotType.MINER, dir);
-                minersBuilt++;
-                unitsAfterEnemySeen++;
+                //    else if (!firstEnemySeen) {
+                //        if (shouldBuildSoldier && rc.canBuildRobot(RobotType.SOLDIER, dir)) {
+                //            rc.setIndicatorString("3");
+                //            rc.buildRobot(RobotType.SOLDIER, dir);
+                //            soldiersBuilt++;
+                //        }
+                //    }
+                //    else if ((unitsAfterEnemySeen) % 3 < 2) {
+                //        rc.setIndicatorString("soldier?");
+                //        if (rc.canBuildRobot(RobotType.SOLDIER, dir) && shouldBuildSoldier) {
+                //            rc.buildRobot(RobotType.SOLDIER, dir);
+                //            soldiersBuilt++;
+                //            rc.writeSharedArray(51, rc.readSharedArray(51) + 1);
+                //            unitsAfterEnemySeen++;
+                //        }
+                //    }
+                else if (rc.canBuildRobot(RobotType.MINER, dir)) {
+                    rc.setIndicatorString("5");
+                    rc.buildRobot(RobotType.MINER, dir);
+                    minersBuilt++;
+                    unitsAfterEnemySeen++;
 
+                } else {
+                    rc.setIndicatorString("6");
+                }
             } else {
-                rc.setIndicatorString("6");
+                rc.setIndicatorString("7");
             }
-        } else {
-            rc.setIndicatorString("7");
         }
-
         //Updating Stuff
         lastTurnMiners = rc.readSharedArray(50);
         turnsAlive++;
